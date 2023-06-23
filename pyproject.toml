@@ -1,0 +1,13 @@
+
+[project]
+name = "Giochini-bot"
+version = "0.1"
+description = "A telegram Bot to play daily games like wordle"
+authors = [
+    {name = "Luca Bellanti", email = "luca.bellanti@gmail.com"},
+]
+dependencies = [
+    "python-telegram-bot>=20.3",
+]
+requires-python = ">=3.11"
+license = {text = "MIT"}
