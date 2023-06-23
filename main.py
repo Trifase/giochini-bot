@@ -3,7 +3,7 @@ import time
 import datetime
 from telegram.ext import ApplicationBuilder, ContextTypes, filters, MessageHandler, Application, CommandHandler
 
-from config import TOKEN, GAMES, MEDALS, Punteggio
+from config import TOKEN, GAMES, MEDALS, DAYS, Punteggio
 
 
 
@@ -39,6 +39,9 @@ def parse_results(text) -> dict:
             result['day'] = first_line[3][1:]
             if first_line[4] == 'but':
                 result['tries'] = 'X'
+            elif first_line[-1] == 'tips.':
+                index = first_line.index('guesses')
+                result['tries'] = first_line[index - 1]
             else:
                 result['tries'] = first_line[-2]
             result['timestamp'] = int(time.time())
@@ -64,8 +67,8 @@ def parse_results(text) -> dict:
         elif '#globle' in lines[-1]:
             result['name'] = 'Globle'
             result['timestamp'] = int(time.time())
-            now = datetime.datetime.now()
-            result['day'] = f'{now.month}{now.day}'
+            # Globle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+            result['day'] = get_day_from_date('Globle', lines[0])
             for line in lines:
                 if '=' in line:
                     result['tries'] = line.split('=')[-1][1:]
@@ -82,28 +85,32 @@ def parse_results(text) -> dict:
 
     return result
 
+def get_day_from_date(game: str, date: datetime.date | str = datetime.datetime.today()) -> str:
+    if isinstance(date, str) and game == 'Globle':
+        date = datetime.datetime.strptime(date, '🌎 %b %d, %Y 🌍').date()
+
+    days_difference = DAYS[game]['date'] - date
+    return str(int(DAYS[game]['day']) - days_difference.days)
+
+
 def make_daily_classifica(game, emoji) -> str:
     query = (Punteggio
         .select(Punteggio.user_name, Punteggio.tries)
-        .where(Punteggio.date == datetime.date.today(), Punteggio.game == game)
+        .where(Punteggio.day == get_day_from_date(game, datetime.date.today()), Punteggio.game == game)
         .order_by(Punteggio.tries, Punteggio.timestamp))
     if not query:
         return None
-    # print(f'INSIDE: faccio la classifica di {game}')
     classifica = ''
 
-    classifica += f'<b>{emoji} {game}</b>\n'
+    classifica += f'<b>{emoji} {game} #{get_day_from_date(game, datetime.date.today())}</b>\n'
 
     for posto, punteggio in enumerate(query, start=1):
         classifica += f'{MEDALS.get(posto, " ")} {punteggio.user_name} ({punteggio.tries})\n'
-    # print(classifica)
     return classifica
 
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # print('ricevuto')
     messaggio = ''
     for game in GAMES.keys():
-        # print(f'faccio la classifica di {game}')
         classifica = make_daily_classifica(game, GAMES.get(game))
         if classifica:
             messaggio += classifica + '\n'
