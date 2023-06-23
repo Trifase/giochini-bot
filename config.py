@@ -28,7 +28,8 @@ GAMES = {
     'Tradle': '🚢',
     'GuessTheGame': '🎮',
     'Wordle': '🆒',
-    'Globle': '🌍'
+    'Globle': '🌍',
+    'Flagle': '🏁'
 }
 
 MEDALS = {

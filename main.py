@@ -69,6 +69,14 @@ def parse_results(text) -> dict:
             for line in lines:
                 if '=' in line:
                     result['tries'] = line.split('=')[-1][1:]
+
+        elif 'Flagle' in lines[0]:
+            result['name'] = 'Flagle'
+            first_line = lines[0].split()
+            result['day'] = first_line[1][1:]
+            result['tries'] = first_line[3].split('/')[0]
+            result['timestamp'] = int(time.time())
+
     except IndexError:
         return None
 
