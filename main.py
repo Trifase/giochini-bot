@@ -1,10 +1,12 @@
-from telegram import Update
-import time
 import datetime
-from telegram.ext import ApplicationBuilder, ContextTypes, filters, MessageHandler, Application, CommandHandler
+import time
 
-from config import TOKEN, GAMES, MEDALS, DAYS, Punteggio
+import pytz
 
+from telegram import Update
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+
+from config import GAMES, ID_GIOCHINI, MEDALS, TOKEN, Punteggio
 
 
 def parse_results(text) -> dict:
@@ -85,13 +87,15 @@ def parse_results(text) -> dict:
 
     return result
 
-def get_day_from_date(game: str, date: datetime.date | str = datetime.datetime.today()) -> str:
+def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
     if isinstance(date, str) and game == 'Globle':
         date = datetime.datetime.strptime(date, '🌎 %b %d, %Y 🌍').date()
 
-    days_difference = DAYS[game]['date'] - date
-    return str(int(DAYS[game]['day']) - days_difference.days)
+    if date is None:
+        date = datetime.date.today()
 
+    days_difference = GAMES[game]['date'] - date
+    return str(int(GAMES[game]['day']) - days_difference.days)
 
 def make_daily_classifica(game, emoji) -> str:
     query = (Punteggio
@@ -108,10 +112,11 @@ def make_daily_classifica(game, emoji) -> str:
         classifica += f'{MEDALS.get(posto, " ")} {punteggio.user_name} ({punteggio.tries})\n'
     return classifica
 
+
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     messaggio = ''
     for game in GAMES.keys():
-        classifica = make_daily_classifica(game, GAMES.get(game))
+        classifica = make_daily_classifica(game, GAMES.get(game).get('emoji'))
         if classifica:
             messaggio += classifica + '\n'
     
@@ -119,11 +124,10 @@ async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text(messaggio, parse_mode='HTML')
     return
 
-
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
 
-async def print_everything(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     chars = ['🟥', '🟩', '⬜️', '🟨', '⬛️']
     if not any(c in update.message.text for c in chars):
@@ -141,13 +145,13 @@ async def print_everything(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         query = (Punteggio
             .select()
-            .where(Punteggio.date == datetime.date.today(),
-                   Punteggio.game == result['name'].capitalize(),
+            .where(Punteggio.day == int(result['day']),
+                   Punteggio.game == result['name'],
                    Punteggio.user_id == result['user_id']
                    )
             )
         if query:
-            await update.message.reply_text('Hai già giocato oggi')
+            await update.message.reply_text('Hai già giocato questo round.')
             return
 
         Punteggio.create(
@@ -161,24 +165,50 @@ async def print_everything(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             tries=int(result['tries']),
             extra=result.get('stars', None)
             )
-        message = f'Classifica di {result["name"]} aggiornata.\n'
-        classifica = make_daily_classifica(result["name"], GAMES.get(result["name"]))
-        message += classifica
-        await update.message.reply_html(classifica)
-        print(f"Aggiungo punteggio di {result['user_name']} per {result['name']} ({result['tries']})")
+        today_game = get_day_from_date(result['name'], datetime.date.today())
+        if today_game == result['day']:
+            message = f'Classifica di {result["name"]} aggiornata.\n'
+            classifica = make_daily_classifica(result["name"], GAMES.get(result["name"]).get('emoji'))
+            message += classifica
+            await update.message.reply_html(classifica)
+
+        else:
+            await update.message.reply_text(f'Ho salvato il tuo punteggio di {int(today_game) - int(result["day"])} giorni fa.')
+
+        print(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
+
     else:
         await update.message.reply_text('Non ho capito, scusa')
 
+async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = 'Buongiorno, ecco a cosa si gioca oggi!\n\n'
+    for game in GAMES.keys():
+        day = get_day_from_date(game, datetime.date.today())
+        message += f'{GAMES[game]["emoji"]} {game} #{day}\n'
+        message += f'{GAMES[game]["url"]}\n\n'
+    mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True)
+    await mypost.pin()
+
+async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await daily_reminder(context)
+
 def main():
+
+
     builder = ApplicationBuilder()
     builder.token(TOKEN)
     builder.post_init(post_init)
 
     app = builder.build()
 
-    app.add_handler(CommandHandler('classifica', classifica), 1)
-    app.add_handler(MessageHandler(filters.TEXT, print_everything))
+    j = app.job_queue
+    j.run_daily(daily_reminder, datetime.time(hour=8, minute=0, tzinfo=pytz.timezone('Europe/Rome')), data=None)
 
+    app.add_handler(CommandHandler('classifica', classifica), 1)
+    app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
+    app.add_handler(MessageHandler(filters.TEXT, parse_punteggio))
+
+    print("Pronti!")
 
     app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
 
