@@ -26,7 +26,7 @@ def parse_results(text) -> dict:
             result['day'] = first_line[1][1:]
             result['tries'] = first_line[2].split('/')[0]
             result['timestamp'] = int(time.time())
-            result['stars'] = text.count('⭐️')
+            result['stars'] = text.count('⭐️') + text.count('🪙')
 
         elif 'Par🇮🇹le' in lines[0]:
             result['name'] = 'Parole'
@@ -82,6 +82,14 @@ def parse_results(text) -> dict:
             result['tries'] = first_line[3].split('/')[0]
             result['timestamp'] = int(time.time())
 
+        elif 'WhereTaken' in lines[0]:
+            result['name'] = 'WhereTaken'
+            first_line = lines[0].split()
+            result['day'] = first_line[2][1:]
+            result['tries'] = first_line[3].split('/')[0]
+            result['timestamp'] = int(time.time())
+            result['stars'] = text.count('⭐️')
+
     except IndexError:
         return None
 
@@ -101,9 +109,11 @@ def make_daily_classifica(game, emoji) -> str:
     query = (Punteggio
         .select(Punteggio.user_name, Punteggio.tries)
         .where(Punteggio.day == get_day_from_date(game, datetime.date.today()), Punteggio.game == game)
-        .order_by(Punteggio.tries, Punteggio.timestamp))
+        .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp))
+
     if not query:
         return None
+
     classifica = ''
 
     classifica += f'<b>{emoji} {game} #{get_day_from_date(game, datetime.date.today())}</b>\n'
@@ -143,6 +153,23 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         result['user_name'] = update.message.from_user.full_name
         result['user_id'] = update.message.from_user.id
 
+        if update.effective_chat.id != ID_GIOCHINI:
+            import pprint
+            pprint.pprint(result)
+            punti = Punteggio(
+                date=datetime.datetime.now(),
+                timestamp=int(result['timestamp']),
+                chat_id=int(update.message.chat.id),
+                user_id=int(result['user_id']),
+                user_name=result['user_name'],
+                game=result['name'],
+                day=int(result['day']),
+                tries=int(result['tries']),
+                extra=str(result.get('stars', None))
+            )
+            pprint.pprint(punti.__dict__)
+            return
+
         query = (Punteggio
             .select()
             .where(Punteggio.day == int(result['day']),
@@ -150,6 +177,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                    Punteggio.user_id == result['user_id']
                    )
             )
+
         if query:
             await update.message.reply_text('Hai già giocato questo round.')
             return
@@ -163,8 +191,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             game=result['name'],
             day=int(result['day']),
             tries=int(result['tries']),
-            extra=result.get('stars', None)
-            )
+            extra=str(result.get('stars', None))
+        )
+
         today_game = get_day_from_date(result['name'], datetime.date.today())
         if today_game == result['day']:
             message = f'Classifica di {result["name"]} aggiornata.\n'
@@ -206,7 +235,7 @@ def main():
 
     app.add_handler(CommandHandler('classifica', classifica), 1)
     app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
-    app.add_handler(MessageHandler(filters.TEXT, parse_punteggio))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.UpdateType.EDITED, parse_punteggio))
 
     print("Pronti!")
 

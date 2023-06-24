@@ -61,6 +61,12 @@ GAMES = {
         'day': '200',
         'emoji': '🌍',
         'url': 'https://globle-game.com/'
+    },
+    'WhereTaken': {
+        'date': datetime.date(2023, 6, 23),
+        'day': '117',
+        'emoji': '📸',
+        'url': 'http://wheretaken.teuteuf.fr'
     }
 }
 
