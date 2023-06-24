@@ -4,6 +4,7 @@ import datetime
 TOKEN = '5960233207:AAF_s8D4DgRm3YdA5n8vMtZibS3nWSSaR5w'
 DBPATH = "sqlite.db"
 ID_GIOCHINI = -1001681280224
+ID_TESTING = -1001180175690
 
 db = peewee.SqliteDatabase(DBPATH)
 

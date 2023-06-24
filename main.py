@@ -6,7 +6,7 @@ import pytz
 from telegram import Update
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-from config import GAMES, ID_GIOCHINI, MEDALS, TOKEN, Punteggio
+from config import GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio
 
 
 def parse_results(text) -> dict:
@@ -105,10 +105,12 @@ def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
     days_difference = GAMES[game]['date'] - date
     return str(int(GAMES[game]['day']) - days_difference.days)
 
-def make_daily_classifica(game, emoji) -> str:
+def make_daily_classifica(game: str, emoji: str, chat_id: int) -> str:
     query = (Punteggio
         .select(Punteggio.user_name, Punteggio.tries)
-        .where(Punteggio.day == get_day_from_date(game, datetime.date.today()), Punteggio.game == game)
+        .where(Punteggio.day == get_day_from_date(game, datetime.date.today()),
+               Punteggio.game == game,
+               Punteggio.chat_id == chat_id)
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp))
 
     if not query:
@@ -126,7 +128,7 @@ def make_daily_classifica(game, emoji) -> str:
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     messaggio = ''
     for game in GAMES.keys():
-        classifica = make_daily_classifica(game, GAMES.get(game).get('emoji'))
+        classifica = make_daily_classifica(game, GAMES.get(game).get('emoji'), chat_id=update.effective_chat.id)
         if classifica:
             messaggio += classifica + '\n'
     
@@ -153,7 +155,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         result['user_name'] = update.message.from_user.full_name
         result['user_id'] = update.message.from_user.id
 
-        if update.effective_chat.id != ID_GIOCHINI:
+        if update.effective_chat.id == ID_TESTING:
             import pprint
             pprint.pprint(result)
             punti = Punteggio(
@@ -197,7 +199,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         today_game = get_day_from_date(result['name'], datetime.date.today())
         if today_game == result['day']:
             message = f'Classifica di {result["name"]} aggiornata.\n'
-            classifica = make_daily_classifica(result["name"], GAMES.get(result["name"]).get('emoji'))
+            classifica = make_daily_classifica(result["name"], GAMES.get(result["name"]).get('emoji'), update.effective_chat.id)
             message += classifica
             await update.message.reply_html(classifica)
 
