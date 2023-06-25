@@ -86,3 +86,13 @@ class Punteggio(peewee.Model):
         database = db
         table_name = 'punteggi'
         primary_key = False
+
+class Punti(peewee.Model):
+    user_id = peewee.IntegerField(unique=True)
+    user_name  = peewee.TextField()
+    punti = peewee.IntegerField()
+
+    class Meta:
+        database = db
+        table_name = 'punti'
+        primary_key = False
