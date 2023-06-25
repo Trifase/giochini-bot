@@ -9,7 +9,7 @@ from telegram.ext import Application, ApplicationBuilder, CommandHandler, Contex
 from config import GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
 
 
-def parse_results(text) -> dict:
+def parse_results(text: str) -> dict:
     result = {}
     lines = text.splitlines()
     try:
