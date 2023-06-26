@@ -3,8 +3,8 @@ import time
 
 import pytz
 from collections import defaultdict
-from telegram import Update
-from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 
 from config import GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
 
@@ -106,13 +106,15 @@ def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
     days_difference = GAMES[game]['date'] - date
     return str(int(GAMES[game]['day']) - days_difference.days)
 
-def make_single_classifica(game: str, emoji: str, chat_id: int, day: int=None, limit: int=6) -> str:
+def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6) -> str:
     day = day or get_day_from_date(game, datetime.date.today())
+    emoji = GAMES[game]['emoji']
     query = (Punteggio
         .select(Punteggio.user_name, Punteggio.tries)
         .where(Punteggio.day == day,
                Punteggio.game == game,
-               Punteggio.chat_id == chat_id)
+               Punteggio.chat_id == chat_id,
+               Punteggio.tries != 999)
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         .limit(limit))
 
@@ -127,11 +129,105 @@ def make_single_classifica(game: str, emoji: str, chat_id: int, day: int=None, l
         classifica += f'{MEDALS.get(posto, " ")} {punteggio.user_name} ({punteggio.tries})\n'
     return classifica
 
+def correct_name(name: str) -> str:
+    return list(GAMES.keys())[[x.lower() for x in GAMES.keys()].index(name.lower())]
+
+def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
+    today = get_day_from_date(game, datetime.date.today())
+    day = int(day)
+    buttons = InlineKeyboardMarkup([[
+        InlineKeyboardButton('⬅️', callback_data=f'cls_{game}_{message_id}_{day - 1}'),
+        InlineKeyboardButton('📆 Oggi', callback_data=f'cls_{game}_{message_id}_{today}'),
+        InlineKeyboardButton('➡️', callback_data=f'cls_{game}_{message_id}_{day + 1}'),
+    ]])
+    return buttons
+
+
+async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+
+    chat_id = query.message.chat.id
+    m_id = query.message.id
+
+    await query.answer()
+
+    data = query.data
+    _, game, message_id, day = data.split('_')
+
+    classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, day=day, limit=6)
+
+    if not classifica_text:
+        classifica_text = "Non c'è niente da vedere qui."
+
+    buttons = make_buttons(game, update.effective_message.message_id, day)
+
+
+    await context.bot.edit_message_text(classifica_text, chat_id=chat_id, message_id=m_id, reply_markup=buttons, parse_mode='HTML')
+
+
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    giochi = [f'<code>{x}</code>' for x in GAMES.keys()]
+    giochi = ' · '.join(giochi)
+    message = [
+        'Questo bot parsa automaticamente i punteggi dei giochi giornalieri, fa una classifica giornaliera e una classifica dei migliori player.',
+        '',
+        f'I giochi disponibili sono:\n {giochi}',
+        '',
+        '📚 <b>Lista dei comandi</b> 📚',
+        '',
+        '📌 /classifica - Mostra la classifica di tutti i giochi',
+        '📌 /classifica <i>[gioco]</i> - Mostra la classifica di un gioco, ad esempio: <code>/classifica wordle</code>',
+        '',
+        '📌 /top - Mostra i migliori player - aggiornato ogni mezzanotte',
+        '📌 /mytoday - Mostra i giochi a cui hai giocato oggi, e quelli che ti mancano',
+        '📌 /help - Mostra questo messaggio',
+    ]
+    message_text = '\n'.join(message)
+    await update.effective_message.reply_text(message_text, parse_mode='HTML')
+
+async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.args:
+        return await classificona(update, context)
+    
+    if context.args[0].lower() not in [x.lower() for x in GAMES.keys()]:
+        return await classificona(update, context)
+    else:
+        game = correct_name(context.args[0])
+        day = get_day_from_date(game, datetime.date.today())
+        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6)
+        if not classifica_text:
+            return await classificona(update, context)
+        buttons = make_buttons(game, update.effective_message.message_id, day)
+
+        await update.effective_message.reply_text(classifica_text, reply_markup=buttons, parse_mode='HTML')
+    return
+
+async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_chat.id != ID_GIOCHINI:
+        return
+
+    message = 'Classifica aggiornata:\n'
+
+    query = (Punti
+        .select()
+        .order_by(Punti.punti.desc())
+        .limit(10))
+
+    if not query:
+        return await update.message.reply_text('Non ci sono ancora giocatori.')
+
+    for i, q in enumerate(query, start=1):
+        if i in [1, 2, 3]:
+            message += f'{MEDALS[i]} [{q.punti}] {q.user_name}\n'
+        else:
+            message += f'[{q.punti}] {q.user_name}\n'
+
+    await update.message.reply_text(text=message, parse_mode='HTML', disable_web_page_preview=True)
 
 async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     messaggio = ''
     for game in GAMES.keys():
-        classifica = make_single_classifica(game, GAMES.get(game).get('emoji'), chat_id=update.effective_chat.id, limit=3)
+        classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3)
         if classifica:
             messaggio += classifica + '\n'
     
@@ -148,12 +244,39 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     result = parse_results(update.message.text)
 
     if result:
-        if result.get('tries') == 'X':
-            await update.message.reply_text('Hai perso loooool')
-            return
 
         result['user_name'] = update.message.from_user.full_name
         result['user_id'] = update.message.from_user.id
+
+        query = (Punteggio
+            .select()
+            .where(Punteggio.day == int(result['day']),
+                   Punteggio.game == result['name'],
+                   Punteggio.user_id == result['user_id'],
+                   Punteggio.chat_id == update.effective_chat.id
+                   )
+            )
+
+        if query:
+            await update.message.reply_text('Hai già giocato questo round.')
+            return
+
+
+        if result.get('tries') == 'X':
+            await update.message.reply_text('Hai perso loooool')
+
+            Punteggio.create(
+            date=datetime.datetime.now(),
+            timestamp=int(result['timestamp']),
+            chat_id=int(update.message.chat.id),
+            user_id=int(result['user_id']),
+            user_name=result['user_name'],
+            game=result['name'],
+            day=int(result['day']),
+            tries=999,
+            extra=str(result.get('stars', None))
+        )
+            return
 
         if update.effective_chat.id == ID_TESTING:
             import pprint
@@ -172,18 +295,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             pprint.pprint(punti.__dict__)
             return
 
-        query = (Punteggio
-            .select()
-            .where(Punteggio.day == int(result['day']),
-                   Punteggio.game == result['name'],
-                   Punteggio.user_id == result['user_id'],
-                   Punteggio.chat_id == update.effective_chat.id
-                   )
-            )
 
-        if query:
-            await update.message.reply_text('Hai già giocato questo round.')
-            return
 
         Punteggio.create(
             date=datetime.datetime.now(),
@@ -200,7 +312,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         today_game = get_day_from_date(result['name'], datetime.date.today())
         if today_game == result['day']:
             message = f'Classifica di {result["name"]} aggiornata.\n'
-            classifica = make_single_classifica(result["name"], GAMES.get(result["name"]).get('emoji'), update.effective_chat.id)
+            classifica = make_single_classifica(result["name"], update.effective_chat.id)
             message += classifica
             await update.message.reply_html(classifica)
 
@@ -230,6 +342,9 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 )
         if query:
             played_today.add(game)
+            tries = query[0].tries
+            if tries == 999:
+                tries = 'X'
             message += f'{GAMES[game]["emoji"]} {game} #{day} ({query[0].tries})\n'
         else:
             not_played_today.add(game)
@@ -258,7 +373,9 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
             .where(Punteggio.day == day,
                 Punteggio.game == game,
                 # Punteggio.chat_id == update.effective_chat.id)
-                Punteggio.chat_id == ID_GIOCHINI)
+                Punteggio.chat_id == ID_GIOCHINI,
+                Punteggio.tries != 999
+                )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3))
 
@@ -312,10 +429,12 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True)
     await mypost.pin()
 
+
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
     Punti.create_table()
     print("Pronti!")
+
 
 def main():
 
@@ -332,11 +451,15 @@ def main():
     app.add_handler(CommandHandler('classificona', classificona), 1)
     app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
     app.add_handler(CommandHandler('mytoday', mytoday), 1)
+    app.add_handler(CommandHandler('help', help), 1)
+
+    app.add_handler(CommandHandler('classifica', post_single_classifica), 2)
+    app.add_handler(CommandHandler('top', top_players), 1)
+    app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r'^cls_'))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.UpdateType.EDITED, parse_punteggio))
 
 
 
     app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
-
 
 main()
