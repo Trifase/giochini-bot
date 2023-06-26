@@ -222,7 +222,8 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         '📌 /classifica <i>[gioco]</i> - Mostra la classifica di un gioco, ad esempio: <code>/classifica wordle</code>',
         '',
         '📌 /top - Mostra i migliori player - aggiornato ogni mezzanotte',
-        '📌 /mytoday - Mostra i giochi a cui hai giocato oggi, e quelli che ti mancano',
+        '📌 /mytoday - Mostra i giochi a cui non hai ancora giocato oggi',
+        '📌 /lista - Manda la lista di tutti i giochi supportati',
         '📌 /help - Mostra questo messaggio',
     ]
     message_text = '\n'.join(message)
@@ -358,7 +359,7 @@ async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TY
     await daily_reminder(context)
 
 async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    message = 'Ecco a cosa hai già giocato oggi:\n'
+    # message = 'Ecco a cosa hai già giocato oggi:\n'
     played_today = set()
     not_played_today = set()
     for game in GAMES.keys():
@@ -375,28 +376,41 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             tries = query[0].tries
             if tries == 999:
                 tries = 'X'
-            message += f'{GAMES[game]["emoji"]} {game} #{day} ({query[0].tries})\n'
+            # message += f'{GAMES[game]["emoji"]} {game} #{day} ({query[0].tries})\n'
         else:
             not_played_today.add(game)
 
     if not played_today:
-        message = 'Non hai giocato a nulla oggi.'
-
-    elif not_played_today:
-        message += '\nTi manca:\n'
+        message = 'Non hai giocato a nulla oggi.\n'
         for game in not_played_today:
             message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+
+    elif not_played_today:
+        message = 'Ti manca da giocare:\n'
+        for game in not_played_today:
+            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+
     elif not not_played_today:
-        message += '\nHai giocato a tutto!'
+        message = 'Hai giocato a tutto!'
+    
+    await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
+
+async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = 'Lista dei giochi:\n'
+    for game in GAMES.keys():
+        message += f'{GAMES[game]["emoji"]} {game}: {GAMES[game]["url"]}\n'
     
     await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
 
 
+
 async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     points = defaultdict(int)
+    today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
     for game in GAMES.keys():
 
-        day = get_day_from_date(game, datetime.date.today())
+        day = get_day_from_date(game, yesterday)
 
         query = (Punteggio
             .select(Punteggio.user_name, Punteggio.user_id)
@@ -476,12 +490,13 @@ def main():
 
     j = app.job_queue
     j.run_daily(daily_reminder, datetime.time(hour=8, minute=0, tzinfo=pytz.timezone('Europe/Rome')), data=None)
-    j.run_daily(riassunto_serale, datetime.time(hour=23, minute=58, tzinfo=pytz.timezone('Europe/Rome')), data=None)
+    j.run_daily(riassunto_serale, datetime.time(hour=1, minute=0, tzinfo=pytz.timezone('Europe/Rome')), data=None)
 
     app.add_handler(CommandHandler('classificona', classificona), 1)
     app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
     app.add_handler(CommandHandler(['mytoday', 'myday', 'my'], mytoday), 1)
     app.add_handler(CommandHandler('help', help), 1)
+    app.add_handler(CommandHandler(['list', 'lista'], list_games), 1)
 
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)
