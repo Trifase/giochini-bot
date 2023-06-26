@@ -1,5 +1,8 @@
 import datetime
 import time
+import logging
+
+import sys
 
 import pytz
 from collections import defaultdict
@@ -7,6 +10,23 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 
 from config import GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
+
+# Logging setup
+logger = logging.getLogger()
+
+logging.basicConfig(
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.handlers.RotatingFileHandler('logs/log.log', maxBytes=1000000, backupCount=5),
+    ],
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="[%Y-%m-%d %H:%M:%S]",
+)
+
+# httpx become very noisy from 0.24.1, so we set it to WARNING
+httpx_logger = logging.getLogger('httpx')
+httpx_logger.setLevel(logging.WARNING)
 
 
 def parse_results(text: str) -> dict:
@@ -322,7 +342,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         else:
             await update.message.reply_text(f'Ho salvato il tuo punteggio di {int(today_game) - int(result["day"])} giorni fa.')
 
-        print(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
+        logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
 
     else:
         await update.message.reply_text('Non ho capito, scusa')
@@ -436,7 +456,7 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
     Punti.create_table()
-    print("Pronti!")
+    logger.info("Pronti!")
 
 
 def main():
@@ -453,7 +473,7 @@ def main():
 
     app.add_handler(CommandHandler('classificona', classificona), 1)
     app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
-    app.add_handler(CommandHandler('mytoday', mytoday), 1)
+    app.add_handler(CommandHandler(['mytoday', 'myday', 'my'], mytoday), 1)
     app.add_handler(CommandHandler('help', help), 1)
 
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
