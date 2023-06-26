@@ -91,6 +91,22 @@ def parse_results(text: str) -> dict:
             result['timestamp'] = int(time.time())
             result['stars'] = text.count('⭐️')
 
+        elif '#waffle' in lines[0]:
+            result['name'] = 'Waffle'
+            first_line = lines[0].split()
+            result['day'] = first_line[0].replace('#waffle', '')
+            punti = first_line[1].split('/')[0]
+            result['tries'] = 15 - int(punti) if punti != 'X' else 'X'
+            result['timestamp'] = int(time.time())
+            result['stars'] = text.count('⭐️')
+
+        elif 'Cloudle -' in lines[0]:
+            result['name'] = 'Cloudle'
+            first_line = lines[0].split()
+            result['day'] = get_day_from_date('Cloudle', datetime.date.today())
+            result['tries'] = first_line[-1].split('/')[0]
+            result['timestamp'] = int(time.time())
+
     except IndexError:
         return None
 
@@ -237,7 +253,7 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
-    chars = ['🟥', '🟩', '⬜️', '🟨', '⬛️', '🟦']
+    chars = ['🟥', '🟩', '⬜️', '🟨', '⬛️', '🟦', '🟢', '⚫️', '🟡']
     if not any(c in update.message.text for c in chars):
         return
 
@@ -261,22 +277,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_text('Hai già giocato questo round.')
             return
 
-
         if result.get('tries') == 'X':
             await update.message.reply_text('Hai perso loooool')
+            result['tries'] = '999'
 
-            Punteggio.create(
-            date=datetime.datetime.now(),
-            timestamp=int(result['timestamp']),
-            chat_id=int(update.message.chat.id),
-            user_id=int(result['user_id']),
-            user_name=result['user_name'],
-            game=result['name'],
-            day=int(result['day']),
-            tries=999,
-            extra=str(result.get('stars', None))
-        )
-            return
 
         if update.effective_chat.id == ID_TESTING:
             import pprint
@@ -295,8 +299,6 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             pprint.pprint(punti.__dict__)
             return
 
-
-
         Punteggio.create(
             date=datetime.datetime.now(),
             timestamp=int(result['timestamp']),
@@ -309,8 +311,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             extra=str(result.get('stars', None))
         )
 
-        today_game = get_day_from_date(result['name'], datetime.date.today())
-        if today_game == result['day']:
+        today_game = int(get_day_from_date(result['name'], datetime.date.today()))
+
+        if int(result['day']) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
             classifica = make_single_classifica(result["name"], update.effective_chat.id)
             message += classifica
@@ -453,7 +456,7 @@ def main():
     app.add_handler(CommandHandler('mytoday', mytoday), 1)
     app.add_handler(CommandHandler('help', help), 1)
 
-    app.add_handler(CommandHandler('classifica', post_single_classifica), 2)
+    app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r'^cls_'))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.UpdateType.EDITED, parse_punteggio))

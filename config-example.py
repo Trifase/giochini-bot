@@ -68,7 +68,19 @@ GAMES = {
         'day': '117',
         'emoji': '📸',
         'url': 'http://wheretaken.teuteuf.fr'
-    }
+    },
+    'Waffle': {
+        'date': datetime.date(2023, 6, 23),
+        'day': '518',
+        'emoji': '🧇',
+        'url': 'https://wafflegame.net/daily'
+    },
+    'Cloudle': {
+        'date': datetime.date(2023, 6, 23),
+        'day': '449',
+        'emoji': '🌦️',
+        'url': 'https://cloudle.app'
+    },
 }
 
 class Punteggio(peewee.Model):
