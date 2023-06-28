@@ -12,6 +12,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
+    Defaults,
     MessageHandler,
     filters,
 )
@@ -51,7 +52,7 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
     data = query.data
     _, game, message_id, day = data.split('_')
 
-    classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, day=day, limit=6)
+    classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, day=day, limit=6, user_id=update.effective_user.id)
 
     if not classifica_text:
         classifica_text = "Non c'è niente da vedere qui."
@@ -59,7 +60,7 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
     buttons = make_buttons(game, update.effective_message.message_id, day)
 
 
-    await context.bot.edit_message_text(classifica_text, chat_id=chat_id, message_id=m_id, reply_markup=buttons, parse_mode='HTML')
+    await context.bot.edit_message_text(classifica_text, chat_id=chat_id, message_id=m_id, reply_markup=buttons, parse_mode='HTML', disable_web_page_preview=True)
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -92,12 +93,12 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
     else:
         game = correct_name(context.args[0])
         day = get_day_from_date(game, datetime.date.today())
-        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6)
+        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id)
         if not classifica_text:
             return await classificona(update, context)
         buttons = make_buttons(game, update.effective_message.message_id, day)
 
-        await update.effective_message.reply_text(classifica_text, reply_markup=buttons, parse_mode='HTML')
+        await update.effective_message.reply_text(classifica_text, reply_markup=buttons, parse_mode='HTML', disable_web_page_preview=True)
     return
 
 async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -349,9 +350,13 @@ async def post_init(app: Application) -> None:
 
 
 def main():
+    defaults = Defaults(
+        disable_web_page_preview=True,
+        )
 
     builder = ApplicationBuilder()
     builder.token(TOKEN)
+    builder.defaults(defaults)
     builder.post_init(post_init)
 
     app = builder.build()

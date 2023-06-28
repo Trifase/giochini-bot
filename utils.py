@@ -9,7 +9,7 @@ from config import GAMES, MEDALS, Punteggio
 
 class GameFilter(MessageFilter):
     def filter(self, message):
-        if not message:
+        if not message.text:
             return False
 
         quadratini = ['🟥', '🟩', '⬜️', '🟨', '⬛️', '🟦', '🟢', '⚫️', '🟡', '🟠', '🔵', '🟣']
@@ -169,11 +169,12 @@ def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
     days_difference = GAMES[game]['date'] - date
     return str(int(GAMES[game]['day']) - days_difference.days)
 
-def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6) -> str:
+def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6, user_id=None) -> str:
     day = day or get_day_from_date(game, datetime.date.today())
     emoji = GAMES[game]['emoji']
+    user_id_found = False
     query = (Punteggio
-        .select(Punteggio.user_name, Punteggio.tries)
+        .select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
         .where(Punteggio.day == day,
                Punteggio.game == game,
                Punteggio.chat_id == chat_id,
@@ -185,14 +186,35 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6)
         return None
 
     classifica = ''
-
-    classifica += f'<b>{emoji} {game} #{day}</b>\n'
+    url = GAMES[game]['url']
+    classifica += f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>\n'
 
     for posto, punteggio in enumerate(query, start=1):
-        # This is a little exception for HighFive scores, which are negative. We want to show them as positive.
+        # This is a little exception for HighFive scores, which are negative because in the game the more the better.
+        # We want to show them as positive.
         if game == 'HighFive':
             punteggio.tries = abs(punteggio.tries)
-        classifica += f'{MEDALS.get(posto, " ")} {punteggio.user_name} ({punteggio.tries})\n'
+        if user_id and not user_id_found and punteggio.user_id == user_id:
+            user_id_found = True
+        classifica += f'{MEDALS.get(posto, "")}{punteggio.user_name} ({punteggio.tries})\n'
+
+    # At this point, if the user is not found, we search deeper in the db
+    if user_id and not user_id_found:
+        deep_query = (Punteggio
+                .select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+                .where(Punteggio.day == day,
+                    Punteggio.game == game,
+                    Punteggio.chat_id == chat_id,
+                    Punteggio.tries != 999)
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp))
+        
+        for posto, punteggio in enumerate(deep_query, start=1):
+            if game == 'HighFive':
+                punteggio.tries = abs(punteggio.tries)
+            if user_id and punteggio.user_id == user_id:
+                user_id_found = True
+                classifica += f'...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n'
+
     return classifica
 
 def correct_name(name: str) -> str:
