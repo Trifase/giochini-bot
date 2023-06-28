@@ -163,3 +163,4 @@ sqlite.db
 config.py
 logs/
 backups/
+.vscode/settings.json

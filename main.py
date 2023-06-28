@@ -18,7 +18,8 @@ from telegram.ext import (
 )
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
-from utils import correct_name, get_day_from_date, make_buttons, make_single_classifica, parse_results, GameFilter
+from utils import correct_name, get_day_from_date, make_buttons, GameFilter
+from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, plotwords, framed)
 
 # Logging setup
 logger = logging.getLogger()
@@ -39,6 +40,102 @@ httpx_logger.setLevel(logging.WARNING)
 
 # Istanziamo il filtro custom
 giochini_results_filter = GameFilter()
+
+
+def parse_results(text: str) -> dict:
+    lines = text.splitlines()
+
+    if 'Wordle' in lines[0]:
+        return wordle(text)
+
+    elif 'Worldle' in lines[0]:
+        return worldle(text)
+
+    elif 'Par🇮🇹le' in lines[0]:
+        return parole(text)
+
+    elif 'contexto.me' in lines[0]:
+        return contexto(text)
+
+    elif '#Tradle' in lines[0]:
+        return tradle(text)
+
+    elif '#GuessTheGame' in lines[0]:
+        return guessthegame(text)
+
+    elif '#globle' in lines[-1]:
+        return globle(text)
+
+    elif 'Flagle' in lines[0]:
+        return flagle(text)
+
+    elif 'WhereTaken' in lines[0]:
+        return wheretaken(text)
+
+    elif '#waffle' in lines[0]:
+        return waffle(text) 
+
+    elif 'Cloudle -' in lines[0]:
+        return cloudle(text)    
+
+    elif 'https://highfivegame.app/2' in lines[-1]:
+        return highfive(text)
+
+    elif 'Plotwords' in lines[0]:
+        return plotwords(text)
+
+    elif 'Framed' in lines[0]:
+        return framed(text)
+
+    return None
+
+def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6, user_id=None) -> str:
+    day = day or get_day_from_date(game, datetime.date.today())
+    emoji = GAMES[game]['emoji']
+    user_id_found = False
+    query = (Punteggio
+        .select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+        .where(Punteggio.day == day,
+               Punteggio.game == game,
+               Punteggio.chat_id == chat_id,
+               Punteggio.tries != 999)
+        .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+        .limit(limit))
+
+    if not query:
+        return None
+
+    classifica = ''
+    url = GAMES[game]['url']
+    classifica += f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>\n'
+
+    for posto, punteggio in enumerate(query, start=1):
+        # This is a little exception for HighFive scores, which are negative because in the game the more the better.
+        # We want to show them as positive.
+        if game == 'HighFive':
+            punteggio.tries = abs(punteggio.tries)
+        if user_id and not user_id_found and punteggio.user_id == user_id:
+            user_id_found = True
+        classifica += f'{MEDALS.get(posto, "")}{punteggio.user_name} ({punteggio.tries})\n'
+
+    # At this point, if the user is not found, we search deeper in the db
+    if user_id and not user_id_found:
+        deep_query = (Punteggio
+                .select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+                .where(Punteggio.day == day,
+                    Punteggio.game == game,
+                    Punteggio.chat_id == chat_id,
+                    Punteggio.tries != 999)
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp))
+        
+        for posto, punteggio in enumerate(deep_query, start=1):
+            if game == 'HighFive':
+                punteggio.tries = abs(punteggio.tries)
+            if user_id and punteggio.user_id == user_id:
+                user_id_found = True
+                classifica += f'...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n'
+
+    return classifica
 
 
 async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
