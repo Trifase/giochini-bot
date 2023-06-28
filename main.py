@@ -17,7 +17,7 @@ from telegram.ext import (
 )
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
-from utils import correct_name, get_day_from_date, make_buttons, make_single_classifica, parse_results
+from utils import correct_name, get_day_from_date, make_buttons, make_single_classifica, parse_results, GameFilter
 
 # Logging setup
 logger = logging.getLogger()
@@ -36,6 +36,8 @@ logging.basicConfig(
 httpx_logger = logging.getLogger('httpx')
 httpx_logger.setLevel(logging.WARNING)
 
+# Istanziamo il filtro custom
+giochini_results_filter = GameFilter()
 
 
 async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -132,10 +134,6 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     return
 
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-
-    chars = ['🟥', '🟩', '⬜️', '🟨', '⬛️', '🟦', '🟢', '⚫️', '🟡']
-    if not any(c in update.message.text for c in chars):
-        return
 
     result = parse_results(update.message.text)
 
@@ -373,7 +371,7 @@ def main():
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r'^cls_'))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.UpdateType.EDITED, parse_punteggio))
+    app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 
 
 

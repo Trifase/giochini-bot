@@ -2,8 +2,27 @@ import datetime
 import time
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext.filters import MessageFilter
 
 from config import GAMES, MEDALS, Punteggio
+
+
+class GameFilter(MessageFilter):
+    def filter(self, message):
+        if not message:
+            return False
+
+        quadratini = ['🟥', '🟩', '⬜️', '🟨', '⬛️', '🟦', '🟢', '⚫️', '🟡', '🟠', '🔵', '🟣']
+
+        # Se ha qualche emoji colorata, probabilmente è un messaggio di un gioco
+        if any(c in message.text for c in quadratini):
+            return True
+
+        # Eccezione per Plotwords, che non usa emoji
+        if 'Plotwords' in message.text and 'Clues used' in message.text:
+            return True
+
+        return False
 
 def parse_results(text: str) -> dict:
     result = {}
@@ -99,6 +118,7 @@ def parse_results(text: str) -> dict:
         elif 'Cloudle -' in lines[0]:
             result['name'] = 'Cloudle'
             first_line = lines[0].split()
+            # Cloudle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
             result['day'] = get_day_from_date('Cloudle', datetime.date.today())
             result['tries'] = first_line[-1].split('/')[0]
             result['timestamp'] = int(time.time())
@@ -109,6 +129,26 @@ def parse_results(text: str) -> dict:
             # HighFive doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
             result['day'] = get_day_from_date('HighFive', lines[-1])
             result['tries'] = str(0-int(lines[0].split()[3]))
+
+        elif 'Plotwords' in lines[0]:
+            result['name'] = 'Plotwords'
+            result['timestamp'] = int(time.time())
+            first_line = lines[0].split()
+            result['day'] = first_line[1][1:]
+            tries = lines[1].split()[-1].split('/')[0]
+            result['tries'] = tries if tries != '13' else 'X'
+
+        elif 'Framed' in lines[0]:
+            result['name'] = 'Framed'
+            result['timestamp'] = int(time.time())
+            first_line = lines[0].split()
+            result['day'] = first_line[1][1:]
+            punteggio = lines[1].replace(' ', '').replace('🎥', '')
+            if '🟩' not in punteggio:
+                result['tries'] = 'X'
+            else:
+                result['tries'] = str(punteggio.index('🟩')+1)
+
 
     except IndexError:
         return None

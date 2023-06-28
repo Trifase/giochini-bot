@@ -27,43 +27,43 @@ GAMES = {
         'date': datetime.date(2023, 6, 23),
         'day': '535',
         'emoji': '🇮🇹',
-        'url': 'https://pietroppeter.github.io/wordle-it/'
+        'url': 'https://pietroppeter.github.io/wordle-it'
     },
     'Worldle': {
         'date': datetime.date(2023, 6, 23),
         'day': '518',
         'emoji': '🗺️',
-        'url': 'https://worldle.teuteuf.fr/'
+        'url': 'https://worldle.teuteuf.fr'
     },
     'Contexto': {
         'date': datetime.date(2023, 6, 23),
         'day': '278',
         'emoji': '🔄',
-        'url': 'https://contexto.me/'
+        'url': 'https://contexto.me'
     },
     'Tradle': {
         'date': datetime.date(2023, 6, 23),
         'day': '474',
         'emoji': '🚢',
-        'url': 'https://oec.world/en/tradle/'
+        'url': 'https://oec.world/en/tradle'
     },
     'GuessTheGame': {
         'date': datetime.date(2023, 6, 23),
         'day': '405',
         'emoji': '🎮',
-        'url': 'https://guessthe.game/'
+        'url': 'https://guessthe.game'
     },
     'Flagle': {
         'date': datetime.date(2023, 6, 23),
         'day': '465',
         'emoji': '🏁',
-        'url': 'https://flagle-game.com/'
+        'url': 'https://flagle-game.com'
     },
     'Globle': {
         'date': datetime.date(2023, 6, 23),
         'day': '200',
         'emoji': '🌍',
-        'url': 'https://globle-game.com/'
+        'url': 'https://globle-game.com'
     },
     'WhereTaken': {
         'date': datetime.date(2023, 6, 23),
@@ -83,6 +83,24 @@ GAMES = {
         'emoji': '🌦️',
         'url': 'https://cloudle.app'
     },
+    'HighFive': {
+        'date': datetime.date(2023, 6, 23),
+        'day': '100',
+        'emoji': '🖐️',
+        'url': 'https://highfivegame.app'
+    },
+    'Framed': {
+        'date': datetime.date(2023, 6, 23),
+        'day': '469',
+        'emoji': '🎞',
+        'url': 'https://framed.wtf/'
+    },
+    'Plotwords': {
+        'date': datetime.date(2023, 6, 23),
+        'day': '339',
+        'emoji': '🎬',
+        'url': 'https://plotwords.com/daily'
+    }
 }
 
 class Punteggio(peewee.Model):
