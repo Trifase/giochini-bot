@@ -1,11 +1,11 @@
 import datetime
 import logging
 import sys
-import time
+import zipfile
 from collections import defaultdict
 
 import pytz
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -16,7 +16,8 @@ from telegram.ext import (
     filters,
 )
 
-from config import GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
+from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
+from utils import correct_name, get_day_from_date, make_buttons, make_single_classifica, parse_results
 
 # Logging setup
 logger = logging.getLogger()
@@ -35,155 +36,6 @@ logging.basicConfig(
 httpx_logger = logging.getLogger('httpx')
 httpx_logger.setLevel(logging.WARNING)
 
-
-def parse_results(text: str) -> dict:
-    result = {}
-    lines = text.splitlines()
-    try:
-        if 'Wordle' in lines[0]:
-            result['name'] = 'Wordle'
-            first_line = lines[0].split()
-            result['day'] = first_line[1]
-            result['tries'] = first_line[2].split('/')[0]
-            result['timestamp'] = int(time.time())
-
-        elif 'Worldle' in lines[0]:
-            result['name'] = 'Worldle'
-            first_line = lines[0].split()
-            result['day'] = first_line[1][1:]
-            result['tries'] = first_line[2].split('/')[0]
-            result['timestamp'] = int(time.time())
-            result['stars'] = text.count('⭐️') + text.count('🪙')
-
-        elif 'Par🇮🇹le' in lines[0]:
-            result['name'] = 'Parole'
-            first_line = lines[0].split()
-            result['day'] = first_line[1][2:]
-            result['tries'] = first_line[2].split('/')[0]
-            result['timestamp'] = int(time.time())
-
-        elif 'contexto.me' in lines[0]:
-            result['name'] = 'Contexto'
-            first_line = lines[0].split()
-            result['day'] = first_line[3][1:]
-            if first_line[4] == 'but':
-                result['tries'] = 'X'
-            elif first_line[-1] == 'tips.':
-                tips = int(first_line[-2])
-                index = first_line.index('guesses')
-                result['tries'] = int(first_line[index - 1]) + (tips * 15)
-            else:
-                result['tries'] = first_line[-2]
-            result['timestamp'] = int(time.time())
-
-        elif '#Tradle' in lines[0]:
-            result['name'] = 'Tradle'
-            first_line = lines[0].split()
-            result['day'] = first_line[1][1:]
-            result['tries'] = first_line[2].split('/')[0]
-            result['timestamp'] = int(time.time())
-
-        elif '#GuessTheGame' in lines[0]:
-            result['name'] = 'GuessTheGame'
-            result['timestamp'] = int(time.time())
-            first_line = lines[0].split()
-            result['day'] = first_line[1][1:]
-            punteggio = lines[2].replace(' ', '')
-            if '🟩' not in punteggio:
-                result['tries'] = 'X'
-            else:
-                result['tries'] = str(punteggio.index('🟩'))
-
-        elif '#globle' in lines[-1]:
-            result['name'] = 'Globle'
-            result['timestamp'] = int(time.time())
-            # Globle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-            result['day'] = get_day_from_date('Globle', lines[0])
-            for line in lines:
-                if '=' in line:
-                    result['tries'] = line.split('=')[-1][1:]
-
-        elif 'Flagle' in lines[0]:
-            result['name'] = 'Flagle'
-            first_line = lines[0].split()
-            result['day'] = first_line[1][1:]
-            result['tries'] = first_line[3].split('/')[0]
-            result['timestamp'] = int(time.time())
-
-        elif 'WhereTaken' in lines[0]:
-            result['name'] = 'WhereTaken'
-            first_line = lines[0].split()
-            result['day'] = first_line[2][1:]
-            result['tries'] = first_line[3].split('/')[0]
-            result['timestamp'] = int(time.time())
-            result['stars'] = text.count('⭐️')
-
-        elif '#waffle' in lines[0]:
-            result['name'] = 'Waffle'
-            first_line = lines[0].split()
-            result['day'] = first_line[0].replace('#waffle', '')
-            punti = first_line[1].split('/')[0]
-            result['tries'] = 15 - int(punti) if punti != 'X' else 'X'
-            result['timestamp'] = int(time.time())
-            result['stars'] = text.count('⭐️')
-
-        elif 'Cloudle -' in lines[0]:
-            result['name'] = 'Cloudle'
-            first_line = lines[0].split()
-            result['day'] = get_day_from_date('Cloudle', datetime.date.today())
-            result['tries'] = first_line[-1].split('/')[0]
-            result['timestamp'] = int(time.time())
-
-    except IndexError:
-        return None
-
-    return result
-
-def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
-    if isinstance(date, str) and game == 'Globle':
-        date = datetime.datetime.strptime(date, '🌎 %b %d, %Y 🌍').date()
-
-    if date is None:
-        date = datetime.date.today()
-
-    days_difference = GAMES[game]['date'] - date
-    return str(int(GAMES[game]['day']) - days_difference.days)
-
-def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6) -> str:
-    day = day or get_day_from_date(game, datetime.date.today())
-    emoji = GAMES[game]['emoji']
-    query = (Punteggio
-        .select(Punteggio.user_name, Punteggio.tries)
-        .where(Punteggio.day == day,
-               Punteggio.game == game,
-               Punteggio.chat_id == chat_id,
-               Punteggio.tries != 999)
-        .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-        .limit(limit))
-
-    if not query:
-        return None
-
-    classifica = ''
-
-    classifica += f'<b>{emoji} {game} #{day}</b>\n'
-
-    for posto, punteggio in enumerate(query, start=1):
-        classifica += f'{MEDALS.get(posto, " ")} {punteggio.user_name} ({punteggio.tries})\n'
-    return classifica
-
-def correct_name(name: str) -> str:
-    return list(GAMES.keys())[[x.lower() for x in GAMES.keys()].index(name.lower())]
-
-def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
-    today = get_day_from_date(game, datetime.date.today())
-    day = int(day)
-    buttons = InlineKeyboardMarkup([[
-        InlineKeyboardButton('⬅️', callback_data=f'cls_{game}_{message_id}_{day - 1}'),
-        InlineKeyboardButton('📆 Oggi', callback_data=f'cls_{game}_{message_id}_{today}'),
-        InlineKeyboardButton('➡️', callback_data=f'cls_{game}_{message_id}_{day + 1}'),
-    ]])
-    return buttons
 
 
 async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -356,7 +208,12 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.message.reply_text('Non ho capito, scusa')
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await daily_reminder(context)
+    if update.effective_user.id == ADMIN_ID:
+        await daily_reminder(context)
+
+async def manual_backup(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id == ADMIN_ID:
+        return await make_backup(context)
 
 async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # message = 'Ecco a cosa hai già giocato oggi:\n'
@@ -401,7 +258,6 @@ async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         message += f'{GAMES[game]["emoji"]} {game}: {GAMES[game]["url"]}\n'
     
     await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
-
 
 
 async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -473,6 +329,20 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True)
     await mypost.pin()
 
+async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:
+    now = datetime.datetime.today().strftime('%Y%m%d_%H%M%S')
+
+    backup_dir = "backups"
+    archive_name = f"{backup_dir}/{now}-backup.zip"
+    files_to_backup = ['sqlite.db']
+
+    with zipfile.ZipFile(archive_name, 'w') as zip_ref:
+        for file in files_to_backup:
+            zip_ref.write(file)
+
+    await context.bot.send_document(chat_id=BACKUP_DEST, document=open(archive_name, 'rb'))
+    logging.info("[AUTO] Backup DB eseguito.")
+
 
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
@@ -491,12 +361,14 @@ def main():
     j = app.job_queue
     j.run_daily(daily_reminder, datetime.time(hour=8, minute=0, tzinfo=pytz.timezone('Europe/Rome')), data=None)
     j.run_daily(riassunto_serale, datetime.time(hour=1, minute=0, tzinfo=pytz.timezone('Europe/Rome')), data=None)
+    j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone('Europe/Rome')), data=None)
 
     app.add_handler(CommandHandler('classificona', classificona), 1)
     app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
     app.add_handler(CommandHandler(['mytoday', 'myday', 'my'], mytoday), 1)
     app.add_handler(CommandHandler('help', help), 1)
     app.add_handler(CommandHandler(['list', 'lista'], list_games), 1)
+    app.add_handler(CommandHandler('backup', manual_backup), 1)
 
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)

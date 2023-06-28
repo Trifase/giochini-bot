@@ -5,6 +5,8 @@ TOKEN = 'token'
 DBPATH = "sqlite.db"
 ID_GIOCHINI = 0
 ID_TESTING = 0
+BACKUP_DEST = 0
+ADMIN_ID = 0
 
 db = peewee.SqliteDatabase(DBPATH)
 
