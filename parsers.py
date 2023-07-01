@@ -21,7 +21,7 @@ def worldle(text: str) -> dict:
     result['day'] = first_line[1][1:]
     result['tries'] = first_line[2].split('/')[0]
     result['timestamp'] = int(time.time())
-    result['stars'] = text.count('⭐️') + text.count('🪙')
+    result['stars'] = text.count('⭐️') + text.count('🪙') + text.count('🏙️')
     return result
 
 def parole(text: str) -> dict:
@@ -148,8 +148,8 @@ def plotwords(text: str) -> dict:
     result['timestamp'] = int(time.time())
     first_line = lines[0].split()
     result['day'] = first_line[1][1:]
-    tries = lines[1].split()[-1].split('/')[0]
-    result['tries'] = tries if tries != '13' else 'X'
+    tries, clues = lines[1].split()[-1].split('/')
+    result['tries'] = tries if tries != clues else 'X'
     return result
 
 def framed(text: str) -> dict:

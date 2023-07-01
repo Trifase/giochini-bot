@@ -291,9 +291,13 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if int(result['day']) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
-            classifica = make_single_classifica(result["name"], update.effective_chat.id)
-            message += classifica
-            await update.message.reply_html(classifica)
+            classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result['day'])
+            if classifica:
+                message += classifica
+                mymsg = await update.message.reply_html(classifica)
+                context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
+            else: 
+                await update.message.reply_html("Qua dovrebbe esserci una classifica ma qualcosa è andato storto. @Trifase?")
 
         else:
             await update.message.reply_text(f'Ho salvato il tuo punteggio di {int(today_game) - int(result["day"])} giorni fa.')
@@ -346,7 +350,9 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif not not_played_today:
         message = 'Hai giocato a tutto!'
     
-    await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
+    mymsg = await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
+    command_msg = update.message
+    context.job_queue.run_once(delete_post, 60, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}")
 
 async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = 'Lista dei giochi:\n'
@@ -423,14 +429,14 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
         message += f'{GAMES[game]["emoji"]} {game} #{day}\n'
         message += f'{GAMES[game]["url"]}\n\n'
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True)
-    await mypost.pin()
+    await mypost.pin(disable_notification=True)
 
 async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:
     now = datetime.datetime.today().strftime('%Y%m%d_%H%M%S')
 
     backup_dir = "backups"
-    archive_name = f"{backup_dir}/{now}-backup.zip"
-    files_to_backup = ['sqlite.db']
+    archive_name = f"{backup_dir}/giochini-{now}-backup.zip"
+    files_to_backup = ['db/sqlite.db']
 
     with zipfile.ZipFile(archive_name, 'w') as zip_ref:
         for file in files_to_backup:
@@ -438,6 +444,15 @@ async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await context.bot.send_document(chat_id=BACKUP_DEST, document=open(archive_name, 'rb'))
     logging.info("[AUTO] Backup DB eseguito.")
+
+async def minimize_post(context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = context.job.data
+    await message.edit_text("Punteggio salvato.")
+
+async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
+    messages: list = context.job.data
+    for message in messages:
+        await message.delete()
 
 
 async def post_init(app: Application) -> None:

@@ -8,7 +8,7 @@ from config import GAMES
 
 class GameFilter(MessageFilter):
     def filter(self, message):
-        if not message:
+        if not message.text:
             return False
 
         quadratini = ['🟥', '🟩', '⬜️', '🟨', '⬛️', '🟦', '🟢', '⚫️', '🟡', '🟠', '🔵', '🟣']
