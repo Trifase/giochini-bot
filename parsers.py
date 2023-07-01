@@ -3,6 +3,15 @@ from utils import get_day_from_date
 import datetime
 import time
 
+# Every parser in this file will parse a text-result from a website and produce a dictionary with the following characteristics:
+# dict = {
+#     'name': 'Wordle'      -> a string for the game name
+#     'day': '356'          -> a string with the game number, will be turned into a int when necessary
+#     'tries': '3'          -> a string for the main 'points' of the game, usually the lesser the better.
+#     'timestamp': 12345678 -> Unix timestamp. Int.
+#     'stars': 3            -> some games have addictional stars or something if you do optional challenges. Int or None.
+# }
+
 def wordle(text: str) -> dict:
     result = {}
     lines = text.splitlines()
