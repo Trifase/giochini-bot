@@ -38,6 +38,10 @@ logging.basicConfig(
 httpx_logger = logging.getLogger('httpx')
 httpx_logger.setLevel(logging.WARNING)
 
+# We also want to lower the log level of the scheduler
+aps_logger = logging.getLogger('apscheduler')
+aps_logger.setLevel(logging.WARNING)
+
 # Istanziamo il filtro custom
 giochini_results_filter = GameFilter()
 
@@ -258,21 +262,24 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             result['tries'] = '999'
 
 
+
         if update.effective_chat.id == ID_TESTING:
             import pprint
-            pprint.pprint(result)
-            punti = Punteggio(
-                date=datetime.datetime.now(),
-                timestamp=int(result['timestamp']),
-                chat_id=int(update.message.chat.id),
-                user_id=int(result['user_id']),
-                user_name=result['user_name'],
-                game=result['name'],
-                day=int(result['day']),
-                tries=int(result['tries']),
-                extra=str(result.get('stars', None))
-            )
-            pprint.pprint(punti.__dict__)
+            rawtext = pprint.pformat(result)
+            await update.message.reply_html(f'<code>{rawtext}</code>')
+            # pprint.pprint(result)
+            # punti = Punteggio(
+            #     date=datetime.datetime.now(),
+            #     timestamp=int(result['timestamp']),
+            #     chat_id=int(update.message.chat.id),
+            #     user_id=int(result['user_id']),
+            #     user_name=result['user_name'],
+            #     game=result['name'],
+            #     day=int(result['day']),
+            #     tries=int(result['tries']),
+            #     extra=str(result.get('stars', None))
+            # )
+            # pprint.pprint(punti.__dict__)
             return
 
         Punteggio.create(
@@ -287,6 +294,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             extra=str(result.get('stars', None))
         )
 
+        if result['tries'] == '999':
+            return
+
         today_game = int(get_day_from_date(result['name'], datetime.date.today()))
 
         if int(result['day']) in [today_game, today_game - 1]:
@@ -297,7 +307,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 mymsg = await update.message.reply_html(classifica)
                 context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
             else: 
-                await update.message.reply_html("Qua dovrebbe esserci una classifica ma qualcosa è andato storto. @Trifase?")
+                mymsg = await update.message.reply_html("Ah, non l'ha ancora fatto nessuno, fico.")
+                context.job_queue.run_once(delete_post, 60, data=[mymsg], name=f"delete_post_{str(update.effective_message.id)}")
 
         else:
             await update.message.reply_text(f'Ho salvato il tuo punteggio di {int(today_game) - int(result["day"])} giorni fa.')

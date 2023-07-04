@@ -126,7 +126,8 @@ def waffle(text: str) -> dict:
     punti = first_line[1].split('/')[0]
     result['tries'] = 15 - int(punti) if punti != 'X' else 'X'
     result['timestamp'] = int(time.time())
-    result['stars'] = text.count('⭐️')
+    # This is because emojis have hidden personalities
+    result['stars'] = text.count(b"\xe2\xad\x90".decode('utf-8'))
     return result
 
 def cloudle(text: str) -> dict:
