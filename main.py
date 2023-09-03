@@ -19,7 +19,7 @@ from telegram.ext import (
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
 from utils import correct_name, get_day_from_date, make_buttons, GameFilter
-from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, plotwords, framed)
+from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle)
 
 # Logging setup
 logger = logging.getLogger()
@@ -84,9 +84,12 @@ def parse_results(text: str) -> dict:
 
     elif 'https://highfivegame.app/2' in lines[-1]:
         return highfive(text)
+    
+    elif 'TimeGuessr' in lines[0]:
+        return timeguesser(text)
 
-    elif 'Plotwords' in lines[0]:
-        return plotwords(text)
+    elif 'Moviedle' in lines[0]:
+        return moviedle(text)
 
     elif 'Framed' in lines[0]:
         return framed(text)
@@ -118,6 +121,10 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         # We want to show them as positive.
         if game == 'HighFive':
             punteggio.tries = abs(punteggio.tries)
+        # For Timeguesser, scores are points, the more the better. Max points is 50_000 so we save them as differences from max.
+        if game == 'TimeGuesser':
+            punteggio.tries = 50_000 - punteggio.tries
+
         if user_id and not user_id_found and punteggio.user_id == user_id:
             user_id_found = True
         classifica += f'{MEDALS.get(posto, "")}{punteggio.user_name} ({punteggio.tries})\n'
@@ -135,6 +142,8 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         for posto, punteggio in enumerate(deep_query, start=1):
             if game == 'HighFive':
                 punteggio.tries = abs(punteggio.tries)
+            if game == 'TimeGuesser':
+                punteggio.tries = 50_000 - punteggio.tries
             if user_id and punteggio.user_id == user_id:
                 user_id_found = True
                 classifica += f'...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n'
@@ -491,7 +500,7 @@ def main():
 
     app.add_handler(CommandHandler('classificona', classificona), 1)
     app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
-    app.add_handler(CommandHandler(['mytoday', 'myday', 'my'], mytoday), 1)
+    app.add_handler(CommandHandler(['mytoday', 'myday', 'my', 'today', 'daily'], mytoday), 1)
     app.add_handler(CommandHandler('help', help), 1)
     app.add_handler(CommandHandler(['list', 'lista'], list_games), 1)
     app.add_handler(CommandHandler('backup', manual_backup), 1)

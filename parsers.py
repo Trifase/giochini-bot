@@ -114,7 +114,8 @@ def wheretaken(text: str) -> dict:
     result['day'] = first_line[2][1:]
     result['tries'] = first_line[3].split('/')[0]
     result['timestamp'] = int(time.time())
-    result['stars'] = text.count('⭐️')
+    # This is because emojis have hidden personalities
+    result['stars'] = text.count(b"\xe2\xad\x90".decode('utf-8'))
     return result
 
 def waffle(text: str) -> dict:
@@ -170,6 +171,32 @@ def framed(text: str) -> dict:
     first_line = lines[0].split()
     result['day'] = first_line[1][1:]
     punteggio = lines[1].replace(' ', '')
+    if '🟩' not in punteggio:
+        result['tries'] = 'X'
+    else:
+        result['tries'] = str(punteggio.index('🟩'))
+    return result
+
+def timeguesser(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result['name'] = 'TimeGuesser'
+    result['timestamp'] = int(time.time())
+    first_line = lines[0].split()
+    result['day'] = first_line[1][1:]
+    result['tries'] = 50_000 - int(first_line[2].split('/')[0].replace(',', ''))
+    return result
+
+def moviedle(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result['name'] = 'Moviedle'
+    result['timestamp'] = int(time.time())
+    first_line = lines[0].split()
+    point_line = lines[2][1:]
+    # Moviedle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+    result['day'] = get_day_from_date('Moviedle', first_line[-1])
+    punteggio = point_line.replace(' ', '')
     if '🟩' not in punteggio:
         result['tries'] = 'X'
     else:

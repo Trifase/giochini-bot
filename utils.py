@@ -31,6 +31,9 @@ def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
         date_str = date.split('/')[-1]
         date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
 
+    if isinstance(date, str) and game == 'Moviedle':
+        date = datetime.datetime.strptime(date, '#%Y-%m-%d').date()
+
     if date is None:
         date = datetime.date.today()
 
