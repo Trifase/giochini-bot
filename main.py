@@ -112,7 +112,9 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         .limit(limit))
 
+    # print(f'Sto cercando la classifica per {game}, giorno {day}')
     if not query:
+        # print(f'Classifica per {game} nessun risultato!')
         return None
 
     classifica = ''
@@ -211,14 +213,19 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
     if not context.args:
         return await classificona(update, context)
     
+    # print(context.args)
+    # print(context.args[0].lower())
+    # print([x.lower() for x in GAMES.keys()])
     if context.args[0].lower() not in [x.lower() for x in GAMES.keys()]:
         return await classificona(update, context)
     else:
         game = correct_name(context.args[0])
         day = get_day_from_date(game, datetime.date.today())
         classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id)
+
         if not classifica_text:
-            return await classificona(update, context)
+            # return await classificona(update, context)
+            classifica_text = "Non c'è niente da vedere qui."
         buttons = make_buttons(game, update.effective_message.message_id, day)
 
         await update.effective_message.reply_text(classifica_text, reply_markup=buttons, parse_mode='HTML', disable_web_page_preview=True)
@@ -233,7 +240,7 @@ async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     query = (Punti
         .select()
         .order_by(Punti.punti.desc())
-        .limit(10))
+        .limit(20))
 
     if not query:
         return await update.message.reply_text('Non ci sono ancora giocatori.')
@@ -319,7 +326,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             extra=str(result.get('stars', None))
         )
 
-        if result['tries'] >= '999':
+        if result['tries'] in ['999', '9999999']:
             return
 
         today_game = int(get_day_from_date(result['name'], datetime.date.today()))
