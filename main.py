@@ -19,7 +19,7 @@ from telegram.ext import (
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
 from utils import correct_name, get_day_from_date, make_buttons, GameFilter
-from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle)
+from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle)
 
 # Logging setup
 logger = logging.getLogger()
@@ -94,6 +94,9 @@ def parse_results(text: str) -> dict:
     elif 'Framed' in lines[0]:
         return framed(text)
 
+    elif 'Murdle' in lines[1]:
+        return murdle(text)
+
     return None
 
 def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6, user_id=None) -> str:
@@ -125,6 +128,9 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         if game == 'TimeGuesser':
             punteggio.tries = 50_000 - punteggio.tries
 
+        if game == 'Murdle':
+            punteggio.tries = str(punteggio.tries)[:-2] + ':' + str(punteggio.tries)[-2:]
+
         if user_id and not user_id_found and punteggio.user_id == user_id:
             user_id_found = True
         classifica += f'{MEDALS.get(posto, "")}{punteggio.user_name} ({punteggio.tries})\n'
@@ -142,8 +148,13 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         for posto, punteggio in enumerate(deep_query, start=1):
             if game == 'HighFive':
                 punteggio.tries = abs(punteggio.tries)
+
             if game == 'TimeGuesser':
                 punteggio.tries = 50_000 - punteggio.tries
+
+            if game == 'Murdle':
+                punteggio.tries = str(punteggio.tries[:-2]) + ':' + str(punteggio.tries[-2:])
+
             if user_id and punteggio.user_id == user_id:
                 user_id_found = True
                 classifica += f'...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n'
@@ -268,7 +279,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if result.get('tries') == 'X':
             await update.message.reply_text('Hai perso loooool')
+
             result['tries'] = '999'
+            if result.get('name') == 'Murdle':
+                result['tries'] = '9999999'
 
 
 
@@ -303,7 +317,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             extra=str(result.get('stars', None))
         )
 
-        if result['tries'] == '999':
+        if result['tries'] >= '999':
             return
 
         today_game = int(get_day_from_date(result['name'], datetime.date.today()))

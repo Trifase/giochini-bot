@@ -1,5 +1,5 @@
 
-from utils import get_day_from_date
+from utils import get_day_from_date, time_from_emoji
 import datetime
 import time
 
@@ -193,12 +193,35 @@ def moviedle(text: str) -> dict:
     result['name'] = 'Moviedle'
     result['timestamp'] = int(time.time())
     first_line = lines[0].split()
-    point_line = lines[2][1:]
+    point_line = lines[2][3:]
     # Moviedle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result['day'] = get_day_from_date('Moviedle', first_line[-1])
     punteggio = point_line.replace(' ', '')
-    if '🟩' not in punteggio:
+    punteggio_bonificato = ''
+    # Moviedle uses black-magic squares that inject empty invisible spaces fugging up the count. We remove them with a whitelisted chars list.
+    for char in punteggio:
+        if char in ['⬛', '🟥', '🟩', '⬜']:
+            punteggio_bonificato += char
+
+
+    if '🟩' not in punteggio_bonificato:
         result['tries'] = 'X'
     else:
-        result['tries'] = str(punteggio.index('🟩'))
+        result['tries'] = str(punteggio_bonificato.index('🟩') + 1)
+    return result
+
+def murdle(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result['name'] = 'Murdle'
+    result['timestamp'] = int(time.time())
+    day = lines[1].split()[-1]
+    # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+    result['day'] = get_day_from_date('Murdle', day)
+    points_line = lines[4]
+    punteggio = points_line.split()[-1]
+    if '❌' in points_line:
+        result['tries'] = 'X'
+    else:
+        result['tries'] = str(time_from_emoji(punteggio))
     return result
