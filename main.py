@@ -124,10 +124,12 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         # We want to show them as positive.
         if game == 'HighFive':
             punteggio.tries = abs(punteggio.tries)
+
         # For Timeguesser, scores are points, the more the better. Max points is 50_000 so we save them as differences from max.
         if game == 'TimeGuesser':
             punteggio.tries = 50_000 - punteggio.tries
 
+        #So, murdle points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
         if game == 'Murdle':
             punteggio.tries = str(punteggio.tries)[:-2] + ':' + str(punteggio.tries)[-2:]
 
@@ -153,7 +155,7 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
                 punteggio.tries = 50_000 - punteggio.tries
 
             if game == 'Murdle':
-                punteggio.tries = str(punteggio.tries[:-2]) + ':' + str(punteggio.tries[-2:])
+                punteggio.tries = str(punteggio.tries)[:-2] + ':' + str(punteggio.tries)[-2:]
 
             if user_id and punteggio.user_id == user_id:
                 user_id_found = True
