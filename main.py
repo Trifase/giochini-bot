@@ -5,6 +5,8 @@ import zipfile
 from collections import defaultdict
 
 import pytz
+import peewee
+
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -165,6 +167,26 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
 
     return classifica
 
+def make_games_classifica(days: int = 0) -> str:
+    if not days:
+        days = 30
+    today = datetime.date.today() 
+    days_ago = today - datetime.timedelta(days=days)
+    query = (Punteggio
+        .select(Punteggio.game, Punteggio.timestamp, peewee.fn.COUNT(Punteggio.timestamp).alias('count'))
+        .where(Punteggio.date >= days_ago)
+        .group_by(Punteggio.game)
+        .order_by(peewee.fn.COUNT(Punteggio.timestamp).desc()))
+
+    if not query:
+        return None
+
+    classifica = ''
+    for record in query:
+        classifica += f'[{record.count}] {record.game}\n'
+
+    return classifica
+
 
 async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -186,7 +208,6 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
     await context.bot.edit_message_text(classifica_text, chat_id=chat_id, message_id=m_id, reply_markup=buttons, parse_mode='HTML', disable_web_page_preview=True)
-
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     giochi = [f'<code>{x}</code>' for x in GAMES.keys()]
@@ -250,6 +271,28 @@ async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             message += f'{MEDALS[i]} [{q.punti}] {q.user_name}\n'
         else:
             message += f'[{q.punti}] {q.user_name}\n'
+
+    await update.message.reply_text(text=message, parse_mode='HTML', disable_web_page_preview=True)
+
+async def top_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # if update.effective_chat.id != ID_GIOCHINI:
+    #     return
+    days = 7
+
+    if context.args:
+        try:
+            days = int(context.args[0])
+        except ValueError:
+            pass
+
+    message = f'Classifica dei giochi degli ultimi {days} giorni:\n'
+
+    classifica = make_games_classifica(days)
+
+    if not classifica:
+        classifica = 'Non so che dire'
+
+    message += classifica
 
     await update.message.reply_text(text=message, parse_mode='HTML', disable_web_page_preview=True)
 
@@ -530,6 +573,8 @@ def main():
 
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)
+    
+    app.add_handler(CommandHandler('topgames', top_games), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r'^cls_'))
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 
