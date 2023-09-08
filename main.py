@@ -72,7 +72,7 @@ def parse_results(text: str) -> dict:
     elif '#globle' in lines[-1]:
         return globle(text)
 
-    elif 'Flagle' in lines[0]:
+    elif '#Flagle' in lines[0]:
         return flagle(text)
 
     elif 'WhereTaken' in lines[0]:

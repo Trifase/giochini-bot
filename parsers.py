@@ -102,7 +102,7 @@ def flagle(text: str) -> dict:
     result['name'] = 'Flagle'
     first_line = lines[0].split()
     result['day'] = first_line[1][1:]
-    result['tries'] = first_line[3].split('/')[0]
+    result['tries'] = first_line[2].split('/')[0]
     result['timestamp'] = int(time.time())
     return result
 
