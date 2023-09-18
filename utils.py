@@ -78,3 +78,20 @@ def time_from_emoji(input_string: str) -> str:
     for key, value in emojidict.items():
         input_string = input_string.replace(key, str(value))
     return input_string
+
+def is_connection_block_completed(block: str) -> bool:
+    color = block[0]
+    if block == color*4:
+        return True
+    return False
+
+def is_connection_completed(connection: list[str]) -> bool:
+    completed_blocks = 0
+    for block in connection:
+        if is_connection_block_completed(block):
+            completed_blocks += 1
+    if completed_blocks == 4:
+        return True
+    return False
+
+

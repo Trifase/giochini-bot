@@ -21,7 +21,7 @@ from telegram.ext import (
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
 from utils import correct_name, get_day_from_date, make_buttons, GameFilter
-from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle)
+from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections)
 
 # Logging setup
 logger = logging.getLogger()
@@ -98,6 +98,9 @@ def parse_results(text: str) -> dict:
 
     elif 'Murdle' in lines[1]:
         return murdle(text)
+    
+    elif 'Connections' in lines[0]:
+        return connections(text)
 
     return None
 

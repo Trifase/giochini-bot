@@ -1,5 +1,5 @@
 
-from utils import get_day_from_date, time_from_emoji
+from utils import get_day_from_date, time_from_emoji, is_connection_completed
 import datetime
 import time
 
@@ -225,3 +225,29 @@ def murdle(text: str) -> dict:
     else:
         result['tries'] = str(time_from_emoji(punteggio))
     return result
+
+def connections(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+
+    result['name'] = 'Connections'
+    result['timestamp'] = int(time.time())
+    result['day'] = lines[1].split()[-1][1:]
+
+    points = lines[2:]
+    if is_connection_completed(points):
+        result['tries'] = len(points) - 3
+    else:
+        result['tries'] = 'X'
+    return result
+
+# Connections 
+# Puzzle #99
+# 🟪🟦🟪🟪
+# 🟩🟨🟦🟩
+# 🟨🟩🟨🟦
+# 🟨🟨🟨🟨
+# 🟩🟩🟩🟩
+# 🟦🟦🟦🟦
+# 🟪🟪🟪🟪
+
