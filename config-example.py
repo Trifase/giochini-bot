@@ -54,10 +54,10 @@ GAMES = {
         'url': 'https://guessthe.game'
     },
     'Flagle': {
-        'date': datetime.date(2023, 6, 23),
-        'day': '465',
+        'date': datetime.date(2023, 9, 8),
+        'day': '564',
         'emoji': '🏁',
-        'url': 'https://flagle-game.com'
+        'url': 'https://www.flagle.io'
     },
     'Globle': {
         'date': datetime.date(2023, 6, 23),
@@ -95,11 +95,29 @@ GAMES = {
         'emoji': '🎞',
         'url': 'https://framed.wtf/'
     },
-    'Plotwords': {
+    'TimeGuesser': {
+        'date': datetime.date(2023, 9, 10),
+        'day': '121',
+        'emoji': '📅',
+        'url': 'https://timeguessr.com'
+    },
+    'Moviedle': {
         'date': datetime.date(2023, 6, 23),
-        'day': '339',
-        'emoji': '🎬',
-        'url': 'https://plotwords.com/daily'
+        'day': '200',
+        'emoji': '🎥',
+        'url': 'https://moviedle.app'
+    },
+    'Murdle' : {
+        'date': datetime.date(2023, 6, 23),
+        'day': '1',
+        'emoji': '🔪',
+        'url': 'https://murdle.com'
+    },
+    'Connections' : {
+        'date': datetime.date(2023, 9, 18),
+        'day': '99',
+        'emoji': '🔀',
+        'url': 'https://www.nytimes.com/games/connections'
     }
 }
 
