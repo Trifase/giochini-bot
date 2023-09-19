@@ -113,7 +113,8 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         .where(Punteggio.day == day,
                Punteggio.game == game,
                Punteggio.chat_id == chat_id,
-               Punteggio.tries != 999)
+               Punteggio.tries != 999,
+               Punteggio.tries != 9999999)
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         .limit(limit))
 
@@ -151,7 +152,8 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
                 .where(Punteggio.day == day,
                     Punteggio.game == game,
                     Punteggio.chat_id == chat_id,
-                    Punteggio.tries != 999)
+                    Punteggio.tries != 999,
+                    Punteggio.tries != 9999999)
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp))
         
         for posto, punteggio in enumerate(deep_query, start=1):
