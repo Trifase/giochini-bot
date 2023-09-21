@@ -346,6 +346,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.effective_chat.id == ID_TESTING:
             import pprint
             rawtext = pprint.pformat(result)
+            # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>')
             await update.message.reply_html(f'<code>{rawtext}</code>')
             # pprint.pprint(result)
             # punti = Punteggio(

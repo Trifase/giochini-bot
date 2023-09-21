@@ -30,7 +30,10 @@ def worldle(text: str) -> dict:
     result['day'] = first_line[1][1:]
     result['tries'] = first_line[2].split('/')[0]
     result['timestamp'] = int(time.time())
-    result['stars'] = text.count('⭐️') + text.count('🪙') + text.count('🏙️')
+    stars = text.count(b"\xe2\xad\x90".decode('utf-8'))
+    cityscape = text.count(b"\xf0\x9f\x8f\x99".decode('utf-8'))
+    coin = text.count(b"\xf0\x9f\xaa\x99".decode('utf-8'))
+    result['stars'] = stars + cityscape + coin
     return result
 
 def parole(text: str) -> dict:
