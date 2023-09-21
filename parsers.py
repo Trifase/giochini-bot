@@ -243,14 +243,3 @@ def connections(text: str) -> dict:
     else:
         result['tries'] = 'X'
     return result
-
-# Connections 
-# Puzzle #99
-# 🟪🟦🟪🟪
-# 🟩🟨🟦🟩
-# 🟨🟩🟨🟦
-# 🟨🟨🟨🟨
-# 🟩🟩🟩🟩
-# 🟦🟦🟦🟦
-# 🟪🟪🟪🟪
-
