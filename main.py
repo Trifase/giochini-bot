@@ -20,7 +20,7 @@ from telegram.ext import (
 )
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
-from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, GameFilter
+from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, get_date_from_day, GameFilter
 from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle)
 
 # Logging setup
@@ -205,9 +205,13 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer()
 
     data = query.data
+    if data == 'cls_do_nothing':
+        return
     _, game, message_id, day = data.split('_')
 
     classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, day=day, limit=6, user_id=update.effective_user.id)
+    # date_str = f"== {get_date_from_day(game, day).strftime('%Y-%m-%d')} =="
+    # classifica_text = f'{date_str}\n{classifica_text}'
 
     if not classifica_text:
         classifica_text = "Non c'è niente da vedere qui."
@@ -250,8 +254,10 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
     else:
         game = correct_name(context.args[0])
         day = get_day_from_date(game, datetime.date.today())
-        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id)
 
+        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id)
+        # date_str = f"== {get_date_from_day(game, day).strftime('%Y-%m-%d')} =="
+        # classifica_text = f'{date_str}\n{classifica_text}'
         if not classifica_text:
             # return await classificona(update, context)
             classifica_text = "Non c'è niente da vedere qui."
@@ -375,10 +381,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             message = f'Classifica di {result["name"]} aggiornata.\n'
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result['day'])
             if classifica:
-                message += classifica
+                classifica = f"{message}\n{classifica}"
                 streak = streak_at_day(user_id=result['user_id'], game=result['name'], day=int(result['day']))
                 if streak:
-                    message += f'\nStreak: {streak}'
+                    classifica += f'\nStreak: {streak}'
                 mymsg = await update.message.reply_html(classifica)
                 context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
             else: 
@@ -573,12 +579,10 @@ def main():
 
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)
-    
+
     app.add_handler(CommandHandler('topgames', top_games), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r'^cls_'))
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
-
-
 
     app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
 

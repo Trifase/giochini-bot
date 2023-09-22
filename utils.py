@@ -56,12 +56,14 @@ def correct_name(name: str) -> str:
 
 def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
     today = get_day_from_date(game, datetime.date.today())
+    date_str = f"{get_date_from_day(game, day).strftime('%Y-%m-%d')}"
     day = int(day)
     buttons = InlineKeyboardMarkup([[
         InlineKeyboardButton('⬅️', callback_data=f'cls_{game}_{message_id}_{day - 1}'),
         InlineKeyboardButton('📆 Oggi', callback_data=f'cls_{game}_{message_id}_{today}'),
         InlineKeyboardButton('➡️', callback_data=f'cls_{game}_{message_id}_{day + 1}'),
-    ]])
+    ],
+    [InlineKeyboardButton(date_str, callback_data='cls_do_nothing')]])
     return buttons
 
 def time_from_emoji(input_string: str) -> str:
