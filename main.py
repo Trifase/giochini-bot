@@ -20,8 +20,8 @@ from telegram.ext import (
 )
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
-from utils import correct_name, get_day_from_date, make_buttons, GameFilter
-from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections)
+from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, GameFilter
+from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle)
 
 # Logging setup
 logger = logging.getLogger()
@@ -101,6 +101,9 @@ def parse_results(text: str) -> dict:
     
     elif 'Connections' in lines[0]:
         return connections(text)
+    
+    elif 'nerdlegame' in lines[0]:
+        return nerdle(text)
 
     return None
 
@@ -346,21 +349,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.effective_chat.id == ID_TESTING:
             import pprint
             rawtext = pprint.pformat(result)
-            # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>')
+            # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
             await update.message.reply_html(f'<code>{rawtext}</code>')
-            # pprint.pprint(result)
-            # punti = Punteggio(
-            #     date=datetime.datetime.now(),
-            #     timestamp=int(result['timestamp']),
-            #     chat_id=int(update.message.chat.id),
-            #     user_id=int(result['user_id']),
-            #     user_name=result['user_name'],
-            #     game=result['name'],
-            #     day=int(result['day']),
-            #     tries=int(result['tries']),
-            #     extra=str(result.get('stars', None))
-            # )
-            # pprint.pprint(punti.__dict__)
+
             return
 
         Punteggio.create(
@@ -385,6 +376,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result['day'])
             if classifica:
                 message += classifica
+                streak = streak_at_day(user_id=result['user_id'], game=result['name'], day=int(result['day']))
+                if streak:
+                    message += f'\nStreak: {streak}'
                 mymsg = await update.message.reply_html(classifica)
                 context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
             else: 

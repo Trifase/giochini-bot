@@ -3,7 +3,7 @@ import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
 
-from config import GAMES
+from config import GAMES, Punteggio
 
 
 class GameFilter(MessageFilter):
@@ -46,6 +46,10 @@ def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
 
     days_difference = GAMES[game]['date'] - date
     return str(int(GAMES[game]['day']) - days_difference.days)
+
+def get_date_from_day(game: str, day: str) -> datetime.date:
+    days_difference = int(GAMES[game]['day']) - int(day)
+    return GAMES[game]['date'] - datetime.timedelta(days=days_difference)
 
 def correct_name(name: str) -> str:
     return list(GAMES.keys())[[x.lower() for x in GAMES.keys()].index(name.lower())]
@@ -93,5 +97,30 @@ def is_connection_completed(connection: list[str]) -> bool:
     if completed_blocks == 4:
         return True
     return False
+
+def streak_at_day(user_id, game, day):
+    streak = 0
+
+    games = (Punteggio
+    .select(Punteggio.day, Punteggio.user_id)
+    .where(Punteggio.user_id == user_id,
+            Punteggio.game == game,
+            Punteggio.tries != 999,
+            Punteggio.tries != 9999999)
+    .order_by(Punteggio.day.desc()))
+
+    gamedays = set([int(x.day) for x in games])
+
+    if day not in gamedays:
+        return streak
+
+    for day in range(day, 0, -1):
+        if day in gamedays:
+            streak += 1
+        else:
+            break
+
+    return streak
+
 
 

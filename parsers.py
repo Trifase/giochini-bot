@@ -243,3 +243,13 @@ def connections(text: str) -> dict:
     else:
         result['tries'] = 'X'
     return result
+
+def nerdle(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result['name'] = 'Nerdle'
+    first_line = lines[0].split()
+    result['day'] = first_line[1]
+    result['tries'] = first_line[2].split('/')[0]
+    result['timestamp'] = int(time.time())
+    return result
