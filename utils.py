@@ -1,4 +1,5 @@
 import datetime
+import peewee
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
@@ -100,7 +101,7 @@ def is_connection_completed(connection: list[str]) -> bool:
         return True
     return False
 
-def streak_at_day(user_id, game, day):
+def streak_at_day(user_id, game, day) -> int:
     streak = 0
 
     games = (Punteggio
@@ -124,5 +125,23 @@ def streak_at_day(user_id, game, day):
 
     return streak
 
+def longest_streak(user_id, game) -> int:
+    streak = (Punteggio
+    .select(peewee.fn.MAX(Punteggio.streak))
+    .where(Punteggio.user_id == user_id,
+            Punteggio.game == game))
+    
+    return streak.scalar()
 
 
+def update_streak():
+    for punt in Punteggio.select().where(Punteggio.timestamp > 1693509309):
+        streak = streak_at_day(punt.user_id, punt.game, int(punt.day))
+        print(f"Selected: {punt.user_id} {punt.game} {punt.day} {punt.streak} | calc-streak: {streak}")
+        punt.streak = streak
+        # print(f"New Streak: {punt.streak}")
+        punt.save()
+
+longest_streak(456481297, 'GuessTheGame')
+# update_streak()
+# print(streak_at_day_test(286213405, 'Waffle', 610, debug=False))

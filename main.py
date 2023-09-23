@@ -20,7 +20,7 @@ from telegram.ext import (
 )
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
-from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, get_date_from_day, GameFilter
+from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, longest_streak, get_date_from_day, GameFilter
 from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle)
 
 # Logging setup
@@ -384,7 +384,13 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 classifica = f"{message}\n{classifica}"
                 streak = streak_at_day(user_id=result['user_id'], game=result['name'], day=int(result['day']))
                 if streak:
-                    classifica += f'\nStreak: {streak}'
+                    classifica += f'\nCurrent streak: {streak}'
+                long_streak = longest_streak(user_id=result['user_id'], game=result['name'])
+                if long_streak:
+                    if long_streak > streak:
+                        classifica += f'\nLongest streak: {long_streak}'
+                    else:
+                        classifica += '\nLongest streak: current'
                 mymsg = await update.message.reply_html(classifica)
                 context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
             else: 
