@@ -20,8 +20,8 @@ from telegram.ext import (
 )
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
-from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, longest_streak, get_date_from_day, GameFilter
-from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle)
+from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, longest_streak, get_date_from_day, personal_stats, process_tries, GameFilter
+from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle, picsey)
 
 # Logging setup
 logger = logging.getLogger()
@@ -105,6 +105,9 @@ def parse_results(text: str) -> dict:
     elif 'nerdlegame' in lines[0]:
         return nerdle(text)
 
+    elif 'Picsey' in lines[0]:
+        return picsey(text)
+
     return None
 
 def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6, user_id=None) -> str:
@@ -131,18 +134,8 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
     classifica += f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>\n'
 
     for posto, punteggio in enumerate(query, start=1):
-        # This is a little exception for HighFive scores, which are negative because in the game the more the better.
-        # We want to show them as positive.
-        if game == 'HighFive':
-            punteggio.tries = abs(punteggio.tries)
 
-        # For Timeguesser, scores are points, the more the better. Max points is 50_000 so we save them as differences from max.
-        if game == 'TimeGuesser':
-            punteggio.tries = 50_000 - punteggio.tries
-
-        #So, murdle points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
-        if game == 'Murdle':
-            punteggio.tries = str(punteggio.tries)[:-2] + ':' + str(punteggio.tries)[-2:]
+        punteggio.tries = process_tries(game, punteggio.tries)
 
         if user_id and not user_id_found and punteggio.user_id == user_id:
             user_id_found = True
@@ -160,14 +153,8 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp))
         
         for posto, punteggio in enumerate(deep_query, start=1):
-            if game == 'HighFive':
-                punteggio.tries = abs(punteggio.tries)
 
-            if game == 'TimeGuesser':
-                punteggio.tries = 50_000 - punteggio.tries
-
-            if game == 'Murdle':
-                punteggio.tries = str(punteggio.tries)[:-2] + ':' + str(punteggio.tries)[-2:]
+            punteggio.tries = process_tries(game, punteggio.tries)
 
             if user_id and punteggio.user_id == user_id:
                 user_id_found = True
@@ -359,6 +346,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_html(f'<code>{rawtext}</code>')
 
             return
+        streak = streak_at_day(user_id=result['user_id'], game=result['name'], day=int(result['day']))
 
         Punteggio.create(
             date=datetime.datetime.now(),
@@ -369,7 +357,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             game=result['name'],
             day=int(result['day']),
             tries=int(result['tries']),
-            extra=str(result.get('stars', None))
+            extra=str(result.get('stars', None)),
+            streak=streak + 1
         )
 
         if result['tries'] in ['999', '9999999']:
@@ -382,7 +371,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result['day'])
             if classifica:
                 classifica = f"{message}\n{classifica}"
-                streak = streak_at_day(user_id=result['user_id'], game=result['name'], day=int(result['day']))
+                streak = streak + 1
                 if streak:
                     classifica += f'\nCurrent streak: {streak}'
                 long_streak = longest_streak(user_id=result['user_id'], game=result['name'])
@@ -459,6 +448,13 @@ async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     
     await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
 
+async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        message = personal_stats(update.effective_user.id)
+    except Exception as e:
+        message = 'Ho qualche problema, scusa'
+
+    await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
 
 async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     points = defaultdict(int)
@@ -579,6 +575,7 @@ def main():
     app.add_handler(CommandHandler('classificona', classificona), 1)
     app.add_handler(CommandHandler('giochiamo', manual_daily_reminder), 1)
     app.add_handler(CommandHandler(['mytoday', 'myday', 'my', 'today', 'daily'], mytoday), 1)
+    app.add_handler(CommandHandler(['mystats', 'mystat', 'stats', 'statistiche'], mystats), 1)
     app.add_handler(CommandHandler('help', help), 1)
     app.add_handler(CommandHandler(['list', 'lista'], list_games), 1)
     app.add_handler(CommandHandler('backup', manual_backup), 1)

@@ -253,3 +253,17 @@ def nerdle(text: str) -> dict:
     result['tries'] = first_line[2].split('/')[0]
     result['timestamp'] = int(time.time())
     return result
+
+def picsey(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    date = lines[0].split()[-1]
+    result['name'] = 'Picsey'
+    result['day'] = get_day_from_date('Picsey', date)
+    points = lines[2].split('p/')[0]
+    # Picsey uses positive poits, from 0 to 100. We as usual save 100-n and then revert it when printing the results.
+    result['tries'] = 100 - int(points)
+    result['timestamp'] = int(time.time())
+    if int(points) == 0:
+        result['tries'] = 'X'
+    return result

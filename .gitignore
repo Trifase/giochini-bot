@@ -164,3 +164,4 @@ config.py
 logs/
 backups/
 .vscode/settings.json
+main.py
