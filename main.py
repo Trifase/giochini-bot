@@ -21,7 +21,7 @@ from telegram.ext import (
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
 from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, longest_streak, get_date_from_day, personal_stats, process_tries, GameFilter
-from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle, picsey)
+from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle, picsey, squareword)
 
 # Logging setup
 logger = logging.getLogger()
@@ -107,6 +107,9 @@ def parse_results(text: str) -> dict:
 
     elif 'Picsey' in lines[0]:
         return picsey(text)
+
+    elif 'squareword.org' in lines[0]:
+        return squareword(text)
 
     return None
 
@@ -520,9 +523,8 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     message = 'Buongiorno, ecco a cosa si gioca oggi!\n\n'
     for game in GAMES.keys():
         day = get_day_from_date(game, datetime.date.today())
-        message += f'{GAMES[game]["emoji"]} {game} #{day}\n'
-        message += f'{GAMES[game]["url"]}\n\n'
-    mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True)
+        message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n\n'
+    mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode='HTML')
     await mypost.pin(disable_notification=True)
 
 async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:

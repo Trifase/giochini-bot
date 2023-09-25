@@ -7,7 +7,7 @@ import time
 # dict = {
 #     'name': 'Wordle'      -> a string for the game name
 #     'day': '356'          -> a string with the game number, will be turned into a int when necessary
-#     'tries': '3'          -> a string for the main 'points' of the game, usually the lesser the better.
+#     'tries': '3'          -> a string for the main 'points' of the game, usually the lesser the better. X for a fail.
 #     'timestamp': 12345678 -> Unix timestamp. Int.
 #     'stars': 3            -> some games have addictional stars or something if you do optional challenges. Int or None.
 # }
@@ -266,4 +266,14 @@ def picsey(text: str) -> dict:
     result['timestamp'] = int(time.time())
     if int(points) == 0:
         result['tries'] = 'X'
+    return result
+
+def squareword(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    first_line = lines[0].split()
+    result['name'] = 'Squareword'
+    result['timestamp'] = int(time.time())
+    result['day'] = first_line[1][:-1]
+    result['tries'] = first_line[2]
     return result
