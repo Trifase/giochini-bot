@@ -4,7 +4,7 @@ import peewee
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
 
-from config import GAMES, Punteggio
+from config import GAMES, Punteggio, Medaglia, Punti
 
 
 class GameFilter(MessageFilter):
@@ -157,7 +157,7 @@ def longest_streak(user_id, game) -> int:
 
 def update_streak():
     c = 0
-    for punt in Punteggio.select().where(Punteggio.streak is not None):
+    for punt in Punteggio.select().where(Punteggio.streak.is_null(False)):
         c += 1
         streak = streak_at_day(punt.user_id, punt.game, int(punt.day))
         print(f"Selected: [{c}] {punt.user_id} {punt.game} {punt.day} {punt.streak} | calc-streak: {streak}")
@@ -205,3 +205,84 @@ def personal_stats(user_id: int) -> str:
         result += total_loses_string
     return result
 
+def new_classifica():
+    classifica = [
+        {'game': 'Wordle', 'day': '828', 'emoji': '🆒', 'url': 'https://www.nytimes.com/games/wordle/index.html', 'pos': [(1, 'Wordle', 31866384, 'Lara', 2), (2, 'Wordle', 286213405, 'sofia', 3), (3, 'Wordle', 542430195, 'Lord Davide eSwatini 🇸🇿', 4)]},
+
+        {'game': 'Parole', 'day': '629', 'emoji': '🇮🇹', 'url': 'https://pietroppeter.github.io/wordle-it', 'pos': [(1, 'Parole', 456481297, 'Trifase', 3), (2, 'Parole', 16337572, 'Jacopo', 4), (3, 'Parole', 31866384, 'Lara', 4)]},
+
+        {'game': 'Contexto', 'day': '372', 'emoji': '🔄', 'url': 'https://contexto.me', 'pos': [(1, 'Contexto', 286213405, 'sofia', 66), (2, 'Contexto', 542430195, 'Lord Davide eSwatini 🇸🇿', 71)]},
+
+        {'game': 'Waffle', 'day': '612', 'emoji': '🧇', 'url': 'https://wafflegame.net/daily', 'pos': [(1, 'Waffle', 286213405, 'sofia', 10), (2, 'Waffle', 31866384, 'Lara', 13), (3, 'Waffle', 456481297, 'Trifase', 13)]},
+
+        {'game': 'HighFive', 'day': '194', 'emoji': '🖐️', 'url': 'https://highfivegame.app', 'pos': [(1, 'HighFive', 286213405, 'sofia', 97), (2, 'HighFive', 542430195, 'Lord Davide eSwatini 🇸🇿', 91)]},
+
+        {'game': 'Connections', 'day': '106', 'emoji': '🔀', 'url': 'https://www.nytimes.com/games/connections', 'pos': [(1, 'Connections', 286213405, 'sofia', 1)]},
+
+        {'game': 'Squareword', 'day': '602', 'emoji': '🔠', 'url': 'https://squareword.org', 'pos': [(1, 'Squareword', 286213405, 'sofia', 11), (2, 'Squareword', 542430195, 'Lord Davide eSwatini 🇸🇿', 14), (3, 'Squareword', 456481297, 'Trifase', 20)]},
+
+        {'game': 'Worldle', 'day': '612', 'emoji': '🗺️', 'url': 'https://worldle.teuteuf.fr', 'pos': [(1, 'Worldle', 286213405, 'sofia', 1), (2, 'Worldle', 349305191, 'Lamantino Lamentino', 1), (3, 'Worldle', 198379603, 'Mario', 1)]},
+
+        {'game': 'Tradle', 'day': '568', 'emoji': '🚢', 'url': 'https://oec.world/en/tradle', 'pos': [(1, 'Tradle', 286213405, 'sofia', 2), (2, 'Tradle', 96000757, 'Roberto', 5), (3, 'Tradle', 198379603, 'Mario', 5)]},
+
+        {'game': 'Flagle', 'day': '581', 'emoji': '🏁', 'url': 'https://www.flagle.io', 'pos': [(1, 'Flagle', 286213405, 'sofia', 2), (2, 'Flagle', 16337572, 'Jacopo', 3), (3, 'Flagle', 542430195, 'Lord Davide eSwatini 🇸🇿', 4)]},
+
+        {'game': 'Globle', 'day': '294', 'emoji': '🌍', 'url': 'https://globle-game.com', 'pos': [(1, 'Globle', 286213405, 'sofia', 2), (2, 'Globle', 61260596, 'Moreno', 5), (3, 'Globle', 198379603, 'Mario', 5)]},
+
+        {'game': 'WhereTaken', 'day': '211', 'emoji': '📸', 'url': 'http://wheretaken.teuteuf.fr', 'pos': [(1, 'WhereTaken', 286213405, 'sofia', 3), (2, 'WhereTaken', 542430195, 'Lord Davide eSwatini 🇸🇿', 4), (3, 'WhereTaken', 198379603, 'Mario', 6)]},
+
+        {'game': 'Cloudle', 'day': '543', 'emoji': '🌦️', 'url': 'https://cloudle.app', 'pos': [(1, 'Cloudle', 542430195, 'Lord Davide eSwatini 🇸🇿', 4), (2, 'Cloudle', 286213405, 'sofia', 5), (3, 'Cloudle', 31866384, 'Lara', 6)]},
+
+        {'game': 'GuessTheGame', 'day': '499', 'emoji': '🎮', 'url': 'https://guessthe.game', 'pos': [(1, 'GuessTheGame', 286213405, 'sofia', 2), (2, 'GuessTheGame', 456481297, 'Trifase', 5), (3, 'GuessTheGame', 198379603, 'Mario', 5)]},
+
+        None,
+
+        {'game': 'TimeGuesser', 'day': '135', 'emoji': '📅', 'url': 'https://timeguessr.com', 'pos': [(1, 'TimeGuesser', 286213405, 'sofia', 47262), (2, 'TimeGuesser', 542430195, 'Lord Davide eSwatini 🇸🇿', 44652), (3, 'TimeGuesser', 16337572, 'Jacopo', 33821)]},
+
+        {'game': 'Moviedle', 'day': '294', 'emoji': '🎥', 'url': 'https://moviedle.app', 'pos': [(1, 'Moviedle', 286213405, 'sofia', 2)]},
+
+        {'game': 'Picsey', 'day': '100', 'emoji': '🪟', 'url': 'https://picsey.io', 'pos': [(1, 'Picsey', 542430195, 'Lord Davide eSwatini 🇸🇿', 96), (2, 'Picsey', 456481297, 'Trifase', 88), (3, 'Picsey', 16337572, 'Jacopo', 63)]},
+
+        {'game': 'Murdle', 'day': '95', 'emoji': '🔪', 'url': 'https://murdle.com', 'pos': [(1, 'Murdle', 286213405, 'sofia', '1:32'), (2, 'Murdle', 456481297, 'Trifase', '1:49'), (3, 'Murdle', 542430195, 'Lord Davide eSwatini 🇸🇿', '3:38')]},
+
+        {'game': 'Nerdle', 'day': '614', 'emoji': '🤓', 'url': 'https://nerdlegame.com', 'pos': [(1, 'Nerdle', 286213405, 'sofia', 3), (2, 'Nerdle', 542430195, 'Lord Davide eSwatini 🇸🇿', 3)]}
+    ]
+
+    final = {}
+
+    for game in classifica:
+        if game is None:
+            continue
+        for pos in game['pos']:
+            # 0 = posizione
+            # 1 = game
+            # 2 = user_id
+            # 3 = nickname
+            # 4 = punteggio
+            if pos[2] not in final:
+                final[pos[2]] = {'nickname': pos[3], 'gold': 0, 'silver': 0, 'bronze': 0, 'total': 0}
+            if pos[0] == 1:
+                final[pos[2]]['gold'] += 1
+            elif pos[0] == 2:
+                final[pos[2]]['silver'] += 1
+            elif pos[0] == 3:
+                final[pos[2]]['bronze'] += 1
+            final[pos[2]]['total'] += 1
+    import pprint
+    pprint.pprint(final)
+    classifica_users = sorted(final.items(), key=lambda x: x[1]['total'], reverse=True)
+    pprint.pprint(classifica_users)
+
+    for user in classifica_users:
+        print(f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n")
+
+def medaglie() -> None:
+    first_of_the_month = datetime.date.today().replace(day=1)
+    # Select user_name, medal, count(medal) from medaglie group by user_name, medal
+    query = (Medaglia
+             .select(Medaglia.user_name, Medaglia.medal, peewee.fn.COUNT(Medaglia.medal).alias('numero'))
+             .where(Medaglia.date >= first_of_the_month)
+             .group_by(Medaglia.user_name, Medaglia.medal))
+    for q in query:
+        print(q.user_name, q.medal, q.numero)
+    return

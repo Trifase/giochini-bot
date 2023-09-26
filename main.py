@@ -6,6 +6,7 @@ from collections import defaultdict
 
 import pytz
 import peewee
+import time
 
 from telegram import Update
 from telegram.ext import (
@@ -19,7 +20,7 @@ from telegram.ext import (
     filters,
 )
 
-from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti
+from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti, Medaglia
 from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, longest_streak, get_date_from_day, personal_stats, process_tries, GameFilter
 from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle, picsey, squareword)
 
@@ -113,10 +114,14 @@ def parse_results(text: str) -> dict:
 
     return None
 
-def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6, user_id=None) -> str:
+def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6, user_id=None, data=False) -> str:
     day = day or get_day_from_date(game, datetime.date.today())
-    emoji = GAMES[game]['emoji']
+
+    emoji = GAMES[game]['emoji']    
+    url = GAMES[game]['url']
+
     user_id_found = False
+
     query = (Punteggio
         .select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
         .where(Punteggio.day == day,
@@ -127,13 +132,18 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         .limit(limit))
 
-    # print(f'Sto cercando la classifica per {game}, giorno {day}')
     if not query:
-        # print(f'Classifica per {game} nessun risultato!')
         return None
 
+    if data:
+        classifica_data = {}
+        classifica_data['game'] = game
+        classifica_data['day'] = day
+        classifica_data['emoji'] = emoji
+        classifica_data['url'] = url
+        classifica_data['pos'] = []
+
     classifica = ''
-    url = GAMES[game]['url']
     classifica += f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>\n'
 
     for posto, punteggio in enumerate(query, start=1):
@@ -142,9 +152,13 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
 
         if user_id and not user_id_found and punteggio.user_id == user_id:
             user_id_found = True
+
         classifica += f'{MEDALS.get(posto, "")}{punteggio.user_name} ({punteggio.tries})\n'
 
-    # At this point, if the user is not found, we search deeper in the db
+        if data:
+            classifica_data['pos'].append((posto, game, punteggio.user_id, punteggio.user_name, punteggio.tries))
+
+    # At this point, if the user is not found in the first LIMIT positions, we search deeper in the db
     if user_id and not user_id_found:
         deep_query = (Punteggio
                 .select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
@@ -163,7 +177,10 @@ def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6,
                 user_id_found = True
                 classifica += f'...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n'
 
-    return classifica
+    if data:
+        return classifica_data
+    else:
+        return classifica
 
 def make_games_classifica(days: int = 0) -> str:
     if not days:
@@ -246,10 +263,8 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
         day = get_day_from_date(game, datetime.date.today())
 
         classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id)
-        # date_str = f"== {get_date_from_day(game, day).strftime('%Y-%m-%d')} =="
-        # classifica_text = f'{date_str}\n{classifica_text}'
+
         if not classifica_text:
-            # return await classificona(update, context)
             classifica_text = "Non c'è niente da vedere qui."
         buttons = make_buttons(game, update.effective_message.message_id, day)
 
@@ -304,6 +319,9 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     messaggio = ''
     for game in GAMES.keys():
         classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3)
+
+        # print(make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, data=True))
+
         if classifica:
             messaggio += classifica + '\n'
     
@@ -459,6 +477,18 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
 
+
+async def medaglie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    first_of_the_month = datetime.date.today().replace(day=1)
+    # Select user_name, medal, count(medal) from medaglie group by user_name, medal
+    query = (Medaglia
+             .select(Medaglia.user_name, Medaglia.medal, peewee.fn.COUNT(Medaglia.medal).alias('numero'))
+             .where(Medaglia.date >= first_of_the_month)
+             .group_by(Medaglia.user_name, Medaglia.medal))
+    for q in query:
+        print(q.user_name, q.medal, q.numero)
+    return
+
 async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     points = defaultdict(int)
     today = datetime.date.today()
@@ -495,27 +525,61 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = int(user_id)
 
         message += f'+{points} {user_name}\n'
-
-        query = (Punti
-            .select(Punti.punti)
-            .where(Punti.user_id == user_id))
         
-        if query:
-            points += query[0].punti
+        Punti.create(
+            date=yesterday,
+            user_id=user_id,
+            user_name=user_name,
+            punti=points)
 
-        Punti.replace(user_id=user_id, user_name=user_name, punti=points).execute()
+        # query = (Punti
+        #     .select(Punti.punti)
+        #     .where(Punti.user_id == user_id))
+        
+        # if query:
+        #     points += query[0].punti
+
+        # Punti.replace(user_id=user_id, user_name=user_name, punti=points).execute()
+
+    # Medals
+    # Select user_name, medal, count(medal) from medaglie group by user_name, medal
+    i = 0
+    medal_names = {
+        0: 'gold',
+        1: 'silver',
+        2: 'bronze'
+    }
+    for user, points in cambiamenti[:3]:
+        user_id, user_name = user.split('_|_')
+        user_id = int(user_id)
+        medal = medal_names[i]
+
+        Medaglia.create(
+        date=datetime.datetime.now(),
+        timestamp=int(time.time()),
+        chat_id=int(ID_GIOCHINI),
+        user_id=int(user_id),
+        user_name=user_name,
+        medal=medal
+        )
+        i += 1
+
 
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode='HTML', disable_web_page_preview=True)
 
-    message = 'Classifica aggiornata:\n'
+    message = 'Classifica di questo mese:\n'
 
+    this_month = yesterday.replace(day=1)
     query = (Punti
-        .select()
-        .order_by(Punti.punti.desc())
-        .limit(10))
+        .select(Punti.user_name, peewee.fn.SUM(Punti.punti).alias('totale'))
+        .where(Punti.date >= this_month)
+        .order_by(peewee.fn.SUM(Punti.punti).desc())
+        .group_by(Punti.user_name)
+        .limit(10)
+        )
 
     for q in query:
-        message += f'[{q.punti}] {q.user_name}\n'
+        message += f'[{q.totale}] {q.user_name}\n'
 
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode='HTML', disable_web_page_preview=True)
 
@@ -554,6 +618,7 @@ async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
     Punti.create_table()
+    Medaglia.create_table()
     logger.info("Pronti!")
 
 
