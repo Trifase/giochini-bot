@@ -1,10 +1,10 @@
 import datetime
-import peewee
 
+import peewee
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
 
-from config import GAMES, Punteggio, Medaglia, Punti
+from config import GAMES, MEDALS, Medaglia, Punteggio
 
 
 class GameFilter(MessageFilter):
@@ -276,13 +276,26 @@ def new_classifica():
     for user in classifica_users:
         print(f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n")
 
-def medaglie() -> None:
+def medaglie_count() -> None:
     first_of_the_month = datetime.date.today().replace(day=1)
+    message = 'Classifica mensile delle medaglie:\n\n'
     # Select user_name, medal, count(medal) from medaglie group by user_name, medal
     query = (Medaglia
-             .select(Medaglia.user_name, Medaglia.medal, peewee.fn.COUNT(Medaglia.medal).alias('numero'))
+             .select(Medaglia.user_name, 
+                     peewee.fn.SUM(Medaglia.gold).alias('gold'),
+                     peewee.fn.SUM(Medaglia.silver).alias('silver'),
+                     peewee.fn.SUM(Medaglia.bronze).alias('bronze'))
              .where(Medaglia.date >= first_of_the_month)
-             .group_by(Medaglia.user_name, Medaglia.medal))
+             .group_by(Medaglia.user_name)
+             .order_by(peewee.fn.SUM(Medaglia.gold).alias('gold').desc(),
+                     peewee.fn.SUM(Medaglia.silver).alias('silver').desc(),
+                     peewee.fn.SUM(Medaglia.bronze).alias('bronze').desc())
+             .limit(10))
+
+    if not query:
+        message += 'Non ci sono ancora medaglie questo mese.'
+        return message
+    
     for q in query:
-        print(q.user_name, q.medal, q.numero)
-    return
+        message += f"{q.user_name} ({int(q.gold or 0)}/{int(q.silver or 0)}/{int(q.bronze or 0)}):\n{int(q.gold or 0)*MEDALS[1][:-1]}{int(q.silver or 0)*MEDALS[2][:-1]}{int(q.bronze or 0)*MEDALS[3][:-1]}\n"
+    return message

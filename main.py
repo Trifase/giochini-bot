@@ -1,13 +1,12 @@
 import datetime
 import logging
 import sys
+import time
 import zipfile
 from collections import defaultdict
 
-import pytz
 import peewee
-import time
-
+import pytz
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -20,9 +19,11 @@ from telegram.ext import (
     filters,
 )
 
-from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Punteggio, Punti, Medaglia
-from utils import correct_name, get_day_from_date, make_buttons, streak_at_day, longest_streak, get_date_from_day, personal_stats, process_tries, GameFilter
-from parsers import (wordle, worldle, parole, contexto, tradle, guessthegame, globle, flagle, wheretaken, waffle, cloudle, highfive, timeguesser, framed, moviedle, murdle, connections, nerdle, picsey, squareword)
+from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Medaglia, Punteggio, Punti
+from parsers import ( cloudle, connections, contexto, flagle, framed, globle, guessthegame, highfive, moviedle, 
+                     murdle, nerdle, parole, picsey, squareword, timeguesser, tradle, waffle, wheretaken, wordle, worldle)
+from utils import (GameFilter, correct_name, get_day_from_date, longest_streak, make_buttons, medaglie_count,
+                   personal_stats, process_tries, streak_at_day)
 
 # Logging setup
 logger = logging.getLogger()
@@ -423,6 +424,10 @@ async def manual_backup(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if update.effective_user.id == ADMIN_ID:
         return await make_backup(context)
 
+async def manual_riassunto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id == ADMIN_ID:
+        return await riassunto_serale(context)
+
 async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # message = 'Ecco a cosa hai già giocato oggi:\n'
     played_today = set()
@@ -473,7 +478,7 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         message = personal_stats(update.effective_user.id)
     except Exception as e:
-        message = 'Ho qualche problema, scusa'
+        message = f'Ho qualche problema, scusa ({e})'
 
     await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
 
@@ -525,34 +530,19 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = int(user_id)
 
         message += f'+{points} {user_name}\n'
-        
+        print(yesterday, user_id, user_name, points)
         Punti.create(
             date=yesterday,
             user_id=user_id,
             user_name=user_name,
             punti=points)
 
-        # query = (Punti
-        #     .select(Punti.punti)
-        #     .where(Punti.user_id == user_id))
-        
-        # if query:
-        #     points += query[0].punti
-
-        # Punti.replace(user_id=user_id, user_name=user_name, punti=points).execute()
-
     # Medals
-    # Select user_name, medal, count(medal) from medaglie group by user_name, medal
     i = 0
-    medal_names = {
-        0: 'gold',
-        1: 'silver',
-        2: 'bronze'
-    }
+
     for user, points in cambiamenti[:3]:
         user_id, user_name = user.split('_|_')
         user_id = int(user_id)
-        medal = medal_names[i]
 
         Medaglia.create(
         date=datetime.datetime.now(),
@@ -560,7 +550,9 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id=int(ID_GIOCHINI),
         user_id=int(user_id),
         user_name=user_name,
-        medal=medal
+        gold=1 if i == 0 else None,
+        silver=1 if i == 1 else None,
+        bronze=1 if i == 2 else None
         )
         i += 1
 
@@ -581,7 +573,16 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     for q in query:
         message += f'[{q.totale}] {q.user_name}\n'
 
+    next_month = this_month.replace(day=28) + datetime.timedelta(days=4)
+    last_day_of_month = next_month - datetime.timedelta(days=next_month.day)
+    if yesterday == last_day_of_month:
+        message += 'Ultimo giorno del mese!! Classifica finale!!'
+
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode='HTML', disable_web_page_preview=True)
+
+    medaglie_str = medaglie_count()
+    
+    await context.bot.send_message(chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode='HTML', disable_web_page_preview=True)
 
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     message = 'Buongiorno, ecco a cosa si gioca oggi!\n\n'
@@ -646,6 +647,7 @@ def main():
     app.add_handler(CommandHandler('help', help), 1)
     app.add_handler(CommandHandler(['list', 'lista'], list_games), 1)
     app.add_handler(CommandHandler('backup', manual_backup), 1)
+    app.add_handler(CommandHandler('riassuntone', manual_riassunto), 1)
 
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)

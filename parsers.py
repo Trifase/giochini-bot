@@ -1,7 +1,8 @@
 
-from utils import get_day_from_date, time_from_emoji, is_connection_completed
 import datetime
 import time
+
+from utils import get_day_from_date, is_connection_completed, time_from_emoji
 
 # Every parser in this file will parse a text-result from a website and produce a dictionary with the following characteristics:
 # dict = {
