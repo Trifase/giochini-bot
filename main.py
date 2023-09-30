@@ -21,7 +21,7 @@ from telegram.ext import (
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Medaglia, Punteggio, Punti
 from parsers import ( cloudle, connections, contexto, flagle, framed, globle, guessthegame, highfive, moviedle, 
-                     murdle, nerdle, parole, picsey, squareword, timeguesser, tradle, waffle, wheretaken, wordle, worldle)
+                     murdle, nerdle, parole2, picsey, squareword, timeguesser, tradle, waffle, wheretaken, wordle, worldle)
 from utils import (GameFilter, correct_name, get_day_from_date, longest_streak, make_buttons, medaglie_count,
                    personal_stats, process_tries, streak_at_day)
 
@@ -59,8 +59,11 @@ def parse_results(text: str) -> dict:
     elif 'Worldle' in lines[0]:
         return worldle(text)
 
-    elif 'Par🇮🇹le' in lines[0]:
-        return parole(text)
+    # elif 'Par🇮🇹le' in lines[0] and '°' in lines[0]:
+    #     return parole(text)
+
+    elif 'Par🇮🇹le' in lines[0] and '°' not in lines[0]:
+        return parole2(text)
 
     elif 'contexto.me' in lines[0]:
         return contexto(text)
@@ -294,6 +297,18 @@ async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     await update.message.reply_text(text=message, parse_mode='HTML', disable_web_page_preview=True)
 
+async def top_medaglie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_chat.id != ID_GIOCHINI:
+        return
+
+    medaglie_str = medaglie_count(monthly=False)
+    if not medaglie_str:
+        message = 'Niente da vedere'
+    else:
+        message = medaglie_str
+
+    await update.message.reply_text(text=message, parse_mode='HTML', disable_web_page_preview=True)
+
 async def top_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # if update.effective_chat.id != ID_GIOCHINI:
     #     return
@@ -482,17 +497,17 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(message, parse_mode='HTML', disable_web_page_preview=True)
 
+async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_chat.id != ID_GIOCHINI:
+        return
 
-async def medaglie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    first_of_the_month = datetime.date.today().replace(day=1)
-    # Select user_name, medal, count(medal) from medaglie group by user_name, medal
-    query = (Medaglia
-             .select(Medaglia.user_name, Medaglia.medal, peewee.fn.COUNT(Medaglia.medal).alias('numero'))
-             .where(Medaglia.date >= first_of_the_month)
-             .group_by(Medaglia.user_name, Medaglia.medal))
-    for q in query:
-        print(q.user_name, q.medal, q.numero)
-    return
+    medaglie_str = medaglie_count()
+    if not medaglie_str:
+        message = 'Niente da vedere'
+    else:
+        message = medaglie_str
+
+    await update.message.reply_text(text=message, parse_mode='HTML', disable_web_page_preview=True)
 
 async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     points = defaultdict(int)
@@ -651,6 +666,8 @@ def main():
 
     app.add_handler(CommandHandler(['c', 'classifica'], post_single_classifica), 2)
     app.add_handler(CommandHandler('top', top_players), 1)
+    app.add_handler(CommandHandler('top_medaglie', top_medaglie), 1)
+    app.add_handler(CommandHandler('medaglie', medaglie_mensile), 1)
 
     app.add_handler(CommandHandler('topgames', top_games), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r'^cls_'))

@@ -124,17 +124,19 @@ def is_connection_completed(connection: list[str]) -> bool:
 
 
 def streak_at_day(user_id, game, day) -> int:
+    day = int(day)
     streak = 0
 
     games = (Punteggio
     .select(Punteggio.day, Punteggio.user_id)
-    .where(Punteggio.user_id == user_id,
+    .where(Punteggio.user_id == int(user_id),
             Punteggio.game == game,
             Punteggio.tries != 999,
             Punteggio.tries != 9999999)
     .order_by(Punteggio.day.desc()))
 
     gamedays = set([int(x.day) for x in games])
+    # print(gamedays)
 
     if day not in gamedays:
         return streak
@@ -157,7 +159,7 @@ def longest_streak(user_id, game) -> int:
 
 def update_streak():
     c = 0
-    for punt in Punteggio.select().where(Punteggio.streak.is_null(False)):
+    for punt in Punteggio.select().where(Punteggio.streak < 2):
         c += 1
         streak = streak_at_day(punt.user_id, punt.game, int(punt.day))
         print(f"Selected: [{c}] {punt.user_id} {punt.game} {punt.day} {punt.streak} | calc-streak: {streak}")
@@ -276,9 +278,12 @@ def new_classifica():
     for user in classifica_users:
         print(f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n")
 
-def medaglie_count() -> None:
+def medaglie_count(monthly=True) -> None:
     first_of_the_month = datetime.date.today().replace(day=1)
     message = 'Classifica mensile delle medaglie:\n\n'
+    if not monthly:
+        first_of_the_month = datetime.date(2020, 1, 1)
+        message = 'Classifica totale delle medaglie:\n\n'
     # Select user_name, medal, count(medal) from medaglie group by user_name, medal
     query = (Medaglia
              .select(Medaglia.user_name, 
@@ -299,3 +304,6 @@ def medaglie_count() -> None:
     for q in query:
         message += f"{q.user_name} ({int(q.gold or 0)}/{int(q.silver or 0)}/{int(q.bronze or 0)}):\n{int(q.gold or 0)*MEDALS[1][:-1]}{int(q.silver or 0)*MEDALS[2][:-1]}{int(q.bronze or 0)*MEDALS[3][:-1]}\n"
     return message
+
+
+# update_streak()

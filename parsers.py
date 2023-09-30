@@ -38,11 +38,23 @@ def worldle(text: str) -> dict:
     return result
 
 def parole(text: str) -> dict:
+    # This is for https://pietroppeter.github.io/wordle-it/
     result = {}
     lines = text.splitlines()
     result['name'] = 'Parole'
     first_line = lines[0].split()
     result['day'] = first_line[1][2:]
+    result['tries'] = first_line[2].split('/')[0]
+    result['timestamp'] = int(time.time())
+    return result
+
+def parole2(text: str) -> dict:
+    # This is for https://par-le.github.io/gioco/
+    result = {}
+    lines = text.splitlines()
+    result['name'] = 'Parole'
+    first_line = lines[0].split()
+    result['day'] = first_line[1]
     result['tries'] = first_line[2].split('/')[0]
     result['timestamp'] = int(time.time())
     return result
