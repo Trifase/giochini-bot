@@ -307,3 +307,6 @@ def medaglie_count(monthly=True) -> None:
 
 
 # update_streak()
+
+# streak =streak_at_day(user_id='456481297', game='Murdle', day=int('101'))
+# print(streak)

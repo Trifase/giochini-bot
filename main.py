@@ -62,8 +62,11 @@ def parse_results(text: str) -> dict:
     # elif 'Par🇮🇹le' in lines[0] and '°' in lines[0]:
     #     return parole(text)
 
-    elif 'Par🇮🇹le' in lines[0] and '°' not in lines[0]:
-        return parole2(text)
+    elif 'Par🇮🇹le' in lines[0]:
+        if '°' not in lines[0]:
+            return parole2(text)
+        else:
+            return 'wrong_parole'
 
     elif 'contexto.me' in lines[0]:
         return contexto(text)
@@ -348,6 +351,9 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     result = parse_results(update.message.text)
+    if result == 'wrong_parole':
+        await update.message.reply_text('Per favore fai <a href="https://par-le.github.io/gioco/">il nuovo parole</a>', parse_mode='HTML')
+        return
 
     if result:
 
@@ -383,7 +389,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_html(f'<code>{rawtext}</code>')
 
             return
-        streak = streak_at_day(user_id=result['user_id'], game=result['name'], day=int(result['day']))
+        streak = streak_at_day(user_id=int(result['user_id']), game=result['name'], day=int(result['day']))
 
         Punteggio.create(
             date=datetime.datetime.now(),
