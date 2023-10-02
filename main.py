@@ -551,7 +551,6 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = int(user_id)
 
         message += f'+{points} {user_name}\n'
-        print(yesterday, user_id, user_name, points)
         Punti.create(
             date=yesterday,
             user_id=user_id,
@@ -566,7 +565,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = int(user_id)
 
         Medaglia.create(
-        date=datetime.datetime.now(),
+        date=yesterday,
         timestamp=int(time.time()),
         chat_id=int(ID_GIOCHINI),
         user_id=int(user_id),
@@ -609,7 +608,7 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     message = 'Buongiorno, ecco a cosa si gioca oggi!\n\n'
     for game in GAMES.keys():
         day = get_day_from_date(game, datetime.date.today())
-        message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n\n'
+        message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode='HTML')
     await mypost.pin(disable_notification=True)
 
