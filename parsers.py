@@ -67,7 +67,7 @@ def contexto(text: str) -> dict:
     result['day'] = first_line[3][1:]
     if first_line[4] == 'but':
         result['tries'] = 'X'
-    elif first_line[-1] == 'tips.':
+    elif first_line[-1] == 'hints.':
         tips = int(first_line[-2])
         index = first_line.index('guesses')
         result['tries'] = int(first_line[index - 1]) + (tips * 15)
@@ -289,4 +289,17 @@ def squareword(text: str) -> dict:
     result['timestamp'] = int(time.time())
     result['day'] = first_line[1][:-1]
     result['tries'] = first_line[2]
+    return result
+
+def metazooa(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result['name'] = 'Metazooa'
+    result['timestamp'] = int(time.time())
+    # Globle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+    result['day'] = lines[0].split()[2][1:]
+    if 'stumped' in lines[1]:
+        result['tries'] = 'X'
+    else:
+        result['tries'] = lines[1].split()[-2]
     return result

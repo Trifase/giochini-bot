@@ -21,7 +21,8 @@ from telegram.ext import (
 
 from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Medaglia, Punteggio, Punti
 from parsers import ( cloudle, connections, contexto, flagle, framed, globle, guessthegame, highfive, moviedle, 
-                     murdle, nerdle, parole2, picsey, squareword, timeguesser, tradle, waffle, wheretaken, wordle, worldle)
+                     murdle, nerdle, parole2, picsey, squareword, timeguesser, tradle, waffle, wheretaken, wordle, worldle,
+                     metazooa)
 from utils import (GameFilter, correct_name, get_day_from_date, longest_streak, make_buttons, medaglie_count,
                    personal_stats, process_tries, streak_at_day)
 
@@ -119,6 +120,8 @@ def parse_results(text: str) -> dict:
     elif 'squareword.org' in lines[0]:
         return squareword(text)
 
+    elif 'Animal' in lines[0] and '#metazooa' in lines[-1]:
+        return metazooa(text)
     return None
 
 def make_single_classifica(game: str, chat_id: int, day: int=None, limit: int=6, user_id=None, data=False) -> str:
@@ -282,21 +285,24 @@ async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if update.effective_chat.id != ID_GIOCHINI:
         return
 
-    message = 'Classifica aggiornata:\n'
+    message = 'Classifica ALL TIME:\n'
+
 
     query = (Punti
-        .select()
-        .order_by(Punti.punti.desc())
-        .limit(20))
+            .select(Punti.user_name, peewee.fn.SUM(Punti.punti).alias('totale'))
+            .order_by(peewee.fn.SUM(Punti.punti).desc())
+            .group_by(Punti.user_name)
+            .limit(20)
+            )
 
     if not query:
         return await update.message.reply_text('Non ci sono ancora giocatori.')
 
     for i, q in enumerate(query, start=1):
         if i in [1, 2, 3]:
-            message += f'{MEDALS[i]} [{q.punti}] {q.user_name}\n'
+            message += f'{MEDALS[i]} [{q.totale}] {q.user_name}\n'
         else:
-            message += f'[{q.punti}] {q.user_name}\n'
+            message += f'[{q.totale}] {q.user_name}\n'
 
     await update.message.reply_text(text=message, parse_mode='HTML', disable_web_page_preview=True)
 
@@ -352,7 +358,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     result = parse_results(update.message.text)
     if result == 'wrong_parole':
-        await update.message.reply_text('Per favore fai <a href="https://par-le.github.io/gioco/">il nuovo parole</a>', parse_mode='HTML')
+        if update.effective_user.id == 31866384:
+            await update.message.reply_text('LARA TI PREGO PER FAVORE DAI CHE CAZZO TI SCONGIURO <a href="https://par-le.github.io/gioco/">IL NUOVO PAROLE</a> GRAZIE OK grazie dai ciao', parse_mode='HTML')
+        else:  
+            await update.message.reply_text('Per favore fai <a href="https://par-le.github.io/gioco/">il nuovo parole</a>', parse_mode='HTML')
         return
 
     if result:
@@ -605,10 +614,18 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode='HTML', disable_web_page_preview=True)
 
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
+    categorie = set([GAMES[x]['category'] for x in GAMES.keys()])
     message = 'Buongiorno, ecco a cosa si gioca oggi!\n\n'
-    for game in GAMES.keys():
-        day = get_day_from_date(game, datetime.date.today())
-        message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
+    for categoria in categorie:
+        message += f'<b>{categoria}</b>\n'
+        for game in GAMES.keys():
+            if GAMES[game]['category'] == categoria:
+                day = get_day_from_date(game, datetime.date.today())
+                message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
+        message += '\n'
+    # for game in GAMES.keys():
+    #     day = get_day_from_date(game, datetime.date.today())
+    #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode='HTML')
     await mypost.pin(disable_notification=True)
 
