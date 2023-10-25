@@ -12,106 +12,105 @@ class GameFilter(MessageFilter):
         if not message.text:
             return False
 
-        quadratini = ['🟥', '🟩', '⬜️', '🟨', '⬛️', '🟦', '🟢', '⚫️', '🟡', '🟠', '🔵', '🟣']
+        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣"]
 
         # Se ha qualche emoji colorata, probabilmente è un messaggio di un gioco
         if any(c in message.text for c in quadratini):
             return True
 
         # Eccezione per Plotwords, che non usa emoji
-        if 'Plotwords' in message.text and 'Clues used' in message.text:
+        if "Plotwords" in message.text and "Clues used" in message.text:
             return True
-        
-        if 'Murdle for' in message.text and ('❌' in message.text or '✅' in message.text) and '🔪' in message.text:
+
+        if "Murdle for" in message.text and ("❌" in message.text or "✅" in message.text) and "🔪" in message.text:
             return True
 
         return False
 
+
 def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
-    if isinstance(date, str) and game == 'Globle':
-        date = datetime.datetime.strptime(date, '🌎 %b %d, %Y 🌍').date()
+    if isinstance(date, str) and game == "Globle":
+        date = datetime.datetime.strptime(date, "🌎 %b %d, %Y 🌍").date()
 
-    if isinstance(date, str) and game == 'HighFive':
-        date_str = date.split('/')[-1]
-        date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    if isinstance(date, str) and game == "HighFive":
+        date_str = date.split("/")[-1]
+        date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
 
-    if isinstance(date, str) and game == 'Moviedle':
-        date = datetime.datetime.strptime(date, '#%Y-%m-%d').date()
-    
-    if isinstance(date, str) and game == 'Murdle':
-        date = datetime.datetime.strptime(date, '%m/%d/%Y').date()
+    if isinstance(date, str) and game == "Moviedle":
+        date = datetime.datetime.strptime(date, "#%Y-%m-%d").date()
 
-    if isinstance(date, str) and game == 'Picsey':
-        date = datetime.datetime.strptime(date, '%m.%d.%y').date()
+    if isinstance(date, str) and game == "Murdle":
+        date = datetime.datetime.strptime(date, "%m/%d/%Y").date()
+
+    if isinstance(date, str) and game == "Picsey":
+        date = datetime.datetime.strptime(date, "%m.%d.%y").date()
 
     if date is None:
         date = datetime.date.today()
 
-    days_difference = GAMES[game]['date'] - date
-    return str(int(GAMES[game]['day']) - days_difference.days)
+    days_difference = GAMES[game]["date"] - date
+    return str(int(GAMES[game]["day"]) - days_difference.days)
+
 
 def get_date_from_day(game: str, day: str) -> datetime.date:
-    days_difference = int(GAMES[game]['day']) - int(day)
-    return GAMES[game]['date'] - datetime.timedelta(days=days_difference)
+    days_difference = int(GAMES[game]["day"]) - int(day)
+    return GAMES[game]["date"] - datetime.timedelta(days=days_difference)
+
 
 def correct_name(name: str) -> str:
     return list(GAMES.keys())[[x.lower() for x in GAMES.keys()].index(name.lower())]
+
 
 def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
     today = get_day_from_date(game, datetime.date.today())
     date_str = f"{get_date_from_day(game, day).strftime('%Y-%m-%d')}"
     day = int(day)
-    buttons = InlineKeyboardMarkup([[
-        InlineKeyboardButton('⬅️', callback_data=f'cls_{game}_{message_id}_{day - 1}'),
-        InlineKeyboardButton('📆 Oggi', callback_data=f'cls_{game}_{message_id}_{today}'),
-        InlineKeyboardButton('➡️', callback_data=f'cls_{game}_{message_id}_{day + 1}'),
-    ],
-    [InlineKeyboardButton(date_str, callback_data='cls_do_nothing')]])
+    buttons = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("⬅️", callback_data=f"cls_{game}_{message_id}_{day - 1}"),
+                InlineKeyboardButton("📆 Oggi", callback_data=f"cls_{game}_{message_id}_{today}"),
+                InlineKeyboardButton("➡️", callback_data=f"cls_{game}_{message_id}_{day + 1}"),
+            ],
+            [InlineKeyboardButton(date_str, callback_data="cls_do_nothing")],
+        ]
+    )
     return buttons
 
+
 def time_from_emoji(input_string: str) -> str:
-    emojidict = {
-        '0️⃣': 0,
-        '1️⃣': 1,
-        '2️⃣': 2,
-        '3️⃣': 3,
-        '4️⃣': 4,
-        '5️⃣': 5,
-        '6️⃣': 6,
-        '7️⃣': 7,
-        '8️⃣': 8,
-        '9️⃣': 9,
-        '🔟': 10,
-        ':': ''
-    }
+    emojidict = {"0️⃣": 0, "1️⃣": 1, "2️⃣": 2, "3️⃣": 3, "4️⃣": 4, "5️⃣": 5, "6️⃣": 6, "7️⃣": 7, "8️⃣": 8, "9️⃣": 9, "🔟": 10, ":": ""}
     for key, value in emojidict.items():
         input_string = input_string.replace(key, str(value))
     return input_string
 
-def process_tries(game: str, tries: int|str) -> int|str:
+
+def process_tries(game: str, tries: int | str) -> int | str:
     # This is a little exception for HighFive scores, which are negative because in the game the more the better.
     # We want to show them as positive.
-    if game == 'HighFive':
+    if game == "HighFive":
         tries = abs(tries)
 
     # For Timeguesser, scores are points, the more the better. Max points is 50_000 so we save them as differences from max.
-    if game == 'TimeGuesser':
+    if game == "TimeGuesser":
         tries = 50_000 - tries
 
     # For Picsey, scores are points, the more the better. Max points is 100 so we save them as differences from max.
-    if game == 'Picsey':
+    if game == "Picsey":
         tries = 100 - tries
 
     # So, murdle points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
-    if game == 'Murdle':
-        tries = str(tries)[:-2] + ':' + str(tries)[-2:]
+    if game == "Murdle":
+        tries = str(tries)[:-2] + ":" + str(tries)[-2:]
     return tries
+
 
 def is_connection_block_completed(block: str) -> bool:
     color = block[0]
-    if block == color*4:
+    if block == color * 4:
         return True
     return False
+
 
 def is_connection_completed(connection: list[str]) -> bool:
     completed_blocks = 0
@@ -127,13 +126,16 @@ def streak_at_day(user_id, game, day) -> int:
     day = int(day)
     streak = 0
 
-    games = (Punteggio
-    .select(Punteggio.day, Punteggio.user_id)
-    .where(Punteggio.user_id == int(user_id),
+    games = (
+        Punteggio.select(Punteggio.day, Punteggio.user_id)
+        .where(
+            Punteggio.user_id == int(user_id),
             Punteggio.game == game,
             Punteggio.tries != 999,
-            Punteggio.tries != 9999999)
-    .order_by(Punteggio.day.desc()))
+            Punteggio.tries != 9999999,
+        )
+        .order_by(Punteggio.day.desc())
+    )
 
     gamedays = set([int(x.day) for x in games])
     # print(gamedays)
@@ -149,13 +151,14 @@ def streak_at_day(user_id, game, day) -> int:
 
     return streak
 
+
 def longest_streak(user_id, game) -> int:
-    streak = (Punteggio
-    .select(peewee.fn.MAX(Punteggio.streak))
-    .where(Punteggio.user_id == user_id,
-            Punteggio.game == game))
-    
+    streak = Punteggio.select(peewee.fn.MAX(Punteggio.streak)).where(
+        Punteggio.user_id == user_id, Punteggio.game == game
+    )
+
     return streak.scalar()
+
 
 def update_streak():
     c = 0
@@ -167,29 +170,52 @@ def update_streak():
         # print(f"New Streak: {punt.streak}")
         punt.save()
 
+
 def personal_stats(user_id: int) -> str:
-    intro = 'Ecco le tue statistiche personali:\n\n'
+    intro = "Ecco le tue statistiche personali:\n\n"
 
     # longest streak best game streak
-    long_streak_query = Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias('streak'), Punteggio.game).where(Punteggio.user_id == user_id).group_by(Punteggio.game).order_by(Punteggio.streak.desc()).limit(1)
+    long_streak_query = (
+        Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
+        .where(Punteggio.user_id == user_id)
+        .group_by(Punteggio.game)
+        .order_by(Punteggio.streak.desc())
+        .limit(1)
+    )
     long_streak = long_streak_query[0].streak
     long_streak_game = long_streak_query[0].game
     long_streak_string = f"Lo streak più lungo è di {long_streak} giocate di fila a {long_streak_game}.\n"
 
     # gioco più giocato
-    most_played_query = Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias('c')).where(Punteggio.user_id == user_id).group_by(Punteggio.game).order_by(peewee.fn.COUNT(Punteggio.game).desc()).limit(1)
+    most_played_query = (
+        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+        .where(Punteggio.user_id == user_id)
+        .group_by(Punteggio.game)
+        .order_by(peewee.fn.COUNT(Punteggio.game).desc())
+        .limit(1)
+    )
     most_played = most_played_query[0].game
     most_played_count = most_played_query[0].c
     most_played_string = f"Il gioco a cui hai giocato di più è {most_played} con {most_played_count} partite!\n"
 
     # gioco meno giocato
-    least_played_query = Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias('c')).where(Punteggio.user_id == user_id).group_by(Punteggio.game).order_by(peewee.fn.COUNT(Punteggio.game).asc()).limit(1)
+    least_played_query = (
+        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+        .where(Punteggio.user_id == user_id)
+        .group_by(Punteggio.game)
+        .order_by(peewee.fn.COUNT(Punteggio.game).asc())
+        .limit(1)
+    )
     least_played = least_played_query[0].game
     least_played_count = least_played_query[0].c
-    least_played_string = f"Il gioco che invece ti fa cagare di più è {least_played}, hai giocato solo {least_played_count} volte.\n"
+    least_played_string = (
+        f"Il gioco che invece ti fa cagare di più è {least_played}, hai giocato solo {least_played_count} volte.\n"
+    )
 
     # giocate totali
-    total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias('c')).where(Punteggio.user_id == user_id).scalar()
+    total_plays = (
+        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id).scalar()
+    )
 
     # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
     single_play_minutes = 2
@@ -198,7 +224,11 @@ def personal_stats(user_id: int) -> str:
     total_plays_string = f"In totale hai fatto {total_plays} partite. A 2 minuti a partita, hai sprecato {duration.strftime('%H ore e %M minuti')} della tua vita.\n"
 
     # giocate perse totali
-    total_loses = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias('c')).where(Punteggio.user_id == user_id, (Punteggio.tries == 999) | (Punteggio.tries == 9999999)).scalar()
+    total_loses = (
+        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
+        .where(Punteggio.user_id == user_id, (Punteggio.tries == 999) | (Punteggio.tries == 9999999))
+        .scalar()
+    )
     if total_loses:
         total_loses_string = f"In totale, hai perso {total_loses} partite\n"
 
@@ -207,47 +237,199 @@ def personal_stats(user_id: int) -> str:
         result += total_loses_string
     return result
 
+
 def new_classifica():
     classifica = [
-        {'game': 'Wordle', 'day': '828', 'emoji': '🆒', 'url': 'https://www.nytimes.com/games/wordle/index.html', 'pos': [(1, 'Wordle', 31866384, 'Lara', 2), (2, 'Wordle', 286213405, 'sofia', 3), (3, 'Wordle', 542430195, 'Lord Davide eSwatini 🇸🇿', 4)]},
-
-        {'game': 'Parole', 'day': '629', 'emoji': '🇮🇹', 'url': 'https://pietroppeter.github.io/wordle-it', 'pos': [(1, 'Parole', 456481297, 'Trifase', 3), (2, 'Parole', 16337572, 'Jacopo', 4), (3, 'Parole', 31866384, 'Lara', 4)]},
-
-        {'game': 'Contexto', 'day': '372', 'emoji': '🔄', 'url': 'https://contexto.me', 'pos': [(1, 'Contexto', 286213405, 'sofia', 66), (2, 'Contexto', 542430195, 'Lord Davide eSwatini 🇸🇿', 71)]},
-
-        {'game': 'Waffle', 'day': '612', 'emoji': '🧇', 'url': 'https://wafflegame.net/daily', 'pos': [(1, 'Waffle', 286213405, 'sofia', 10), (2, 'Waffle', 31866384, 'Lara', 13), (3, 'Waffle', 456481297, 'Trifase', 13)]},
-
-        {'game': 'HighFive', 'day': '194', 'emoji': '🖐️', 'url': 'https://highfivegame.app', 'pos': [(1, 'HighFive', 286213405, 'sofia', 97), (2, 'HighFive', 542430195, 'Lord Davide eSwatini 🇸🇿', 91)]},
-
-        {'game': 'Connections', 'day': '106', 'emoji': '🔀', 'url': 'https://www.nytimes.com/games/connections', 'pos': [(1, 'Connections', 286213405, 'sofia', 1)]},
-
-        {'game': 'Squareword', 'day': '602', 'emoji': '🔠', 'url': 'https://squareword.org', 'pos': [(1, 'Squareword', 286213405, 'sofia', 11), (2, 'Squareword', 542430195, 'Lord Davide eSwatini 🇸🇿', 14), (3, 'Squareword', 456481297, 'Trifase', 20)]},
-
-        {'game': 'Worldle', 'day': '612', 'emoji': '🗺️', 'url': 'https://worldle.teuteuf.fr', 'pos': [(1, 'Worldle', 286213405, 'sofia', 1), (2, 'Worldle', 349305191, 'Lamantino Lamentino', 1), (3, 'Worldle', 198379603, 'Mario', 1)]},
-
-        {'game': 'Tradle', 'day': '568', 'emoji': '🚢', 'url': 'https://oec.world/en/tradle', 'pos': [(1, 'Tradle', 286213405, 'sofia', 2), (2, 'Tradle', 96000757, 'Roberto', 5), (3, 'Tradle', 198379603, 'Mario', 5)]},
-
-        {'game': 'Flagle', 'day': '581', 'emoji': '🏁', 'url': 'https://www.flagle.io', 'pos': [(1, 'Flagle', 286213405, 'sofia', 2), (2, 'Flagle', 16337572, 'Jacopo', 3), (3, 'Flagle', 542430195, 'Lord Davide eSwatini 🇸🇿', 4)]},
-
-        {'game': 'Globle', 'day': '294', 'emoji': '🌍', 'url': 'https://globle-game.com', 'pos': [(1, 'Globle', 286213405, 'sofia', 2), (2, 'Globle', 61260596, 'Moreno', 5), (3, 'Globle', 198379603, 'Mario', 5)]},
-
-        {'game': 'WhereTaken', 'day': '211', 'emoji': '📸', 'url': 'http://wheretaken.teuteuf.fr', 'pos': [(1, 'WhereTaken', 286213405, 'sofia', 3), (2, 'WhereTaken', 542430195, 'Lord Davide eSwatini 🇸🇿', 4), (3, 'WhereTaken', 198379603, 'Mario', 6)]},
-
-        {'game': 'Cloudle', 'day': '543', 'emoji': '🌦️', 'url': 'https://cloudle.app', 'pos': [(1, 'Cloudle', 542430195, 'Lord Davide eSwatini 🇸🇿', 4), (2, 'Cloudle', 286213405, 'sofia', 5), (3, 'Cloudle', 31866384, 'Lara', 6)]},
-
-        {'game': 'GuessTheGame', 'day': '499', 'emoji': '🎮', 'url': 'https://guessthe.game', 'pos': [(1, 'GuessTheGame', 286213405, 'sofia', 2), (2, 'GuessTheGame', 456481297, 'Trifase', 5), (3, 'GuessTheGame', 198379603, 'Mario', 5)]},
-
+        {
+            "game": "Wordle",
+            "day": "828",
+            "emoji": "🆒",
+            "url": "https://www.nytimes.com/games/wordle/index.html",
+            "pos": [
+                (1, "Wordle", 31866384, "Lara", 2),
+                (2, "Wordle", 286213405, "sofia", 3),
+                (3, "Wordle", 542430195, "Lord Davide eSwatini 🇸🇿", 4),
+            ],
+        },
+        {
+            "game": "Parole",
+            "day": "629",
+            "emoji": "🇮🇹",
+            "url": "https://pietroppeter.github.io/wordle-it",
+            "pos": [
+                (1, "Parole", 456481297, "Trifase", 3),
+                (2, "Parole", 16337572, "Jacopo", 4),
+                (3, "Parole", 31866384, "Lara", 4),
+            ],
+        },
+        {
+            "game": "Contexto",
+            "day": "372",
+            "emoji": "🔄",
+            "url": "https://contexto.me",
+            "pos": [(1, "Contexto", 286213405, "sofia", 66), (2, "Contexto", 542430195, "Lord Davide eSwatini 🇸🇿", 71)],
+        },
+        {
+            "game": "Waffle",
+            "day": "612",
+            "emoji": "🧇",
+            "url": "https://wafflegame.net/daily",
+            "pos": [
+                (1, "Waffle", 286213405, "sofia", 10),
+                (2, "Waffle", 31866384, "Lara", 13),
+                (3, "Waffle", 456481297, "Trifase", 13),
+            ],
+        },
+        {
+            "game": "HighFive",
+            "day": "194",
+            "emoji": "🖐️",
+            "url": "https://highfivegame.app",
+            "pos": [(1, "HighFive", 286213405, "sofia", 97), (2, "HighFive", 542430195, "Lord Davide eSwatini 🇸🇿", 91)],
+        },
+        {
+            "game": "Connections",
+            "day": "106",
+            "emoji": "🔀",
+            "url": "https://www.nytimes.com/games/connections",
+            "pos": [(1, "Connections", 286213405, "sofia", 1)],
+        },
+        {
+            "game": "Squareword",
+            "day": "602",
+            "emoji": "🔠",
+            "url": "https://squareword.org",
+            "pos": [
+                (1, "Squareword", 286213405, "sofia", 11),
+                (2, "Squareword", 542430195, "Lord Davide eSwatini 🇸🇿", 14),
+                (3, "Squareword", 456481297, "Trifase", 20),
+            ],
+        },
+        {
+            "game": "Worldle",
+            "day": "612",
+            "emoji": "🗺️",
+            "url": "https://worldle.teuteuf.fr",
+            "pos": [
+                (1, "Worldle", 286213405, "sofia", 1),
+                (2, "Worldle", 349305191, "Lamantino Lamentino", 1),
+                (3, "Worldle", 198379603, "Mario", 1),
+            ],
+        },
+        {
+            "game": "Tradle",
+            "day": "568",
+            "emoji": "🚢",
+            "url": "https://oec.world/en/tradle",
+            "pos": [
+                (1, "Tradle", 286213405, "sofia", 2),
+                (2, "Tradle", 96000757, "Roberto", 5),
+                (3, "Tradle", 198379603, "Mario", 5),
+            ],
+        },
+        {
+            "game": "Flagle",
+            "day": "581",
+            "emoji": "🏁",
+            "url": "https://www.flagle.io",
+            "pos": [
+                (1, "Flagle", 286213405, "sofia", 2),
+                (2, "Flagle", 16337572, "Jacopo", 3),
+                (3, "Flagle", 542430195, "Lord Davide eSwatini 🇸🇿", 4),
+            ],
+        },
+        {
+            "game": "Globle",
+            "day": "294",
+            "emoji": "🌍",
+            "url": "https://globle-game.com",
+            "pos": [
+                (1, "Globle", 286213405, "sofia", 2),
+                (2, "Globle", 61260596, "Moreno", 5),
+                (3, "Globle", 198379603, "Mario", 5),
+            ],
+        },
+        {
+            "game": "WhereTaken",
+            "day": "211",
+            "emoji": "📸",
+            "url": "http://wheretaken.teuteuf.fr",
+            "pos": [
+                (1, "WhereTaken", 286213405, "sofia", 3),
+                (2, "WhereTaken", 542430195, "Lord Davide eSwatini 🇸🇿", 4),
+                (3, "WhereTaken", 198379603, "Mario", 6),
+            ],
+        },
+        {
+            "game": "Cloudle",
+            "day": "543",
+            "emoji": "🌦️",
+            "url": "https://cloudle.app",
+            "pos": [
+                (1, "Cloudle", 542430195, "Lord Davide eSwatini 🇸🇿", 4),
+                (2, "Cloudle", 286213405, "sofia", 5),
+                (3, "Cloudle", 31866384, "Lara", 6),
+            ],
+        },
+        {
+            "game": "GuessTheGame",
+            "day": "499",
+            "emoji": "🎮",
+            "url": "https://guessthe.game",
+            "pos": [
+                (1, "GuessTheGame", 286213405, "sofia", 2),
+                (2, "GuessTheGame", 456481297, "Trifase", 5),
+                (3, "GuessTheGame", 198379603, "Mario", 5),
+            ],
+        },
         None,
-
-        {'game': 'TimeGuesser', 'day': '135', 'emoji': '📅', 'url': 'https://timeguessr.com', 'pos': [(1, 'TimeGuesser', 286213405, 'sofia', 47262), (2, 'TimeGuesser', 542430195, 'Lord Davide eSwatini 🇸🇿', 44652), (3, 'TimeGuesser', 16337572, 'Jacopo', 33821)]},
-
-        {'game': 'Moviedle', 'day': '294', 'emoji': '🎥', 'url': 'https://moviedle.app', 'pos': [(1, 'Moviedle', 286213405, 'sofia', 2)]},
-
-        {'game': 'Picsey', 'day': '100', 'emoji': '🪟', 'url': 'https://picsey.io', 'pos': [(1, 'Picsey', 542430195, 'Lord Davide eSwatini 🇸🇿', 96), (2, 'Picsey', 456481297, 'Trifase', 88), (3, 'Picsey', 16337572, 'Jacopo', 63)]},
-
-        {'game': 'Murdle', 'day': '95', 'emoji': '🔪', 'url': 'https://murdle.com', 'pos': [(1, 'Murdle', 286213405, 'sofia', '1:32'), (2, 'Murdle', 456481297, 'Trifase', '1:49'), (3, 'Murdle', 542430195, 'Lord Davide eSwatini 🇸🇿', '3:38')]},
-
-        {'game': 'Nerdle', 'day': '614', 'emoji': '🤓', 'url': 'https://nerdlegame.com', 'pos': [(1, 'Nerdle', 286213405, 'sofia', 3), (2, 'Nerdle', 542430195, 'Lord Davide eSwatini 🇸🇿', 3)]}
+        {
+            "game": "TimeGuesser",
+            "day": "135",
+            "emoji": "📅",
+            "url": "https://timeguessr.com",
+            "pos": [
+                (1, "TimeGuesser", 286213405, "sofia", 47262),
+                (2, "TimeGuesser", 542430195, "Lord Davide eSwatini 🇸🇿", 44652),
+                (3, "TimeGuesser", 16337572, "Jacopo", 33821),
+            ],
+        },
+        {
+            "game": "Moviedle",
+            "day": "294",
+            "emoji": "🎥",
+            "url": "https://moviedle.app",
+            "pos": [(1, "Moviedle", 286213405, "sofia", 2)],
+        },
+        {
+            "game": "Picsey",
+            "day": "100",
+            "emoji": "🪟",
+            "url": "https://picsey.io",
+            "pos": [
+                (1, "Picsey", 542430195, "Lord Davide eSwatini 🇸🇿", 96),
+                (2, "Picsey", 456481297, "Trifase", 88),
+                (3, "Picsey", 16337572, "Jacopo", 63),
+            ],
+        },
+        {
+            "game": "Murdle",
+            "day": "95",
+            "emoji": "🔪",
+            "url": "https://murdle.com",
+            "pos": [
+                (1, "Murdle", 286213405, "sofia", "1:32"),
+                (2, "Murdle", 456481297, "Trifase", "1:49"),
+                (3, "Murdle", 542430195, "Lord Davide eSwatini 🇸🇿", "3:38"),
+            ],
+        },
+        {
+            "game": "Nerdle",
+            "day": "614",
+            "emoji": "🤓",
+            "url": "https://nerdlegame.com",
+            "pos": [(1, "Nerdle", 286213405, "sofia", 3), (2, "Nerdle", 542430195, "Lord Davide eSwatini 🇸🇿", 3)],
+        },
     ]
 
     final = {}
@@ -255,52 +437,61 @@ def new_classifica():
     for game in classifica:
         if game is None:
             continue
-        for pos in game['pos']:
+        for pos in game["pos"]:
             # 0 = posizione
             # 1 = game
             # 2 = user_id
             # 3 = nickname
             # 4 = punteggio
             if pos[2] not in final:
-                final[pos[2]] = {'nickname': pos[3], 'gold': 0, 'silver': 0, 'bronze': 0, 'total': 0}
+                final[pos[2]] = {"nickname": pos[3], "gold": 0, "silver": 0, "bronze": 0, "total": 0}
             if pos[0] == 1:
-                final[pos[2]]['gold'] += 1
+                final[pos[2]]["gold"] += 1
             elif pos[0] == 2:
-                final[pos[2]]['silver'] += 1
+                final[pos[2]]["silver"] += 1
             elif pos[0] == 3:
-                final[pos[2]]['bronze'] += 1
-            final[pos[2]]['total'] += 1
+                final[pos[2]]["bronze"] += 1
+            final[pos[2]]["total"] += 1
     import pprint
+
     pprint.pprint(final)
-    classifica_users = sorted(final.items(), key=lambda x: x[1]['total'], reverse=True)
+    classifica_users = sorted(final.items(), key=lambda x: x[1]["total"], reverse=True)
     pprint.pprint(classifica_users)
 
     for user in classifica_users:
-        print(f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n")
+        print(
+            f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n"
+        )
+
 
 def medaglie_count(monthly=True) -> None:
     first_of_the_month = datetime.date.today().replace(day=1)
-    message = 'Classifica mensile delle medaglie:\n\n'
+    message = "Classifica mensile delle medaglie:\n\n"
     if not monthly:
         first_of_the_month = datetime.date(2020, 1, 1)
-        message = 'Classifica totale delle medaglie:\n\n'
+        message = "Classifica totale delle medaglie:\n\n"
     # Select user_name, medal, count(medal) from medaglie group by user_name, medal
-    query = (Medaglia
-             .select(Medaglia.user_name, 
-                     peewee.fn.SUM(Medaglia.gold).alias('gold'),
-                     peewee.fn.SUM(Medaglia.silver).alias('silver'),
-                     peewee.fn.SUM(Medaglia.bronze).alias('bronze'))
-             .where(Medaglia.date >= first_of_the_month)
-             .group_by(Medaglia.user_name)
-             .order_by(peewee.fn.SUM(Medaglia.gold).alias('gold').desc(),
-                     peewee.fn.SUM(Medaglia.silver).alias('silver').desc(),
-                     peewee.fn.SUM(Medaglia.bronze).alias('bronze').desc())
-             .limit(10))
+    query = (
+        Medaglia.select(
+            Medaglia.user_name,
+            peewee.fn.SUM(Medaglia.gold).alias("gold"),
+            peewee.fn.SUM(Medaglia.silver).alias("silver"),
+            peewee.fn.SUM(Medaglia.bronze).alias("bronze"),
+        )
+        .where(Medaglia.date >= first_of_the_month)
+        .group_by(Medaglia.user_name)
+        .order_by(
+            peewee.fn.SUM(Medaglia.gold).alias("gold").desc(),
+            peewee.fn.SUM(Medaglia.silver).alias("silver").desc(),
+            peewee.fn.SUM(Medaglia.bronze).alias("bronze").desc(),
+        )
+        .limit(10)
+    )
 
     if not query:
-        message += 'Non ci sono ancora medaglie questo mese.'
+        message += "Non ci sono ancora medaglie questo mese."
         return message
-    
+
     for q in query:
         message += f"{q.user_name} ({int(q.gold or 0)}/{int(q.silver or 0)}/{int(q.bronze or 0)}):\n{int(q.gold or 0)*MEDALS[1][:-1]}{int(q.silver or 0)*MEDALS[2][:-1]}{int(q.bronze or 0)*MEDALS[3][:-1]}\n"
     return message
