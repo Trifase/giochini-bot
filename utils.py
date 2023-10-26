@@ -13,6 +13,7 @@ class Classifica:
     game: str = ''
     day: str = ''
     date: datetime.date = None
+    emoji: str = ''
     pos: list[tuple[str, str]] = []
     valid: bool = True
     header: str = ''
