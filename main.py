@@ -233,7 +233,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
                 user_id_found = True
                 classifica += f"...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n"
 
-    print(class_ifica)
+    # print(class_ifica)
     if data:
         return classifica_data
     else:
