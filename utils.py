@@ -6,6 +6,17 @@ from telegram.ext.filters import MessageFilter
 
 from config import GAMES, MEDALS, Medaglia, Punteggio
 
+from dataclassy import dataclass
+
+@dataclass
+class Classifica:
+    game: str = ''
+    day: str = ''
+    date: datetime.date = None
+    emoji: str = ''
+    pos: list[tuple[str, str]] = []
+    valid: bool = True
+    header: str = ''
 
 class GameFilter(MessageFilter):
     def filter(self, message):

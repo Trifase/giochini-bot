@@ -53,6 +53,7 @@ from utils import (
     personal_stats,
     process_tries,
     streak_at_day,
+    Classifica,
 )
 
 # Logging setup
@@ -186,6 +187,13 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
         classifica_data["url"] = url
         classifica_data["pos"] = []
 
+    class_ifica = Classifica()
+    class_ifica.game = game
+    class_ifica.day = day
+    class_ifica.date = datetime.date.today()
+    class_ifica.emoji = emoji
+    class_ifica.header = f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>'
+
     classifica = ""
     classifica += f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>\n'
 
@@ -196,9 +204,13 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
             user_id_found = True
 
         classifica += f'{MEDALS.get(posto, "")}{punteggio.user_name} ({punteggio.tries})\n'
+        class_ifica.pos.append((posto, punteggio.user_name, punteggio.tries))
+
 
         if data:
             classifica_data["pos"].append((posto, game, punteggio.user_id, punteggio.user_name, punteggio.tries))
+    if len(class_ifica.pos) < 3:
+        class_ifica.valid = False
 
     # At this point, if the user is not found in the first LIMIT positions, we search deeper in the db
     if user_id and not user_id_found:
@@ -221,6 +233,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
                 user_id_found = True
                 classifica += f"...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n"
 
+    print(class_ifica)
     if data:
         return classifica_data
     else:
