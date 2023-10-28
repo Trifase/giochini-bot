@@ -169,8 +169,8 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
             Punteggio.day == day,
             Punteggio.game == game,
             Punteggio.chat_id == chat_id,
-            # TODO this should be changed according to https://github.com/coleifer/peewee/issues/612#issuecomment-468029502 to mitigate Ruff bitching
-            Punteggio.lost == False,
+            # https://github.com/coleifer/peewee/issues/612#issuecomment-468029502
+            Punteggio.lost.is_null(True),
         )
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         .limit(limit)
@@ -206,7 +206,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
                 Punteggio.day == day,
                 Punteggio.game == game,
                 Punteggio.chat_id == chat_id,
-                Punteggio.lost == False,
+                Punteggio.lost.is_null(True),
             )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         )
@@ -606,7 +606,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
                 Punteggio.game == game,
                 # Punteggio.chat_id == update.effective_chat.id)
                 Punteggio.chat_id == ID_GIOCHINI,
-                Punteggio.lost == False,
+                Punteggio.lost.is_null(True),
             )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
@@ -704,7 +704,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                 Punteggio.day == day,
                 Punteggio.game == game,
                 Punteggio.chat_id == ID_GIOCHINI,
-                Punteggio.lost == False,
+                Punteggio.lost.is_null(True),
             )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
@@ -727,7 +727,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                     Punteggio.day == day,
                     Punteggio.game == game,
                     Punteggio.chat_id == ID_GIOCHINI,
-                    Punteggio.lost == False,
+                    Punteggio.lost.is_null(True),
                 )
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
                 .limit(3)

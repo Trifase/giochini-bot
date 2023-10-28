@@ -162,7 +162,7 @@ def streak_at_day(user_id, game, day) -> int:
         .where(
             Punteggio.user_id == int(user_id),
             Punteggio.game == game,
-            Punteggio.lost == False,
+            Punteggio.lost.is_null(True),
         )
         .order_by(Punteggio.day.desc())
     )
@@ -256,7 +256,7 @@ def personal_stats(user_id: int) -> str:
     # giocate perse totali
     total_loses = (
         Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_id == user_id, Punteggio.lost == True,)
+        .where(Punteggio.user_id == user_id, Punteggio.lost.is_null(False),)
         .scalar()
     )
     if total_loses:
