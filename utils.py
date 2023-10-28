@@ -56,6 +56,9 @@ class GameFilter(MessageFilter):
         if "Murdle for" in message.text and ("❌" in message.text or "✅" in message.text) and "🔪" in message.text:
             return True
 
+        if "#Angle" in message.text and ("⬇️" in message.text or "⬆️" in message.text or "🎉" in message.text):
+            return True
+
         return False
 
 
@@ -162,7 +165,7 @@ def streak_at_day(user_id, game, day) -> int:
         .where(
             Punteggio.user_id == int(user_id),
             Punteggio.game == game,
-            Punteggio.lost.is_null(True),
+            Punteggio.lost == False,
         )
         .order_by(Punteggio.day.desc())
     )
@@ -256,7 +259,7 @@ def personal_stats(user_id: int) -> str:
     # giocate perse totali
     total_loses = (
         Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_id == user_id, Punteggio.lost.is_null(False),)
+        .where(Punteggio.user_id == user_id, Punteggio.lost == True ,)
         .scalar()
     )
     if total_loses:

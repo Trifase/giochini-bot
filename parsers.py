@@ -317,10 +317,37 @@ def metazooa(text: str) -> dict:
     lines = text.splitlines()
     result["name"] = "Metazooa"
     result["timestamp"] = int(time.time())
-    # Globle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+    # metazoa doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result["day"] = lines[0].split()[2][1:]
     if "stumped" in lines[1]:
         result["tries"] = "X"
     else:
         result["tries"] = lines[1].split()[-2]
     return result
+
+def metaflora(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Metaflora"
+    result["timestamp"] = int(time.time())
+    # metazoa doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+    result["day"] = lines[0].split()[2][1:]
+    if "stumped" in lines[1]:
+        result["tries"] = "X"
+    else:
+        result["tries"] = lines[1].split()[-2]
+    return result
+
+def angle(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Angle"
+    result["timestamp"] = int(time.time())
+    result["day"] = lines[0].split()[1][1:]
+    points = lines[0].split()[-1].split("/")[0]
+    if points == 'X':
+        result["tries"] = 'X'
+    else:
+        result["tries"] = points
+    return result
+

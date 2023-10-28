@@ -42,6 +42,8 @@ from parsers import (
     wordle,
     worldle,
     metazooa,
+    metaflora,
+    angle,
 )
 from utils import (
     GameFilter,
@@ -152,12 +154,19 @@ def parse_results(text: str) -> dict:
 
     elif "Animal" in lines[0] and "#metazooa" in lines[-1]:
         return metazooa(text)
+
+    elif "Plant" in lines[0] and "#metaflora" in lines[-1]:
+        return metaflora(text)
+    
+    elif 'Angle' in lines[0]:
+
+        return angle(text)
     return None
 
 
 def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True) -> str:
     day = day or get_day_from_date(game, datetime.date.today())
-
+    # print(f"Making classifica for {game} #{day}")
     emoji = GAMES[game]["emoji"]
     url = GAMES[game]["url"]
 
@@ -170,7 +179,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
             Punteggio.game == game,
             Punteggio.chat_id == chat_id,
             # https://github.com/coleifer/peewee/issues/612#issuecomment-468029502
-            Punteggio.lost.is_null(True),
+            Punteggio.lost == False,
         )
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         .limit(limit)
@@ -178,6 +187,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
 
     if not query:
         return None
+
 
     classifica = Classifica()
     classifica.game = game
@@ -205,7 +215,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
                 Punteggio.day == day,
                 Punteggio.game == game,
                 Punteggio.chat_id == chat_id,
-                Punteggio.lost.is_null(True),
+                Punteggio.lost == False,
             )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         )
@@ -256,6 +266,7 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
     data = query.data
     if data == "cls_do_nothing":
         return
+
     _, game, message_id, day = data.split("_")
 
     classifica_text = make_single_classifica(
@@ -605,7 +616,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
                 Punteggio.game == game,
                 # Punteggio.chat_id == update.effective_chat.id)
                 Punteggio.chat_id == ID_GIOCHINI,
-                Punteggio.lost.is_null(True),
+                Punteggio.lost == False,
             )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
@@ -703,7 +714,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                 Punteggio.day == day,
                 Punteggio.game == game,
                 Punteggio.chat_id == ID_GIOCHINI,
-                Punteggio.lost.is_null(True),
+                Punteggio.lost == False,
             )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
@@ -726,7 +737,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                     Punteggio.day == day,
                     Punteggio.game == game,
                     Punteggio.chat_id == ID_GIOCHINI,
-                    Punteggio.lost.is_null(True),
+                    Punteggio.lost == False,
                 )
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
                 .limit(3)
