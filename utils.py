@@ -17,6 +17,26 @@ class Classifica:
     pos: list[tuple[str, str]] = []
     valid: bool = True
     header: str = ''
+    last: str = ''
+
+    # def __repr__(self):
+    #     classifica = ''
+    #     classifica += self.header + '\n'
+    #     for posto, username, tries in self.pos:
+    #         classifica += f'{MEDALS.get(posto, "")}{username} ({tries})\n'
+    #     if self.last:
+    #         classifica += f'{self.last}'
+    #     return classifica
+    
+    def to_string(self) -> str:
+        classifica = ''
+        classifica += self.header + '\n'
+        for posto, username, tries in self.pos:
+            classifica += f'{MEDALS.get(posto, "")}{username} ({tries})\n'
+        if self.last:
+            classifica += f'{self.last}'
+        return classifica
+
 
 class GameFilter(MessageFilter):
     def filter(self, message):
@@ -142,8 +162,7 @@ def streak_at_day(user_id, game, day) -> int:
         .where(
             Punteggio.user_id == int(user_id),
             Punteggio.game == game,
-            Punteggio.tries != 999,
-            Punteggio.tries != 9999999,
+            Punteggio.lost == False,
         )
         .order_by(Punteggio.day.desc())
     )
@@ -237,7 +256,7 @@ def personal_stats(user_id: int) -> str:
     # giocate perse totali
     total_loses = (
         Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_id == user_id, (Punteggio.tries == 999) | (Punteggio.tries == 9999999))
+        .where(Punteggio.user_id == user_id, Punteggio.lost == True,)
         .scalar()
     )
     if total_loses:
