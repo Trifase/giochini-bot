@@ -194,7 +194,6 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
 
         classifica.pos.append((posto, punteggio.user_name, punteggio.tries))
 
-
     if len(classifica.pos) < 3:
         classifica.valid = False
 
