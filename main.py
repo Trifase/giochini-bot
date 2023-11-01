@@ -695,11 +695,14 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     today = datetime.date.today()
 
     # Score Calculation models:
-    # standard: standard calculation model: 3 points to the first, 2 points to the second and 1 point to the third
-    # alternate: Alternate calculation model: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
-    #           If a game has 7 plays, the first gets 7 points, the second 6 and so on
+    # standard: standard calculation model: 3 points to the first, 2 points to the second and 1 point to the third, no matter how many plays there are.
+    # 
+    # alternate: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
+    #           It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
+    #           BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
+    # 
     # skip-empty: same as the standard, but games with less than limit plays (default: 3) are not counted at all
-    model = 'standard'
+    model = 'alternate'
     if '-skip-empty' in context.args:
         model = 'skip-empty'
     elif '-alternate' in context.args:
