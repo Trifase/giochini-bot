@@ -19,7 +19,9 @@ from telegram.ext import (
     filters,
 )
 
-from config import ADMIN_ID, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Medaglia, Punteggio, Punti
+import traceback
+
+from config import ADMIN_ID, ID_BOTCENTRAL, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Medaglia, Punteggio, Punti
 from parsers import (
     cloudle,
     connections,
@@ -254,6 +256,13 @@ def make_games_classifica(days: int = 0) -> str:
 
     return classifica
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_string = "".join(tb_list)
+
+    await context.bot.send_message(
+        chat_id=ID_BOTCENTRAL, text=f'<pre><code class="language-python">{tb_string[:4000]}</code></pre>', parse_mode="HTML"
+    )
 
 async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -609,23 +618,45 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     for game in GAMES.keys():
         day = get_day_from_date(game, yesterday)
 
-        query = (
+        # OLD STANDARD MODEL
+        # query = (
+        #     Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+        #     .where(
+        #         Punteggio.day == day,
+        #         Punteggio.game == game,
+        #         # Punteggio.chat_id == update.effective_chat.id)
+        #         Punteggio.chat_id == ID_GIOCHINI,
+        #         Punteggio.lost == False,
+        #     )
+        #     .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+        #     .limit(3)
+        # )
+
+        # for i in range(len(query)):
+        #     try:
+        #         name = f"{query[i].user_id}_|_{query[i].user_name}"
+        #         points[name] += 3 - i
+        #     except IndexError:
+        #         pass
+
+        # ALTERNATE MODEL
+        # This include lost plays, that we filter out when we assign points.
+        query_alternate = (
             Punteggio.select(Punteggio.user_name, Punteggio.user_id)
             .where(
                 Punteggio.day == day,
                 Punteggio.game == game,
-                # Punteggio.chat_id == update.effective_chat.id)
                 Punteggio.chat_id == ID_GIOCHINI,
                 Punteggio.lost == False,
             )
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
         )
-
-        for i in range(len(query)):
+        for i in range(len(query_alternate)):
             try:
-                name = f"{query[i].user_id}_|_{query[i].user_name}"
-                points[name] += 3 - i
+                if not query_alternate[i].lost:
+                    name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+                    points[name] += len(query_alternate) - i
             except IndexError:
                 pass
 
@@ -867,6 +898,9 @@ def main():
     app.add_handler(CommandHandler("topgames", top_games), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r"^cls_"))
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
+
+    # Error handler
+    app.add_error_handler(error_handler)
 
     app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
 
