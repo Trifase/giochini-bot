@@ -351,3 +351,13 @@ def angle(text: str) -> dict:
         result["tries"] = points
     return result
 
+def tempoindovinr(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "TempoIndovinr"
+    result["timestamp"] = int(time.time())
+    result["day"] = lines[0].split()[-1]
+    points = lines[1].split()[2].split('/')[0]
+    result["tries"] = 1_000 - int(points)
+    return result
+

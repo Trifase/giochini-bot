@@ -2,6 +2,7 @@ import datetime
 import logging
 import sys
 import time
+import traceback
 import zipfile
 from collections import defaultdict
 
@@ -19,10 +20,21 @@ from telegram.ext import (
     filters,
 )
 
-import traceback
-
-from config import ADMIN_ID, ID_BOTCENTRAL, BACKUP_DEST, GAMES, ID_GIOCHINI, ID_TESTING, MEDALS, TOKEN, Medaglia, Punteggio, Punti
+from config import (
+    ADMIN_ID,
+    BACKUP_DEST,
+    GAMES,
+    ID_BOTCENTRAL,
+    ID_GIOCHINI,
+    ID_TESTING,
+    MEDALS,
+    TOKEN,
+    Medaglia,
+    Punteggio,
+    Punti,
+)
 from parsers import (
+    angle,
     cloudle,
     connections,
     contexto,
@@ -31,23 +43,24 @@ from parsers import (
     globle,
     guessthegame,
     highfive,
+    metaflora,
+    metazooa,
     moviedle,
     murdle,
     nerdle,
     parole2,
     picsey,
     squareword,
+    tempoindovinr,
     timeguesser,
     tradle,
     waffle,
     wheretaken,
     wordle,
     worldle,
-    metazooa,
-    metaflora,
-    angle,
 )
 from utils import (
+    Classifica,
     GameFilter,
     correct_name,
     get_day_from_date,
@@ -57,7 +70,6 @@ from utils import (
     personal_stats,
     process_tries,
     streak_at_day,
-    Classifica,
 )
 
 # Logging setup
@@ -161,8 +173,10 @@ def parse_results(text: str) -> dict:
         return metaflora(text)
     
     elif 'Angle' in lines[0]:
-
         return angle(text)
+    
+    elif 'experiments/tempoindovinr/' in lines[-1]:
+        return tempoindovinr(text)
     return None
 
 
