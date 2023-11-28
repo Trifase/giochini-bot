@@ -221,7 +221,7 @@ def personal_stats(user_id: int) -> str:
     )
     long_streak = long_streak_query[0].streak
     long_streak_game = long_streak_query[0].game
-    long_streak_string = f"Lo streak più lungo è di {long_streak} giocate di fila a {long_streak_game}.\n"
+    long_streak_string = f"Il tuo streak più lungo è di <b>{long_streak}</b> partite a <b>{long_streak_game}.</b>\n"
 
     # gioco più giocato
     most_played_query = (
@@ -233,7 +233,7 @@ def personal_stats(user_id: int) -> str:
     )
     most_played = most_played_query[0].game
     most_played_count = most_played_query[0].c
-    most_played_string = f"Il gioco a cui hai giocato di più è {most_played} con {most_played_count} partite!\n"
+    most_played_string = f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
 
     # gioco meno giocato
     least_played_query = (
@@ -246,7 +246,7 @@ def personal_stats(user_id: int) -> str:
     least_played = least_played_query[0].game
     least_played_count = least_played_query[0].c
     least_played_string = (
-        f"Il gioco che invece ti fa cagare di più è {least_played}, hai giocato solo {least_played_count} volte.\n"
+        f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
     )
 
     # giocate totali
@@ -258,7 +258,7 @@ def personal_stats(user_id: int) -> str:
     single_play_minutes = 2
     total_time = total_plays * single_play_minutes
     duration = datetime.datetime.utcfromtimestamp(datetime.timedelta(minutes=total_time).total_seconds())
-    total_plays_string = f"In totale hai fatto {total_plays} partite. A 2 minuti a partita, hai sprecato {duration.strftime('%H ore e %M minuti')} della tua vita.\n"
+    total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{duration.strftime('%H ore e %M minuti')}</b> della tua vita.\n"
 
     # giocate perse totali
     total_loses = (
@@ -267,7 +267,7 @@ def personal_stats(user_id: int) -> str:
         .scalar()
     )
     if total_loses:
-        total_loses_string = f"In totale, hai perso {total_loses} partite\n"
+        total_loses_string = f"In totale, hai perso <b>{total_loses}</b> partite.\n"
 
     result = intro + long_streak_string + most_played_string + least_played_string + total_plays_string
     if total_loses:

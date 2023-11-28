@@ -314,21 +314,33 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    giochi = [f"<code>{x}</code>" for x in GAMES.keys()]
-    giochi = " · ".join(giochi)
+    # giochi = [f"<code>{x}</code>" for x in GAMES.keys()]
+    # giochi = " · ".join(giochi)
     message = [
         "Questo bot parsa automaticamente i punteggi dei giochi giornalieri, fa una classifica giornaliera e una classifica dei migliori player.",
         "",
-        f"I giochi disponibili sono:\n {giochi}",
+        "Ogni giorno vengono assegnati punti ai primi tre giocatori di ogni gioco (3 punti al primo, 2 al secondo e 1 al terzo).",
+        "Se un gioco ha meno di tre giocatori, vengono assegnati punti solo ai giocatori presenti, in modo proporzionale.",
+        "Alle tre persone con più punti vengono assegnate le medaglie d'oro, d'argento e di bronzo.",
+        "",
+        # f"I giochi disponibili sono:\n {giochi}",
         "",
         "📚 <b>Lista dei comandi</b> 📚",
         "",
-        "📌 /classifica - Mostra la classifica di tutti i giochi",
-        "📌 /classifica <i>[gioco]</i> - Mostra la classifica di un gioco, ad esempio: <code>/classifica wordle</code>",
+        "📌 /c o classifica - Mostra la classifica di tutti i giochi",
+        "📌 /c <i>[gioco]</i> - Mostra la classifica di un gioco, ad esempio: <code>/c wordle</code>",
         "",
-        "📌 /top - Mostra i migliori player - aggiornato ogni mezzanotte",
         "📌 /mytoday - Mostra i giochi a cui non hai ancora giocato oggi",
-        "📌 /lista - Manda la lista di tutti i giochi supportati",
+        "📌 /dailyranking - Mostra i punti del giorno corrente",
+        "📌 /medaglie - Mostra il medagliere mensile",
+        "",
+        "📌 /top - Mostra la classifica punteggi all time",
+        "📌 /top_medaglie - Mostra il medagliere all time",
+        "",
+        "📌 /mystats - Mostra le tue statistiche",
+        "📌 /top_games - Mostra i giochi più giocati",
+        "📌 /lista - Mostra la lista di tutti i giochi supportati",
+        "",
         "📌 /help - Mostra questo messaggio",
     ]
     message_text = "\n".join(message)
