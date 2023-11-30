@@ -361,3 +361,20 @@ def tempoindovinr(text: str) -> dict:
     result["tries"] = 1_000 - int(points)
     return result
 
+def travle(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Travle"
+    result["timestamp"] = int(time.time())
+    first_line = lines[0].split()
+    result["day"] = first_line[1][1:]
+    tries = first_line[2].split("/")[0][1:]
+    if tries == '?':
+        result["tries"] = 'X'
+    else:
+        hints = 0
+        if len(first_line) > 3:
+            hints = first_line[3][1:]
+        result["tries"] = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2)) # +1, +2, +3 (triangulars)
+    return result
+

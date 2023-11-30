@@ -43,7 +43,7 @@ class GameFilter(MessageFilter):
         if not message.text:
             return False
 
-        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣"]
+        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅"]
 
         # Se ha qualche emoji colorata, probabilmente è un messaggio di un gioco
         if any(c in message.text for c in quadratini):
@@ -57,6 +57,9 @@ class GameFilter(MessageFilter):
             return True
 
         if "#Angle" in message.text and ("⬇️" in message.text or "⬆️" in message.text or "🎉" in message.text):
+            return True
+        
+        if "#travle" in message.text and 'https://imois.in/games/travle' in message.text:
             return True
 
         return False

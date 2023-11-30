@@ -54,6 +54,7 @@ from parsers import (
     tempoindovinr,
     timeguesser,
     tradle,
+    travle,
     waffle,
     wheretaken,
     wordle,
@@ -177,6 +178,9 @@ def parse_results(text: str) -> dict:
     
     elif 'experiments/tempoindovinr/' in lines[-1]:
         return tempoindovinr(text)
+    
+    elif '#travle' in lines[0] and 'imois.in' in lines[-1]:
+        return travle(text)
     return None
 
 
