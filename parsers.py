@@ -378,3 +378,17 @@ def travle(text: str) -> dict:
         result["tries"] = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2)) # +1, +2, +3 (triangulars)
     return result
 
+def nerdlecross(text: str) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "NerdleCross"
+    result["timestamp"] = int(time.time())
+    first_line = lines[0].split()
+    result["day"] = first_line[-1][1:]
+    points = lines[-1].split(":")[-1].split('/')[0].strip()
+    # Nerdle Cross uses positive poits, from 0 to 6. We as usual save 6-n and then revert it when printing the results.
+    result["tries"] = 6 - int(points)
+    if result["tries"] == 0:
+        result["tries"] = 'X'
+    return result
+

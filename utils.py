@@ -59,7 +59,7 @@ class GameFilter(MessageFilter):
         if "#Angle" in message.text and ("⬇️" in message.text or "⬆️" in message.text or "🎉" in message.text):
             return True
         
-        if "#travle" in message.text and 'https://imois.in/games/travle' in message.text:
+        if "#travle " in message.text and 'https://imois.in/games/travle' in message.text:
             return True
 
         return False
@@ -143,6 +143,10 @@ def process_tries(game: str, tries: int | str) -> int | str:
     # So, murdle points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
     if game == "Murdle":
         tries = str(tries)[:-2] + ":" + str(tries)[-2:]
+
+    # For NerdleCross, scores are points, the more the better. Max points is 6 so we save them as differences from max.
+    if game == 'NerdleCross':
+        tries = 6 - tries
     return tries
 
 

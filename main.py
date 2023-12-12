@@ -48,6 +48,7 @@ from parsers import (
     moviedle,
     murdle,
     nerdle,
+    nerdlecross,
     parole2,
     picsey,
     squareword,
@@ -181,6 +182,9 @@ def parse_results(text: str) -> dict:
     
     elif '#travle' in lines[0] and 'imois.in' in lines[-1]:
         return travle(text)
+
+    elif 'cross nerdle #' in lines[0] and '@nerdlegame' in lines[-1]:
+        return nerdlecross(text)
     return None
 
 
