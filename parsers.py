@@ -386,9 +386,10 @@ def nerdlecross(text: str) -> dict:
     first_line = lines[0].split()
     result["day"] = first_line[-1][1:]
     points = lines[-1].split(":")[-1].split('/')[0].strip()
+
     # Nerdle Cross uses positive poits, from 0 to 6. We as usual save 6-n and then revert it when printing the results.
     result["tries"] = 6 - int(points)
-    if result["tries"] == 0:
+    if result["tries"] == 6:
         result["tries"] = 'X'
     return result
 

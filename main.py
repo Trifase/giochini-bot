@@ -1,6 +1,7 @@
 import datetime
 import logging
 import sys
+import json
 import time
 import traceback
 import zipfile
@@ -8,7 +9,7 @@ from collections import defaultdict
 
 import peewee
 import pytz
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -32,6 +33,7 @@ from config import (
     Medaglia,
     Punteggio,
     Punti,
+    Setting,
 )
 from parsers import (
     angle,
@@ -277,6 +279,77 @@ def make_games_classifica(days: int = 0) -> str:
         classifica += f"[{record.count}] {record.game}\n"
 
     return classifica
+
+def make_menu_setting_favs(favs: list, user_id: str, row_length: int = 2) -> InlineKeyboardMarkup:
+    keyboard = []
+    games = [x for x in GAMES.keys()]
+    games = sorted(games)
+    for game in games:
+        if game not in favs:
+            keyboard.append(InlineKeyboardButton(game, callback_data=f"favs_add_{game}_{user_id}"))
+        else:
+            keyboard.append(InlineKeyboardButton(f"⭐ {game}", callback_data=f"favs_del_{game}_{user_id}"))
+    columns = [keyboard[i : i + row_length] for i in range(0, len(keyboard), row_length)]
+    columns.append([InlineKeyboardButton("Fine", callback_data=f"fav_close_{user_id}")])
+    return columns
+
+async def fav_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data['settings']
+    user_id = str(update.effective_user.id)
+
+    favs = settings[user_id]['favs']
+    game = update.callback_query.data.split("_")[2]
+    target_uid = update.callback_query.data.split("_")[3]
+    if user_id != target_uid:
+        return
+    if game not in favs:
+        favs.append(game)
+    json.dump(settings, open("db/user_settings.json", "w"), indent=4)
+    keyboard = make_menu_setting_favs(favs, user_id)
+    reply_keyboard = InlineKeyboardMarkup(keyboard)
+    await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
+
+async def fav_del(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data['settings']
+    user_id = str(update.effective_user.id)
+
+    favs = settings[user_id]['favs']
+    game = update.callback_query.data.split("_")[2]
+    target_uid = update.callback_query.data.split("_")[3]
+    if user_id != target_uid:
+        return
+    if game in favs:
+        favs.remove(game)
+    json.dump(settings, open("db/user_settings.json", "w"), indent=4)
+    keyboard = make_menu_setting_favs(favs, user_id)
+    reply_keyboard = InlineKeyboardMarkup(keyboard)
+    await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
+
+async def fav_close(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = str(update.effective_user.id)
+    target_uid = update.callback_query.data.split("_")[2]
+    if user_id != target_uid:
+        return
+    await update.effective_message.delete()
+
+async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # with open("db/user_settings.json") as settings_db:
+    #     settings = json.load(settings_db)
+    settings = context.bot_data['settings']
+    user_id = str(update.effective_user.id)
+
+    if user_id not in settings:
+        settings[user_id] = {}
+
+    if 'favs' not in settings[user_id]:
+        settings[user_id]['favs'] = []
+
+    favs = settings[user_id]['favs']
+    # json.dump(settings, open("db/user_settings.json", "w"), indent=4)
+    keyboard = make_menu_setting_favs(favs, user_id)
+    reply_keyboard = InlineKeyboardMarkup(keyboard)
+    await update.effective_message.reply_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
+    return
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
@@ -894,6 +967,15 @@ async def post_init(app: Application) -> None:
     Punteggio.create_table()
     Punti.create_table()
     Medaglia.create_table()
+    # Setting.create_table()
+
+    # Recupero i settings e li storo in memoria
+    if "settings" not in app.bot_data:
+        app.bot_data["settings"] = {}
+
+    with open("db/user_settings.json") as settings_db:
+        settings = json.load(settings_db)
+        app.bot_data["settings"] = settings
     logger.info("Pronti!")
 
 
@@ -929,8 +1011,13 @@ def main():
     app.add_handler(CommandHandler("top_medaglie", top_medaglie), 1)
     app.add_handler(CommandHandler("medaglie", medaglie_mensile), 1)
 
+    app.add_handler(CommandHandler("favs", setting_fav), 3)
+
     app.add_handler(CommandHandler("topgames", top_games), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r"^cls_"))
+    app.add_handler(CallbackQueryHandler(fav_add, pattern=r"^favs_add_"))
+    app.add_handler(CallbackQueryHandler(fav_del, pattern=r"^favs_del_"))
+    app.add_handler(CallbackQueryHandler(fav_close, pattern=r"^fav_close"))
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 
     # Error handler
