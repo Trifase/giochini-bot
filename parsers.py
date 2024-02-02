@@ -13,25 +13,25 @@ from utils import get_day_from_date, is_connection_completed, time_from_emoji
 # }
 
 
-def wordle(text: str) -> dict:
+def wordle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Wordle"
     first_line = lines[0].split()
     result["day"] = first_line[1]
     result["tries"] = first_line[2].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def worldle(text: str) -> dict:
+def worldle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Worldle"
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     result["tries"] = first_line[2].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
     cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))
     coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))
@@ -39,7 +39,7 @@ def worldle(text: str) -> dict:
     return result
 
 
-def parole(text: str) -> dict:
+def parole(text: str, timestamp: int = None) -> dict:
     # This is for https://pietroppeter.github.io/wordle-it/
     result = {}
     lines = text.splitlines()
@@ -47,11 +47,11 @@ def parole(text: str) -> dict:
     first_line = lines[0].split()
     result["day"] = first_line[1][2:]
     result["tries"] = first_line[2].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def parole2(text: str) -> dict:
+def parole2(text: str, timestamp: int = None) -> dict:
     # This is for https://par-le.github.io/gioco/
     result = {}
     lines = text.splitlines()
@@ -59,11 +59,11 @@ def parole2(text: str) -> dict:
     first_line = lines[0].split()
     result["day"] = first_line[1]
     result["tries"] = first_line[2].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def contexto(text: str) -> dict:
+def contexto(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Contexto"
@@ -77,26 +77,26 @@ def contexto(text: str) -> dict:
         result["tries"] = int(first_line[index - 1]) + (tips * 15)
     else:
         result["tries"] = first_line[-2]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def tradle(text: str) -> dict:
+def tradle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Tradle"
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     result["tries"] = first_line[2].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def guessthegame(text: str) -> dict:
+def guessthegame(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "GuessTheGame"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     punteggio = lines[2].replace(" ", "")
@@ -107,11 +107,11 @@ def guessthegame(text: str) -> dict:
     return result
 
 
-def globle(text: str) -> dict:
+def globle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Globle"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     # Globle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result["day"] = get_day_from_date("Globle", lines[0])
     for line in lines:
@@ -120,31 +120,31 @@ def globle(text: str) -> dict:
     return result
 
 
-def flagle(text: str) -> dict:
+def flagle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Flagle"
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     result["tries"] = first_line[2].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def wheretaken(text: str) -> dict:
+def wheretaken(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "WhereTaken"
     first_line = lines[0].split()
     result["day"] = first_line[2][1:]
     result["tries"] = first_line[3].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     # This is because emojis have hidden personalities
     result["stars"] = text.count(b"\xe2\xad\x90".decode("utf-8"))
     return result
 
 
-def waffle(text: str) -> dict:
+def waffle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Waffle"
@@ -152,13 +152,13 @@ def waffle(text: str) -> dict:
     result["day"] = first_line[0].replace("#waffle", "")
     punti = first_line[1].split("/")[0]
     result["tries"] = 15 - int(punti) if punti != "X" else "X"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     # This is because emojis have hidden personalities
     result["stars"] = text.count(b"\xe2\xad\x90".decode("utf-8"))
     return result
 
 
-def cloudle(text: str) -> dict:
+def cloudle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Cloudle"
@@ -166,26 +166,26 @@ def cloudle(text: str) -> dict:
     # Cloudle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result["day"] = get_day_from_date("Cloudle", datetime.date.today())
     result["tries"] = first_line[-1].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def highfive(text: str) -> dict:
+def highfive(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "HighFive"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     # HighFive doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result["day"] = get_day_from_date("HighFive", lines[-1])
     result["tries"] = str(0 - int(lines[0].split()[3]))
     return result
 
 
-def plotwords(text: str) -> dict:
+def plotwords(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Plotwords"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     tries, clues = lines[1].split()[-1].split("/")
@@ -193,11 +193,11 @@ def plotwords(text: str) -> dict:
     return result
 
 
-def framed(text: str) -> dict:
+def framed(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Framed"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     punteggio = lines[1].replace(" ", "")
@@ -208,22 +208,22 @@ def framed(text: str) -> dict:
     return result
 
 
-def timeguesser(text: str) -> dict:
+def timeguesser(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "TimeGuesser"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     result["tries"] = 50_000 - int(first_line[2].split("/")[0].replace(",", ""))
     return result
 
 
-def moviedle(text: str) -> dict:
+def moviedle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Moviedle"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     point_line = lines[2][3:]
     # Moviedle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
@@ -242,11 +242,11 @@ def moviedle(text: str) -> dict:
     return result
 
 
-def murdle(text: str) -> dict:
+def murdle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Murdle"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     day = lines[1].split()[-1]
     # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result["day"] = get_day_from_date("Murdle", day)
@@ -259,12 +259,12 @@ def murdle(text: str) -> dict:
     return result
 
 
-def connections(text: str) -> dict:
+def connections(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
 
     result["name"] = "Connections"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     result["day"] = lines[1].split()[-1][1:]
 
     points = lines[2:]
@@ -275,18 +275,18 @@ def connections(text: str) -> dict:
     return result
 
 
-def nerdle(text: str) -> dict:
+def nerdle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Nerdle"
     first_line = lines[0].split()
     result["day"] = first_line[1]
     result["tries"] = first_line[2].split("/")[0]
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
 
-def picsey(text: str) -> dict:
+def picsey(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     date = lines[0].split()[-1]
@@ -295,28 +295,28 @@ def picsey(text: str) -> dict:
     points = lines[2].split("p/")[0]
     # Picsey uses positive poits, from 0 to 100. We as usual save 100-n and then revert it when printing the results.
     result["tries"] = 100 - int(points)
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     if int(points) == 0:
         result["tries"] = "X"
     return result
 
 
-def squareword(text: str) -> dict:
+def squareword(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     first_line = lines[0].split()
     result["name"] = "Squareword"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     result["day"] = first_line[1][:-1]
     result["tries"] = first_line[2]
     return result
 
 
-def metazooa(text: str) -> dict:
+def metazooa(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Metazooa"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     # metazoa doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result["day"] = lines[0].split()[2][1:]
     if "stumped" in lines[1]:
@@ -325,11 +325,11 @@ def metazooa(text: str) -> dict:
         result["tries"] = lines[1].split()[-2]
     return result
 
-def metaflora(text: str) -> dict:
+def metaflora(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Metaflora"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     # metazoa doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
     result["day"] = lines[0].split()[2][1:]
     if "stumped" in lines[1]:
@@ -338,11 +338,11 @@ def metaflora(text: str) -> dict:
         result["tries"] = lines[1].split()[-2]
     return result
 
-def angle(text: str) -> dict:
+def angle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Angle"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     result["day"] = lines[0].split()[1][1:]
     points = lines[0].split()[-1].split("/")[0]
     if points == 'X':
@@ -351,21 +351,21 @@ def angle(text: str) -> dict:
         result["tries"] = points
     return result
 
-def tempoindovinr(text: str) -> dict:
+def tempoindovinr(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "TempoIndovinr"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     result["day"] = lines[0].split()[-1]
     points = lines[1].split()[2].split('/')[0]
     result["tries"] = 1_000 - int(points)
     return result
 
-def travle(text: str) -> dict:
+def travle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "Travle"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     tries = first_line[2].split("/")[0][1:]
@@ -378,11 +378,11 @@ def travle(text: str) -> dict:
         result["tries"] = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2)) # +1, +2, +3 (triangulars)
     return result
 
-def nerdlecross(text: str) -> dict:
+def nerdlecross(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "NerdleCross"
-    result["timestamp"] = int(time.time())
+    result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[-1][1:]
     points = lines[-1].split(":")[-1].split('/')[0].strip()

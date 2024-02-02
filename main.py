@@ -33,7 +33,6 @@ from config import (
     Medaglia,
     Punteggio,
     Punti,
-    Setting,
 )
 from parsers import (
     angle,
@@ -101,92 +100,92 @@ aps_logger.setLevel(logging.WARNING)
 giochini_results_filter = GameFilter()
 
 
-def parse_results(text: str) -> dict:
+def parse_results(text: str, timestamp: int = None) -> dict:
     lines = text.splitlines()
 
     if "Wordle" in lines[0]:
-        return wordle(text)
+        return wordle(text, timestamp)
 
     elif "Worldle" in lines[0]:
-        return worldle(text)
+        return worldle(text, timestamp)
 
     # elif 'Par🇮🇹le' in lines[0] and '°' in lines[0]:
-    #     return parole(text)
+    #     return parole(text, timestamp)
 
     elif "Par🇮🇹le" in lines[0]:
         if "°" not in lines[0]:
-            return parole2(text)
+            return parole2(text, timestamp)
         else:
             return "wrong_parole"
 
     elif "contexto.me" in lines[0]:
-        return contexto(text)
+        return contexto(text, timestamp)
 
     elif "#Tradle" in lines[0]:
-        return tradle(text)
+        return tradle(text, timestamp)
 
     elif "#GuessTheGame" in lines[0]:
-        return guessthegame(text)
+        return guessthegame(text, timestamp)
 
     elif "#globle" in lines[-1]:
-        return globle(text)
+        return globle(text, timestamp)
 
     elif "#Flagle" in lines[0]:
-        return flagle(text)
+        return flagle(text, timestamp)
 
     elif "WhereTaken" in lines[0]:
-        return wheretaken(text)
+        return wheretaken(text, timestamp)
 
     elif "#waffle" in lines[0]:
-        return waffle(text)
+        return waffle(text, timestamp)
 
     elif "Cloudle -" in lines[0]:
-        return cloudle(text)
+        return cloudle(text, timestamp)
 
     elif "https://highfivegame.app/2" in lines[-1]:
-        return highfive(text)
+        return highfive(text, timestamp)
 
     elif "TimeGuessr" in lines[0]:
-        return timeguesser(text)
+        return timeguesser(text, timestamp)
 
     elif "Moviedle" in lines[0]:
-        return moviedle(text)
+        return moviedle(text, timestamp)
 
     elif "Framed" in lines[0]:
-        return framed(text)
+        return framed(text, timestamp)
 
     elif "Murdle" in lines[1]:
-        return murdle(text)
+        return murdle(text, timestamp)
 
     elif "Connections" in lines[0]:
-        return connections(text)
+        return connections(text, timestamp)
 
     elif "nerdlegame" in lines[0]:
-        return nerdle(text)
+        return nerdle(text, timestamp)
 
     elif "Picsey" in lines[0]:
-        return picsey(text)
+        return picsey(text, timestamp)
 
     elif "squareword.org" in lines[0]:
-        return squareword(text)
+        return squareword(text, timestamp)
 
     elif "Animal" in lines[0] and "#metazooa" in lines[-1]:
-        return metazooa(text)
+        return metazooa(text, timestamp)
 
     elif "Plant" in lines[0] and "#metaflora" in lines[-1]:
-        return metaflora(text)
+        return metaflora(text, timestamp)
     
     elif 'Angle' in lines[0]:
-        return angle(text)
+        return angle(text, timestamp)
     
     elif 'experiments/tempoindovinr/' in lines[-1]:
-        return tempoindovinr(text)
+        return tempoindovinr(text, timestamp)
     
-    elif '#travle' in lines[0] and 'imois.in' in lines[-1]:
-        return travle(text)
+    elif '#travle' in lines[0] and 'travle.earth' in lines[-1]:
+        return travle(text, timestamp)
 
     elif 'cross nerdle #' in lines[0] and '@nerdlegame' in lines[-1]:
-        return nerdlecross(text)
+        return nerdlecross(text, timestamp)
     return None
 
 
@@ -532,7 +531,7 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    result = parse_results(update.message.text)
+    result = parse_results(update.message.text, int(datetime.datetime.timestamp(update.effective_message.date)))
     play_is_lost = False
     if result == "wrong_parole":
         if update.effective_user.id == 31866384:
@@ -669,13 +668,30 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             not_played_today.add(game)
 
     if not played_today:
-        message = "Non hai giocato a nulla oggi.\n"
-        for game in not_played_today:
-            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+        message = "Non hai giocato a nulla oggi.\n\n"
+        # for game in not_played_today:
+        #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
 
     elif not_played_today:
-        message = "Ti manca da giocare:\n"
-        for game in not_played_today:
+        message = "Ti manca da giocare:\n\n"
+
+    favs = []
+    regs = []
+    favorites = []
+    if str(update.effective_user.id) in context.bot_data['settings']:
+        favorites = context.bot_data['settings'][str(update.effective_user.id)]['favs']
+
+    for game in not_played_today:
+        if game in favorites:
+            favs.append(game)
+        else:
+            regs.append(game)
+    if favs:
+        for game in favs:
+            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>\n'
+    message += "\n"
+    if regs:
+        for game in regs:
             message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
 
     elif not not_played_today:
@@ -1023,7 +1039,7 @@ def main():
     # Error handler
     app.add_error_handler(error_handler)
 
-    app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
+    app.run_polling(drop_pending_updates=False, allowed_updates=Update.ALL_TYPES)
 
 
 main()
