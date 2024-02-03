@@ -1,10 +1,11 @@
 import datetime
 
+import httpx
 import peewee
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
 
-from config import GAMES, MEDALS, Medaglia, Punteggio
+from config import GAMES, MEDALS, Medaglia, Punteggio, TOKEN
 
 from dataclassy import dataclass
 
@@ -540,6 +541,26 @@ def medaglie_count(monthly=True) -> None:
         message += f"{q.user_name} ({int(q.gold or 0)}/{int(q.silver or 0)}/{int(q.bronze or 0)}):\n{int(q.gold or 0)*MEDALS[1][:-1]}{int(q.silver or 0)*MEDALS[2][:-1]}{int(q.bronze or 0)*MEDALS[3][:-1]}\n"
     return message
 
+async def react_to_message(update, context, chat_id, message_id, reaction, is_big):
+    bot_token = TOKEN
+    api_url = f"https://api.telegram.org/bot{bot_token}/setMessageReaction"
+
+    supported_emoji = 'Currently, it can be one of "👍", "👎", "❤", "🔥", "🥰", "👏", "😁", "🤔", "🤯", "😱", "🤬", "😢", "🎉", "🤩", "🤮", "💩", "🙏", "👌", "🕊", "🤡", "🥱", "🥴", "😍", "🐳", "❤‍🔥", "🌚", "🌭", "💯", "🤣", "⚡", "🍌", "🏆", "💔", "🤨", "😐", "🍓", "🍾", "💋", "🖕", "😈", "😴", "😭", "🤓", "👻", "👨‍💻", "👀", "🎃", "🙈", "😇", "😨", "🤝", "✍", "🤗", "🫡", "🎅", "🎄", "☃", "💅", "🤪", "🗿", "🆒", "💘", "🙉", "🦄", "😘", "💊", "🙊", "😎", "👾", "🤷‍♂", "🤷", "🤷‍♀", "😡"'
+    dati = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "reaction": [
+            {
+                "type": "emoji",
+                "emoji": reaction,
+            }
+        ],
+        "is_big": is_big
+    }
+
+    async with httpx.AsyncClient() as client:
+        risposta = await client.post(api_url, json=dati)
+        risposta_json = risposta.json()
 
 # update_streak()
 

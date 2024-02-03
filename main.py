@@ -73,6 +73,7 @@ from utils import (
     personal_stats,
     process_tries,
     streak_at_day,
+    react_to_message,
 )
 
 # Logging setup
@@ -970,7 +971,14 @@ async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def minimize_post(context: ContextTypes.DEFAULT_TYPE) -> None:
     message = context.job.data
-    await message.edit_text("Punteggio salvato.")
+    delete_message = True
+    if delete_message:
+        chat_id = message.chat.id
+        reply_id = message.reply_to_message.message_id
+        await react_to_message(None, None, chat_id, reply_id, '✍', False)
+        await message.delete()
+    else:
+        await message.edit_text("Punteggio salvato.")
 
 
 async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
