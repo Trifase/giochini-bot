@@ -290,11 +290,9 @@ def make_menu_setting_favs(favs: list = [], favs_extra_button: bool = False, use
         else:
             keyboard.append(InlineKeyboardButton(f"⭐ {game}", callback_data=f"favs_del_{game}_{user_id}"))
     columns = [keyboard[i : i + row_length] for i in range(0, len(keyboard), row_length)]
-    print('fav_extra_button', favs_extra_button)
     if favs_extra_button:
         columns.append([InlineKeyboardButton("✅ Solo Preferiti", callback_data=f"fav_more_{user_id}")])
     else:
-        print('eccoci')
         columns.append([InlineKeyboardButton("Solo Preferiti", callback_data=f"fav_more_{user_id}")])
 
     columns.append([InlineKeyboardButton("Fine", callback_data=f"fav_close_{user_id}")])
@@ -368,11 +366,10 @@ async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         settings[user_id]['favs'] = []
 
     if 'favs_extra_button' not in settings[user_id]:
-        settings[user_id]['favs_extra_button'] = True
+        settings[user_id]['favs_extra_button'] = False
 
     favs = settings[user_id]['favs']
     # json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    print(settings[user_id]['favs_extra_button'])
     keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]['favs_extra_button'])
 
     reply_keyboard = InlineKeyboardMarkup(keyboard)
