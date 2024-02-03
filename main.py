@@ -280,7 +280,7 @@ def make_games_classifica(days: int = 0) -> str:
 
     return classifica
 
-def make_menu_setting_favs(favs: list, user_id: str, row_length: int = 2) -> InlineKeyboardMarkup:
+def make_menu_setting_favs(favs: list = [], favs_extra_button: bool = False, user_id: str = None, row_length: int = 2) -> InlineKeyboardMarkup:
     keyboard = []
     games = [x for x in GAMES.keys()]
     games = sorted(games)
@@ -290,6 +290,13 @@ def make_menu_setting_favs(favs: list, user_id: str, row_length: int = 2) -> Inl
         else:
             keyboard.append(InlineKeyboardButton(f"⭐ {game}", callback_data=f"favs_del_{game}_{user_id}"))
     columns = [keyboard[i : i + row_length] for i in range(0, len(keyboard), row_length)]
+    print('fav_extra_button', favs_extra_button)
+    if favs_extra_button:
+        columns.append([InlineKeyboardButton("✅ Solo Preferiti", callback_data=f"fav_more_{user_id}")])
+    else:
+        print('eccoci')
+        columns.append([InlineKeyboardButton("Solo Preferiti", callback_data=f"fav_more_{user_id}")])
+
     columns.append([InlineKeyboardButton("Fine", callback_data=f"fav_close_{user_id}")])
     return columns
 
@@ -305,7 +312,7 @@ async def fav_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if game not in favs:
         favs.append(game)
     json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(favs, user_id)
+    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]['favs_extra_button'])
     reply_keyboard = InlineKeyboardMarkup(keyboard)
     await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
 
@@ -321,7 +328,23 @@ async def fav_del(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if game in favs:
         favs.remove(game)
     json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(favs, user_id)
+    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]['favs_extra_button'])
+    reply_keyboard = InlineKeyboardMarkup(keyboard)
+    await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
+
+async def fav_extra_toggle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data['settings']
+    user_id = str(update.effective_user.id)
+    target_uid = update.callback_query.data.split("_")[2]
+    if user_id != target_uid:
+        return
+
+    favs = settings[user_id]['favs']
+    favs_extra_button = settings[user_id]['favs_extra_button']
+    context.bot_data['settings'][user_id]['favs_extra_button'] = not favs_extra_button
+    json.dump(settings, open("db/user_settings.json", "w"), indent=4)
+
+    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=not favs_extra_button)
     reply_keyboard = InlineKeyboardMarkup(keyboard)
     await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
 
@@ -344,10 +367,16 @@ async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if 'favs' not in settings[user_id]:
         settings[user_id]['favs'] = []
 
+    if 'favs_extra_button' not in settings[user_id]:
+        settings[user_id]['favs_extra_button'] = True
+
     favs = settings[user_id]['favs']
     # json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(favs, user_id)
+    print(settings[user_id]['favs_extra_button'])
+    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]['favs_extra_button'])
+
     reply_keyboard = InlineKeyboardMarkup(keyboard)
+
     await update.effective_message.reply_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
     return
 
@@ -679,8 +708,67 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     favs = []
     regs = []
     favorites = []
+    solo_preferiti = False
     if str(update.effective_user.id) in context.bot_data['settings']:
         favorites = context.bot_data['settings'][str(update.effective_user.id)]['favs']
+        solo_preferiti = context.bot_data['settings'][str(update.effective_user.id)].get('favs_extra_button', False)
+
+    for game in not_played_today:
+        if game in favorites:
+            favs.append(game)
+        else:
+            regs.append(game)
+    if favs:
+        for game in favs:
+            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>\n'
+    message += "\n"
+    if regs and not solo_preferiti:
+        for game in regs:
+            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+
+    elif not not_played_today:
+        message = "Hai giocato a tutto!"
+    if solo_preferiti:
+        buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myday_more_{update.effective_user.id}")]]
+        keyboard = InlineKeyboardMarkup(buttons)
+        mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True, reply_markup=keyboard)
+    else:
+        mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    command_msg = update.message
+    context.job_queue.run_once(
+        delete_post, 60, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}"
+    )
+
+
+async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = str(update.effective_user.id)
+    target_uid = update.callback_query.data.split("_")[2]
+    if user_id != target_uid:
+        return
+    
+    played_today = set()
+    not_played_today = set()
+    for game in GAMES.keys():
+        day = get_day_from_date(game, datetime.date.today())
+        query = Punteggio.select().where(
+            Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id
+        )
+        if query:
+            played_today.add(game)
+        else:
+            not_played_today.add(game)
+
+    if not played_today:
+        message = "Non hai giocato a nulla oggi.\n\n"
+
+    elif not_played_today:
+        message = "Ti manca da giocare:\n\n"
+
+    favs = []
+    regs = []
+    favorites = []
+    if str(user_id) in context.bot_data['settings']:
+        favorites = context.bot_data['settings'][str(user_id)]['favs']
 
     for game in not_played_today:
         if game in favorites:
@@ -698,11 +786,8 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif not not_played_today:
         message = "Hai giocato a tutto!"
 
-    mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    command_msg = update.message
-    context.job_queue.run_once(
-        delete_post, 60, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}"
-    )
+    # edit the message
+    await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
 
 async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1034,7 +1119,6 @@ def main():
     app.add_handler(CommandHandler("top", top_players), 1)
     app.add_handler(CommandHandler("top_medaglie", top_medaglie), 1)
     app.add_handler(CommandHandler("medaglie", medaglie_mensile), 1)
-
     app.add_handler(CommandHandler("favs", setting_fav), 3)
 
     app.add_handler(CommandHandler("topgames", top_games), 1)
@@ -1042,6 +1126,13 @@ def main():
     app.add_handler(CallbackQueryHandler(fav_add, pattern=r"^favs_add_"))
     app.add_handler(CallbackQueryHandler(fav_del, pattern=r"^favs_del_"))
     app.add_handler(CallbackQueryHandler(fav_close, pattern=r"^fav_close"))
+    app.add_handler(CallbackQueryHandler(fav_extra_toggle, pattern=r"^fav_more"))
+
+    
+    app.add_handler(CallbackQueryHandler(mytoday_full, pattern=r"^myday_more"))
+
+    
+
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 
     # Error handler
