@@ -638,6 +638,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     else:
                         classifica += "\nLongest streak: current"
                 mymsg = await update.message.reply_html(classifica)
+                chat_id = mymsg.chat.id
+                reply_id = mymsg.reply_to_message.message_id
+                await react_to_message(None, None, chat_id, reply_id, '✍', False)
                 context.job_queue.run_once(
                     minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}"
                 )
@@ -1055,9 +1058,6 @@ async def minimize_post(context: ContextTypes.DEFAULT_TYPE) -> None:
     message = context.job.data
     delete_message = True
     if delete_message:
-        chat_id = message.chat.id
-        reply_id = message.reply_to_message.message_id
-        await react_to_message(None, None, chat_id, reply_id, '✍', False)
         await message.delete()
     else:
         await message.edit_text("Punteggio salvato.")
