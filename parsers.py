@@ -393,3 +393,15 @@ def nerdlecross(text: str, timestamp: int = None) -> dict:
         result["tries"] = 'X'
     return result
 
+def dominofit(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "DominoFit"
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    first_line = lines[0].split()
+    result["day"] = first_line[-1][1:]
+    points = lines[-1][2:]
+    str_points = time_from_emoji(points.strip())
+    result["tries"] = int(str_points)
+    return result
+

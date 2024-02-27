@@ -6,10 +6,11 @@ import time
 import traceback
 import zipfile
 from collections import defaultdict
+import locale
 
 import peewee
 import pytz
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo, ReplyKeyboardRemove
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -39,6 +40,7 @@ from parsers import (
     cloudle,
     connections,
     contexto,
+    dominofit,
     flagle,
     framed,
     globle,
@@ -73,7 +75,6 @@ from utils import (
     personal_stats,
     process_tries,
     streak_at_day,
-    react_to_message,
 )
 
 # Logging setup
@@ -96,6 +97,8 @@ httpx_logger.setLevel(logging.WARNING)
 # We also want to lower the log level of the scheduler
 aps_logger = logging.getLogger("apscheduler")
 aps_logger.setLevel(logging.WARNING)
+
+locale.setlocale(locale.LC_TIME, 'it_IT.UTF-8')
 
 # Istanziamo il filtro custom
 giochini_results_filter = GameFilter()
@@ -187,6 +190,9 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif 'cross nerdle #' in lines[0] and '@nerdlegame' in lines[-1]:
         return nerdlecross(text, timestamp)
+
+    elif 'DOMINO FIT #' in lines[0] and '⌚️' in lines[2]:
+        return dominofit(text, timestamp)
     return None
 
 
@@ -589,6 +595,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if result.get("tries") == "X":
             await update.message.reply_text("Hai perso loooool")
+            await update.message.set_reaction(reaction='🤷‍♂️')
             result["tries"] = "9999999" # Tries have to be popupated nonetheless
             play_is_lost = True
 
@@ -638,9 +645,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     else:
                         classifica += "\nLongest streak: current"
                 mymsg = await update.message.reply_html(classifica)
-                chat_id = mymsg.chat.id
-                reply_id = mymsg.reply_to_message.message_id
-                await react_to_message(None, None, chat_id, reply_id, '✍', False)
+                await mymsg.reply_to_message.set_reaction(reaction='✍')
                 context.job_queue.run_once(
                     minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}"
                 )
@@ -675,6 +680,7 @@ async def manual_backup(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def manual_riassunto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
+        context.bot_data['manual_riassunto'] = True
         return await riassunto_serale(context)
 
 
@@ -872,14 +878,15 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     cambiamenti = dict(points)
     cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
 
-    message = "Ecco come è andata oggi:\n"
+    message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
 
     for user, points in cambiamenti:
         user_id, user_name = user.split("_|_")
         user_id = int(user_id)
 
         message += f"+{points} {user_name}\n"
-        Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=points)
+        if not context.bot_data.get('manual_riassunto', None):
+            Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=points)
 
     # Medals
     i = 0
@@ -888,23 +895,24 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id, user_name = user.split("_|_")
         user_id = int(user_id)
 
-        Medaglia.create(
-            date=yesterday,
-            timestamp=int(time.time()),
-            chat_id=int(ID_GIOCHINI),
-            user_id=int(user_id),
-            user_name=user_name,
-            gold=1 if i == 0 else None,
-            silver=1 if i == 1 else None,
-            bronze=1 if i == 2 else None,
-        )
+        if not context.bot_data.get('manual_riassunto', None):
+            Medaglia.create(
+                date=yesterday,
+                timestamp=int(time.time()),
+                chat_id=int(ID_GIOCHINI),
+                user_id=int(user_id),
+                user_name=user_name,
+                gold=1 if i == 0 else None,
+                silver=1 if i == 1 else None,
+                bronze=1 if i == 2 else None,
+            )
         i += 1
 
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode="HTML", disable_web_page_preview=True)
 
-    message = "Classifica di questo mese:\n"
-
     this_month = yesterday.replace(day=1)
+    message = f"<b>Classifica di questo mese ({this_month.strftime('%B')})</b>:\n\n"
+
     query = (
         Punti.select(Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
         .where(Punti.date >= this_month)
@@ -928,6 +936,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(
         chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode="HTML", disable_web_page_preview=True
     )
+    context.bot_data['manual_riassunto'] = False
 
 
 async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -940,13 +949,18 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     # alternate: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
     #           It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
     #           BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
+    #
+    # alternate-with-lost: same as alternate, but we count lost plays. 
+
     # 
     # skip-empty: same as the standard, but games with less than limit plays (default: 3) are not counted at all
-    model = 'alternate'
+    model = 'alternate-with-lost'
     if '-skip-empty' in context.args:
         model = 'skip-empty'
     elif '-alternate' in context.args:
         model = 'alternate'
+    elif '-altern-with-lost' in context.args:
+        model = 'alternate-with-lost'
 
     for game in GAMES.keys():
         day = get_day_from_date(game, today)
@@ -962,6 +976,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
         )
+
 
         # Score Processing
         if model == 'standard':
@@ -990,6 +1005,26 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                     if not query[i].lost:
                         name = f"{query[i].user_id}_|_{query[i].user_name}"
                         points[name] += len(query) - i
+                except IndexError:
+                    pass
+
+        if model == 'alternate-with-lost':
+            # This include lost plays
+            query_alternate = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+                .where(
+                    Punteggio.day == day,
+                    Punteggio.game == game,
+                    Punteggio.chat_id == ID_GIOCHINI
+                )
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+                .limit(3)
+            )
+            for i in range(len(query_alternate)):
+                try:
+                    if not query[i].lost:
+                        name = f"{query[i].user_id}_|_{query[i].user_name}"
+                        points[name] += len(query_alternate) - i
                 except IndexError:
                     pass
 
@@ -1068,6 +1103,39 @@ async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
     for message in messages:
         await message.delete()
 
+async def launch_web_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # display our web-app!
+    # kb = [
+    #     [InlineKeyboardButton(
+    #         "Show me my Web-App!", 
+    #        web_app=WebAppInfo("https://trifase.github.io/emily-mini-app/"), # obviously, set yours here.
+    #        callback_data='webapp_launch'
+    #     )]
+    # ]
+    # await update.message.reply_text("Let's do this...", reply_markup=InlineKeyboardMarkup(kb))
+
+    kb = [
+        [KeyboardButton(
+            "Show me my Web-App!", 
+           web_app=WebAppInfo("https://trifase.github.io/emily-mini-app/index.html?type=sale&sort=price_descending&page=43"), # obviously, set yours here.
+        #    callback_data='webapp_launch'
+        )]
+    ]
+    await update.message.reply_text("Let's do this...", reply_markup=ReplyKeyboardMarkup(kb))
+
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    data = json.loads(update.to_json())
+    
+    import pprint
+    import html
+    rawtext = pprint.pformat(data)
+    # print(rawtext)
+    rawtext = html.escape(rawtext)
+    # print('callback data:', update.callback_query.data)
+    # wat = await context.bot.answer_callback_query(update.callback_query.id)
+    # print(wat)
+    await update.message.reply_html(f'<pre><code class="language-python">{rawtext}</code></pre>', reply_markup=ReplyKeyboardRemove())
 
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
@@ -1087,7 +1155,7 @@ async def post_init(app: Application) -> None:
 
 def main():
     defaults = Defaults(
-        disable_web_page_preview=True,
+        link_preview_options=LinkPreviewOptions(is_disabled=True),
     )
 
     builder = ApplicationBuilder()
@@ -1111,6 +1179,11 @@ def main():
     app.add_handler(CommandHandler("backup", manual_backup), 1)
     app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
+
+    app.add_handler(CommandHandler('webapp', launch_web_ui))
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    
+    # app.add_handler(CallbackQueryHandler(handle_web_app_data, pattern=r"^webapp_launch"))
 
     app.add_handler(CommandHandler(["c", "classifica"], post_single_classifica), 2)
     app.add_handler(CommandHandler("top", top_players), 1)

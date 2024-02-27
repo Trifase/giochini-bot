@@ -511,7 +511,8 @@ def new_classifica():
 
 def medaglie_count(monthly=True) -> None:
     first_of_the_month = datetime.date.today().replace(day=1)
-    message = "Classifica mensile delle medaglie:\n\n"
+    month_name = first_of_the_month.strftime('%B')
+    message = f"<b>Classifica mensile ({month_name}) delle medaglie:</b>\n\n"
     if not monthly:
         first_of_the_month = datetime.date(2020, 1, 1)
         message = "Classifica totale delle medaglie:\n\n"

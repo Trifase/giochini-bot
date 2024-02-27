@@ -1,14 +1,13 @@
 {
     "456481297": {
         "favs": [
-            "Murdle",
             "Waffle",
             "WhereTaken",
-            "Squareword",
             "Parole",
             "GuessTheGame",
             "Picsey",
-            "Connections"
+            "Connections",
+            "NerdleCross"
         ],
         "favs_extra_button": true
     },
@@ -133,8 +132,11 @@
             "Picsey",
             "Squareword",
             "Travle",
-            "Wordle"
-        ]
+            "Wordle",
+            "Waffle",
+            "DominoFit"
+        ],
+        "favs_extra_button": false
     },
     "35440256": {
         "favs": [
