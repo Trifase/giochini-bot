@@ -2,23 +2,23 @@ import datetime
 
 import httpx
 import peewee
+from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
 
-from config import GAMES, MEDALS, Medaglia, Punteggio, TOKEN
+from config import GAMES, MEDALS, TOKEN, Medaglia, Punteggio
 
-from dataclassy import dataclass
 
 @dataclass
 class Classifica:
-    game: str = ''
-    day: str = ''
+    game: str = ""
+    day: str = ""
     date: datetime.date = None
-    emoji: str = ''
+    emoji: str = ""
     pos: list[tuple[str, str]] = []
     valid: bool = True
-    header: str = ''
-    last: str = ''
+    header: str = ""
+    last: str = ""
 
     # def __repr__(self):
     #     classifica = ''
@@ -28,14 +28,14 @@ class Classifica:
     #     if self.last:
     #         classifica += f'{self.last}'
     #     return classifica
-    
+
     def to_string(self) -> str:
-        classifica = ''
-        classifica += self.header + '\n'
+        classifica = ""
+        classifica += self.header + "\n"
         for posto, username, tries in self.pos:
             classifica += f'{MEDALS.get(posto, "")}{username} ({tries})\n'
         if self.last:
-            classifica += f'{self.last}'
+            classifica += f"{self.last}"
         return classifica
 
 
@@ -59,8 +59,8 @@ class GameFilter(MessageFilter):
 
         if "#Angle" in message.text and ("⬇️" in message.text or "⬆️" in message.text or "🎉" in message.text):
             return True
-        
-        if "#travle " in message.text and 'https://imois.in/games/travle' in message.text:
+
+        if "#travle " in message.text and "https://imois.in/games/travle" in message.text:
             return True
 
         return False
@@ -99,6 +99,7 @@ def correct_name(name: str) -> str:
     return list(GAMES.keys())[[x.lower() for x in GAMES.keys()].index(name.lower())]
 
 
+
 def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
     today = get_day_from_date(game, datetime.date.today())
     date_str = f"{get_date_from_day(game, day).strftime('%Y-%m-%d')}"
@@ -134,7 +135,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
         tries = 50_000 - tries
 
     # For TempoIndovinr, scores are points, the more the better. Max points is 1_000 so we save them as differences from max.
-    if game == 'TempoIndovinr':
+    if game == "TempoIndovinr":
         tries = 1_000 - tries
 
     # For Picsey, scores are points, the more the better. Max points is 100 so we save them as differences from max.
@@ -146,7 +147,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
         tries = str(tries)[:-2] + ":" + str(tries)[-2:]
 
     # For NerdleCross, scores are points, the more the better. Max points is 6 so we save them as differences from max.
-    if game == 'NerdleCross':
+    if game == "NerdleCross":
         tries = 6 - tries
     return tries
 
@@ -241,7 +242,9 @@ def personal_stats(user_id: int) -> str:
     )
     most_played = most_played_query[0].game
     most_played_count = most_played_query[0].c
-    most_played_string = f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
+    most_played_string = (
+        f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
+    )
 
     # gioco meno giocato
     least_played_query = (
@@ -253,9 +256,7 @@ def personal_stats(user_id: int) -> str:
     )
     least_played = least_played_query[0].game
     least_played_count = least_played_query[0].c
-    least_played_string = (
-        f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
-    )
+    least_played_string = f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
 
     # giocate totali
     total_plays = (
@@ -271,7 +272,10 @@ def personal_stats(user_id: int) -> str:
     # giocate perse totali
     total_loses = (
         Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_id == user_id, Punteggio.lost == True ,)
+        .where(
+            Punteggio.user_id == user_id,
+            Punteggio.lost == True,
+        )
         .scalar()
     )
     if total_loses:
@@ -511,7 +515,7 @@ def new_classifica():
 
 def medaglie_count(monthly=True) -> None:
     first_of_the_month = datetime.date.today().replace(day=1)
-    month_name = first_of_the_month.strftime('%B')
+    month_name = first_of_the_month.strftime("%B")
     message = f"<b>Classifica mensile ({month_name}) delle medaglie:</b>\n\n"
     if not monthly:
         first_of_the_month = datetime.date(2020, 1, 1)
@@ -542,11 +546,12 @@ def medaglie_count(monthly=True) -> None:
         message += f"{q.user_name} ({int(q.gold or 0)}/{int(q.silver or 0)}/{int(q.bronze or 0)}):\n{int(q.gold or 0)*MEDALS[1][:-1]}{int(q.silver or 0)*MEDALS[2][:-1]}{int(q.bronze or 0)*MEDALS[3][:-1]}\n"
     return message
 
+
 async def react_to_message(update, context, chat_id, message_id, reaction, is_big):
     bot_token = TOKEN
     api_url = f"https://api.telegram.org/bot{bot_token}/setMessageReaction"
 
-    supported_emoji = 'Currently, it can be one of "👍", "👎", "❤", "🔥", "🥰", "👏", "😁", "🤔", "🤯", "😱", "🤬", "😢", "🎉", "🤩", "🤮", "💩", "🙏", "👌", "🕊", "🤡", "🥱", "🥴", "😍", "🐳", "❤‍🔥", "🌚", "🌭", "💯", "🤣", "⚡", "🍌", "🏆", "💔", "🤨", "😐", "🍓", "🍾", "💋", "🖕", "😈", "😴", "😭", "🤓", "👻", "👨‍💻", "👀", "🎃", "🙈", "😇", "😨", "🤝", "✍", "🤗", "🫡", "🎅", "🎄", "☃", "💅", "🤪", "🗿", "🆒", "💘", "🙉", "🦄", "😘", "💊", "🙊", "😎", "👾", "🤷‍♂", "🤷", "🤷‍♀", "😡"'
+    # supported_emoji = 'Currently, it can be one of "👍", "👎", "❤", "🔥", "🥰", "👏", "😁", "🤔", "🤯", "😱", "🤬", "😢", "🎉", "🤩", "🤮", "💩", "🙏", "👌", "🕊", "🤡", "🥱", "🥴", "😍", "🐳", "❤‍🔥", "🌚", "🌭", "💯", "🤣", "⚡", "🍌", "🏆", "💔", "🤨", "😐", "🍓", "🍾", "💋", "🖕", "😈", "😴", "😭", "🤓", "👻", "👨‍💻", "👀", "🎃", "🙈", "😇", "😨", "🤝", "✍", "🤗", "🫡", "🎅", "🎄", "☃", "💅", "🤪", "🗿", "🆒", "💘", "🙉", "🦄", "😘", "💊", "🙊", "😎", "👾", "🤷‍♂", "🤷", "🤷‍♀", "😡"'
     dati = {
         "chat_id": chat_id,
         "message_id": message_id,
@@ -556,12 +561,13 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
                 "emoji": reaction,
             }
         ],
-        "is_big": is_big
+        "is_big": is_big,
     }
 
     async with httpx.AsyncClient() as client:
-        risposta = await client.post(api_url, json=dati)
-        risposta_json = risposta.json()
+        await client.post(api_url, json=dati)
+        # risposta_json = risposta.json()
+
 
 # update_streak()
 

@@ -325,6 +325,7 @@ def metazooa(text: str, timestamp: int = None) -> dict:
         result["tries"] = lines[1].split()[-2]
     return result
 
+
 def metaflora(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
@@ -338,6 +339,7 @@ def metaflora(text: str, timestamp: int = None) -> dict:
         result["tries"] = lines[1].split()[-2]
     return result
 
+
 def angle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
@@ -345,11 +347,12 @@ def angle(text: str, timestamp: int = None) -> dict:
     result["timestamp"] = timestamp if timestamp else int(time.time())
     result["day"] = lines[0].split()[1][1:]
     points = lines[0].split()[-1].split("/")[0]
-    if points == 'X':
-        result["tries"] = 'X'
+    if points == "X":
+        result["tries"] = "X"
     else:
         result["tries"] = points
     return result
+
 
 def tempoindovinr(text: str, timestamp: int = None) -> dict:
     result = {}
@@ -357,9 +360,10 @@ def tempoindovinr(text: str, timestamp: int = None) -> dict:
     result["name"] = "TempoIndovinr"
     result["timestamp"] = timestamp if timestamp else int(time.time())
     result["day"] = lines[0].split()[-1]
-    points = lines[1].split()[2].split('/')[0]
+    points = lines[1].split()[2].split("/")[0]
     result["tries"] = 1_000 - int(points)
     return result
+
 
 def travle(text: str, timestamp: int = None) -> dict:
     result = {}
@@ -369,14 +373,33 @@ def travle(text: str, timestamp: int = None) -> dict:
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
     tries = first_line[2].split("/")[0][1:]
-    if tries == '?':
-        result["tries"] = 'X'
+    if tries == "?":
+        result["tries"] = "X"
     else:
         hints = 0
         if len(first_line) > 3:
             hints = first_line[3][1:]
-        result["tries"] = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2)) # +1, +2, +3 (triangulars)
+        result["tries"] = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
     return result
+
+
+def travle_ita(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "TravleITA"
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    first_line = lines[0].split()
+    result["day"] = first_line[1][1:]
+    tries = first_line[2].split("/")[0][1:]
+    if tries == "?":
+        result["tries"] = "X"
+    else:
+        hints = 0
+        if len(first_line) > 3:
+            hints = first_line[3][1:]
+        result["tries"] = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+    return result
+
 
 def nerdlecross(text: str, timestamp: int = None) -> dict:
     result = {}
@@ -385,13 +408,14 @@ def nerdlecross(text: str, timestamp: int = None) -> dict:
     result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[-1][1:]
-    points = lines[-1].split(":")[-1].split('/')[0].strip()
+    points = lines[-1].split(":")[-1].split("/")[0].strip()
 
     # Nerdle Cross uses positive poits, from 0 to 6. We as usual save 6-n and then revert it when printing the results.
     result["tries"] = 6 - int(points)
     if result["tries"] == 6:
-        result["tries"] = 'X'
+        result["tries"] = "X"
     return result
+
 
 def dominofit(text: str, timestamp: int = None) -> dict:
     result = {}
@@ -404,4 +428,3 @@ def dominofit(text: str, timestamp: int = None) -> dict:
     str_points = time_from_emoji(points.strip())
     result["tries"] = int(str_points)
     return result
-

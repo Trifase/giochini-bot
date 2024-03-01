@@ -1,16 +1,25 @@
 import datetime
+import json
+import locale
 import logging
 import sys
-import json
 import time
 import traceback
 import zipfile
 from collections import defaultdict
-import locale
 
 import peewee
 import pytz
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo, ReplyKeyboardRemove
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    LinkPreviewOptions,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+    Update,
+    WebAppInfo,
+)
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -59,6 +68,7 @@ from parsers import (
     timeguesser,
     tradle,
     travle,
+    travle_ita,
     waffle,
     wheretaken,
     wordle,
@@ -98,7 +108,7 @@ httpx_logger.setLevel(logging.WARNING)
 aps_logger = logging.getLogger("apscheduler")
 aps_logger.setLevel(logging.WARNING)
 
-locale.setlocale(locale.LC_TIME, 'it_IT.UTF-8')
+locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
 # Istanziamo il filtro custom
 giochini_results_filter = GameFilter()
@@ -178,25 +188,30 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "Plant" in lines[0] and "#metaflora" in lines[-1]:
         return metaflora(text, timestamp)
-    
-    elif 'Angle' in lines[0]:
+
+    elif "Angle" in lines[0]:
         return angle(text, timestamp)
-    
-    elif 'experiments/tempoindovinr/' in lines[-1]:
+
+    elif "experiments/tempoindovinr/" in lines[-1]:
         return tempoindovinr(text, timestamp)
-    
-    elif '#travle' in lines[0] and 'travle.earth' in lines[-1]:
+
+    elif "#̀travle_ita" in lines[0] and "travle.earth" in lines[-1]:
+        return travle_ita(text, timestamp)
+
+    elif "#travle" in lines[0] and "travle.earth" in lines[-1]:
         return travle(text, timestamp)
 
-    elif 'cross nerdle #' in lines[0] and '@nerdlegame' in lines[-1]:
+    elif "cross nerdle #" in lines[0] and "@nerdlegame" in lines[-1]:
         return nerdlecross(text, timestamp)
 
-    elif 'DOMINO FIT #' in lines[0] and '⌚️' in lines[2]:
+    elif "DOMINO FIT #" in lines[0] and "⌚️" in lines[2]:
         return dominofit(text, timestamp)
     return None
 
 
-def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True) -> str:
+def make_single_classifica(
+    game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True
+) -> str:
     day = day or get_day_from_date(game, datetime.date.today())
     # print(f"Making classifica for {game} #{day}")
     emoji = GAMES[game]["emoji"]
@@ -219,7 +234,6 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
 
     if not query:
         return None
-
 
     classifica = Classifica()
     classifica.game = game
@@ -261,7 +275,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
 
     if to_string:
         return classifica.to_string()
-    
+
     return classifica
 
 
@@ -286,7 +300,10 @@ def make_games_classifica(days: int = 0) -> str:
 
     return classifica
 
-def make_menu_setting_favs(favs: list = [], favs_extra_button: bool = False, user_id: str = None, row_length: int = 2) -> InlineKeyboardMarkup:
+
+def make_menu_setting_favs(
+    favs: list = [], favs_extra_button: bool = False, user_id: str = None, row_length: int = 2
+) -> InlineKeyboardMarkup:
     keyboard = []
     games = [x for x in GAMES.keys()]
     games = sorted(games)
@@ -304,11 +321,12 @@ def make_menu_setting_favs(favs: list = [], favs_extra_button: bool = False, use
     columns.append([InlineKeyboardButton("Fine", callback_data=f"fav_close_{user_id}")])
     return columns
 
+
 async def fav_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    settings = context.bot_data['settings']
+    settings = context.bot_data["settings"]
     user_id = str(update.effective_user.id)
 
-    favs = settings[user_id]['favs']
+    favs = settings[user_id]["favs"]
     game = update.callback_query.data.split("_")[2]
     target_uid = update.callback_query.data.split("_")[3]
     if user_id != target_uid:
@@ -316,15 +334,18 @@ async def fav_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if game not in favs:
         favs.append(game)
     json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]['favs_extra_button'])
+    keyboard = make_menu_setting_favs(
+        favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"]
+    )
     reply_keyboard = InlineKeyboardMarkup(keyboard)
     await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
 
+
 async def fav_del(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    settings = context.bot_data['settings']
+    settings = context.bot_data["settings"]
     user_id = str(update.effective_user.id)
 
-    favs = settings[user_id]['favs']
+    favs = settings[user_id]["favs"]
     game = update.callback_query.data.split("_")[2]
     target_uid = update.callback_query.data.split("_")[3]
     if user_id != target_uid:
@@ -332,25 +353,29 @@ async def fav_del(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if game in favs:
         favs.remove(game)
     json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]['favs_extra_button'])
+    keyboard = make_menu_setting_favs(
+        favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"]
+    )
     reply_keyboard = InlineKeyboardMarkup(keyboard)
     await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
 
+
 async def fav_extra_toggle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    settings = context.bot_data['settings']
+    settings = context.bot_data["settings"]
     user_id = str(update.effective_user.id)
     target_uid = update.callback_query.data.split("_")[2]
     if user_id != target_uid:
         return
 
-    favs = settings[user_id]['favs']
-    favs_extra_button = settings[user_id]['favs_extra_button']
-    context.bot_data['settings'][user_id]['favs_extra_button'] = not favs_extra_button
+    favs = settings[user_id]["favs"]
+    favs_extra_button = settings[user_id]["favs_extra_button"]
+    context.bot_data["settings"][user_id]["favs_extra_button"] = not favs_extra_button
     json.dump(settings, open("db/user_settings.json", "w"), indent=4)
 
     keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=not favs_extra_button)
     reply_keyboard = InlineKeyboardMarkup(keyboard)
     await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
+
 
 async def fav_close(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
@@ -359,37 +384,44 @@ async def fav_close(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     await update.effective_message.delete()
 
+
 async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # with open("db/user_settings.json") as settings_db:
     #     settings = json.load(settings_db)
-    settings = context.bot_data['settings']
+    settings = context.bot_data["settings"]
     user_id = str(update.effective_user.id)
 
     if user_id not in settings:
         settings[user_id] = {}
 
-    if 'favs' not in settings[user_id]:
-        settings[user_id]['favs'] = []
+    if "favs" not in settings[user_id]:
+        settings[user_id]["favs"] = []
 
-    if 'favs_extra_button' not in settings[user_id]:
-        settings[user_id]['favs_extra_button'] = False
+    if "favs_extra_button" not in settings[user_id]:
+        settings[user_id]["favs_extra_button"] = False
 
-    favs = settings[user_id]['favs']
+    favs = settings[user_id]["favs"]
     # json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]['favs_extra_button'])
+    keyboard = make_menu_setting_favs(
+        favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"]
+    )
 
     reply_keyboard = InlineKeyboardMarkup(keyboard)
 
     await update.effective_message.reply_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
     return
 
+
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
 
     await context.bot.send_message(
-        chat_id=ID_BOTCENTRAL, text=f'<pre><code class="language-python">{tb_string[:4000]}</code></pre>', parse_mode="HTML"
+        chat_id=ID_BOTCENTRAL,
+        text=f'<pre><code class="language-python">{tb_string[:4000]}</code></pre>',
+        parse_mode="HTML",
     )
+
 
 async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -595,11 +627,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if result.get("tries") == "X":
             await update.message.reply_text("Hai perso loooool")
-            await update.message.set_reaction(reaction='🤷‍♂️')
-            result["tries"] = "9999999" # Tries have to be popupated nonetheless
+            if update.effective_chat.id != ID_TESTING:
+                await update.message.set_reaction(reaction="🤷‍♂️")
+            result["tries"] = "9999999"  # Tries have to be popupated nonetheless
             play_is_lost = True
-
-
 
         if update.effective_chat.id == ID_TESTING:
             import pprint
@@ -645,7 +676,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     else:
                         classifica += "\nLongest streak: current"
                 mymsg = await update.message.reply_html(classifica)
-                await mymsg.reply_to_message.set_reaction(reaction='✍')
+                await mymsg.reply_to_message.set_reaction(reaction="✍")
                 context.job_queue.run_once(
                     minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}"
                 )
@@ -680,7 +711,7 @@ async def manual_backup(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def manual_riassunto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
-        context.bot_data['manual_riassunto'] = True
+        context.bot_data["manual_riassunto"] = True
         return await riassunto_serale(context)
 
 
@@ -715,9 +746,9 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     regs = []
     favorites = []
     solo_preferiti = False
-    if str(update.effective_user.id) in context.bot_data['settings']:
-        favorites = context.bot_data['settings'][str(update.effective_user.id)]['favs']
-        solo_preferiti = context.bot_data['settings'][str(update.effective_user.id)].get('favs_extra_button', False)
+    if str(update.effective_user.id) in context.bot_data["settings"]:
+        favorites = context.bot_data["settings"][str(update.effective_user.id)]["favs"]
+        solo_preferiti = context.bot_data["settings"][str(update.effective_user.id)].get("favs_extra_button", False)
 
     for game in not_played_today:
         if game in favorites:
@@ -737,7 +768,9 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if solo_preferiti:
         buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myday_more_{update.effective_user.id}")]]
         keyboard = InlineKeyboardMarkup(buttons)
-        mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True, reply_markup=keyboard)
+        mymsg = await update.message.reply_text(
+            message, parse_mode="HTML", disable_web_page_preview=True, reply_markup=keyboard
+        )
     else:
         mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
     command_msg = update.message
@@ -751,7 +784,7 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     target_uid = update.callback_query.data.split("_")[2]
     if user_id != target_uid:
         return
-    
+
     played_today = set()
     not_played_today = set()
     for game in GAMES.keys():
@@ -773,8 +806,8 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     favs = []
     regs = []
     favorites = []
-    if str(user_id) in context.bot_data['settings']:
-        favorites = context.bot_data['settings'][str(user_id)]['favs']
+    if str(user_id) in context.bot_data["settings"]:
+        favorites = context.bot_data["settings"][str(user_id)]["favs"]
 
     for game in not_played_today:
         if game in favorites:
@@ -858,12 +891,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         # This include lost plays, that we filter out when we assign points.
         query_alternate = (
             Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-            .where(
-                Punteggio.day == day,
-                Punteggio.game == game,
-                Punteggio.chat_id == ID_GIOCHINI,
-                Punteggio.lost == False,
-            )
+            .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
         )
@@ -885,7 +913,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = int(user_id)
 
         message += f"+{points} {user_name}\n"
-        if not context.bot_data.get('manual_riassunto', None):
+        if not context.bot_data.get("manual_riassunto", None):
             Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=points)
 
     # Medals
@@ -895,7 +923,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id, user_name = user.split("_|_")
         user_id = int(user_id)
 
-        if not context.bot_data.get('manual_riassunto', None):
+        if not context.bot_data.get("manual_riassunto", None):
             Medaglia.create(
                 date=yesterday,
                 timestamp=int(time.time()),
@@ -936,7 +964,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(
         chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode="HTML", disable_web_page_preview=True
     )
-    context.bot_data['manual_riassunto'] = False
+    context.bot_data["manual_riassunto"] = False
 
 
 async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -945,22 +973,22 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Score Calculation models:
     # standard: standard calculation model: 3 points to the first, 2 points to the second and 1 point to the third, no matter how many plays there are.
-    # 
+    #
     # alternate: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
     #           It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
     #           BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
     #
-    # alternate-with-lost: same as alternate, but we count lost plays. 
+    # alternate-with-lost: same as alternate, but we count lost plays.
 
-    # 
+    #
     # skip-empty: same as the standard, but games with less than limit plays (default: 3) are not counted at all
-    model = 'alternate-with-lost'
-    if '-skip-empty' in context.args:
-        model = 'skip-empty'
-    elif '-alternate' in context.args:
-        model = 'alternate'
-    elif '-altern-with-lost' in context.args:
-        model = 'alternate-with-lost'
+    model = "alternate-with-lost"
+    if "-skip-empty" in context.args:
+        model = "skip-empty"
+    elif "-alternate" in context.args:
+        model = "alternate"
+    elif "-altern-with-lost" in context.args:
+        model = "alternate-with-lost"
 
     for game in GAMES.keys():
         day = get_day_from_date(game, today)
@@ -977,9 +1005,8 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
             .limit(3)
         )
 
-
         # Score Processing
-        if model == 'standard':
+        if model == "standard":
             for i in range(len(query)):
                 try:
                     name = f"{query[i].user_id}_|_{query[i].user_name}"
@@ -987,7 +1014,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                 except IndexError:
                     pass
 
-        if model == 'alternate':
+        if model == "alternate":
             # This include lost plays, that we filter out when we assign points.
             query_alternate = (
                 Punteggio.select(Punteggio.user_name, Punteggio.user_id)
@@ -1008,15 +1035,11 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                 except IndexError:
                     pass
 
-        if model == 'alternate-with-lost':
+        if model == "alternate-with-lost":
             # This include lost plays
             query_alternate = (
                 Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-                .where(
-                    Punteggio.day == day,
-                    Punteggio.game == game,
-                    Punteggio.chat_id == ID_GIOCHINI
-                )
+                .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
                 .limit(3)
             )
@@ -1028,7 +1051,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                 except IndexError:
                     pass
 
-        if model == 'skip-empty':
+        if model == "skip-empty":
             limit = 3
             if len(query) < limit:
                 continue
@@ -1103,11 +1126,12 @@ async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
     for message in messages:
         await message.delete()
 
+
 async def launch_web_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # display our web-app!
     # kb = [
     #     [InlineKeyboardButton(
-    #         "Show me my Web-App!", 
+    #         "Show me my Web-App!",
     #        web_app=WebAppInfo("https://trifase.github.io/emily-mini-app/"), # obviously, set yours here.
     #        callback_data='webapp_launch'
     #     )]
@@ -1115,27 +1139,35 @@ async def launch_web_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # await update.message.reply_text("Let's do this...", reply_markup=InlineKeyboardMarkup(kb))
 
     kb = [
-        [KeyboardButton(
-            "Show me my Web-App!", 
-           web_app=WebAppInfo("https://trifase.github.io/emily-mini-app/index.html?type=sale&sort=price_descending&page=43"), # obviously, set yours here.
-        #    callback_data='webapp_launch'
-        )]
+        [
+            KeyboardButton(
+                "Show me my Web-App!",
+                web_app=WebAppInfo(
+                    "https://trifase.github.io/emily-mini-app/index.html?type=sale&sort=price_descending&page=43"
+                ),  # obviously, set yours here.
+                #    callback_data='webapp_launch'
+            )
+        ]
     ]
     await update.message.reply_text("Let's do this...", reply_markup=ReplyKeyboardMarkup(kb))
 
-async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = json.loads(update.to_json())
-    
-    import pprint
+
     import html
+    import pprint
+
     rawtext = pprint.pformat(data)
     # print(rawtext)
     rawtext = html.escape(rawtext)
     # print('callback data:', update.callback_query.data)
     # wat = await context.bot.answer_callback_query(update.callback_query.id)
     # print(wat)
-    await update.message.reply_html(f'<pre><code class="language-python">{rawtext}</code></pre>', reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_html(
+        f'<pre><code class="language-python">{rawtext}</code></pre>', reply_markup=ReplyKeyboardRemove()
+    )
+
 
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
@@ -1180,9 +1212,9 @@ def main():
     app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
 
-    app.add_handler(CommandHandler('webapp', launch_web_ui))
+    app.add_handler(CommandHandler("webapp", launch_web_ui))
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
-    
+
     # app.add_handler(CallbackQueryHandler(handle_web_app_data, pattern=r"^webapp_launch"))
 
     app.add_handler(CommandHandler(["c", "classifica"], post_single_classifica), 2)
@@ -1198,10 +1230,7 @@ def main():
     app.add_handler(CallbackQueryHandler(fav_close, pattern=r"^fav_close"))
     app.add_handler(CallbackQueryHandler(fav_extra_toggle, pattern=r"^fav_more"))
 
-    
     app.add_handler(CallbackQueryHandler(mytoday_full, pattern=r"^myday_more"))
-
-    
 
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 
