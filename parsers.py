@@ -428,3 +428,17 @@ def dominofit(text: str, timestamp: int = None) -> dict:
     str_points = time_from_emoji(points.strip())
     result["tries"] = int(str_points)
     return result
+
+def bandle(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Bandle"
+    first_line = lines[0].split()
+    result["day"] = first_line[1][1:]
+    punti = first_line[2].split("/")[0]
+    if punti == "x":
+        result["tries"] = "X"
+    else:
+        result["tries"] = punti
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result

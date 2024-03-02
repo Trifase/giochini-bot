@@ -46,6 +46,7 @@ from config import (
 )
 from parsers import (
     angle,
+    bandle,
     cloudle,
     connections,
     contexto,
@@ -206,6 +207,9 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "DOMINO FIT #" in lines[0] and "⌚️" in lines[2]:
         return dominofit(text, timestamp)
+
+    elif "Bandle #" in lines[0] and "https://bandle.app/" in lines[-1]:
+        return bandle(text, timestamp)
     return None
 
 

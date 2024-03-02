@@ -31,6 +31,13 @@ GAMES = {
         "emoji": "🇮🇹",
         "url": "https://par-le.github.io/gioco/",
     },
+    'Bandle': {
+        'category': 'Immagini, giochi e film',
+        'date': datetime.date(2024, 3, 3),
+        'day': '564',
+        'emoji': '🎛️',
+        'url': 'https://bandle.app/'
+    },
     "Contexto": {
         "category": "Giochi di parole",
         "date": datetime.date(2023, 6, 23),
