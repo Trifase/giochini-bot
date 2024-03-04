@@ -47,6 +47,7 @@ from config import (
 from parsers import (
     angle,
     bandle,
+    chrono,
     cloudle,
     connections,
     contexto,
@@ -196,7 +197,7 @@ def parse_results(text: str, timestamp: int = None) -> dict:
     elif "experiments/tempoindovinr/" in lines[-1]:
         return tempoindovinr(text, timestamp)
 
-    elif "#̀travle_ita" in lines[0] and "travle.earth" in lines[-1]:
+    elif "#travle_ita" in lines[0] and "/ita" in lines[-1]:
         return travle_ita(text, timestamp)
 
     elif "#travle" in lines[0] and "travle.earth" in lines[-1]:
@@ -210,6 +211,9 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "Bandle #" in lines[0] and "https://bandle.app/" in lines[-1]:
         return bandle(text, timestamp)
+
+    elif "CHRONO  #" in lines[0] and "https://chrono.ques" in lines[-1]:
+        return chrono(text, timestamp)
     return None
 
 

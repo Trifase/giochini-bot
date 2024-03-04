@@ -442,3 +442,22 @@ def bandle(text: str, timestamp: int = None) -> dict:
         result["tries"] = punti
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
+def chrono(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Chrono"
+    first_line = lines[0].split()
+    result["day"] = first_line[2][1:]
+    punti = first_line[0]
+
+    if punti == "😬":
+        result["tries"] = "X"
+    elif punti == "🥉":
+        result["tries"] = 3
+    elif punti == "🥈":
+        result["tries"] = 2
+    elif punti == "🥇":
+        result["tries"] = 1
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result
