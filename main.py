@@ -49,6 +49,7 @@ from parsers import (
     bandle,
     chrono,
     cloudle,
+    colorfle,
     connections,
     contexto,
     dominofit,
@@ -65,6 +66,7 @@ from parsers import (
     nerdlecross,
     parole2,
     picsey,
+    rotaboxes,
     squareword,
     stepdle,
     tempoindovinr,
@@ -218,6 +220,13 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "Stepdle #" in lines[0]:
         return stepdle(text, timestamp)
+
+    elif "Colorfle" in lines[0] and 'accuracy' in lines[-1]:
+        return colorfle(text, timestamp)
+
+    elif "rotabox.es" in lines[3] and 'clicks:' in lines[1]:
+        return rotaboxes(text, timestamp)
+
     return None
 
 

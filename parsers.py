@@ -476,3 +476,30 @@ def stepdle(text: str, timestamp: int = None) -> dict:
         result["tries"] = "X"
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
+def colorfle(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Colorfle"
+    first_line = lines[0].split()
+    result["day"] = first_line[1]
+    punti = first_line[2].split("/")[0]
+    if punti == "X":
+        result["tries"] = "X"
+    else:
+        result["tries"] = punti
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result
+
+def rotaboxes(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Rotaboxes"
+    result["day"] = lines[3].split("/")[-1]
+    punti = lines[1]
+    punti = punti.split("clicks: ")[-1]
+    max_points = int(punti.split("/")[-1])
+    clicks = int(punti.split("/")[0])
+    result["tries"] = clicks - max_points
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result
