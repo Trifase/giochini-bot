@@ -679,6 +679,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
         if play_is_lost:
+            logging.info(
+            f"Aggiungo tentativo di {result['user_name']} per {result['name']} #{result['day']} (fallito)"
+        )
             return
 
         today_game = int(get_day_from_date(result["name"], datetime.date.today()))
