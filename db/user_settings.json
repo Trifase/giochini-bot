@@ -9,7 +9,9 @@
             "Connections",
             "NerdleCross",
             "Chrono",
-            "Stepdle"
+            "Stepdle",
+            "Colorfle",
+            "Rotaboxes"
         ],
         "favs_extra_button": true
     },
@@ -70,8 +72,11 @@
             "Waffle",
             "WhereTaken",
             "Wordle",
-            "Worldle"
-        ]
+            "Worldle",
+            "TravleITA",
+            "Chrono"
+        ],
+        "favs_extra_button": false
     },
     "16337572": {
         "favs": [
