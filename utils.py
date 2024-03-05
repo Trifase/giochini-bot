@@ -121,6 +121,8 @@ def time_from_emoji(input_string: str) -> str:
     emojidict = {"0️⃣": 0, "1️⃣": 1, "2️⃣": 2, "3️⃣": 3, "4️⃣": 4, "5️⃣": 5, "6️⃣": 6, "7️⃣": 7, "8️⃣": 8, "9️⃣": 9, "🔟": 10, ":": ""}
     for key, value in emojidict.items():
         input_string = input_string.replace(key, str(value))
+
+    input_string = ''.join([x for x in input_string if x in "0123456789"])
     return input_string
 
 

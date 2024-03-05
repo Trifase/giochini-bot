@@ -66,6 +66,7 @@ from parsers import (
     nerdlecross,
     parole2,
     picsey,
+    polygonle,
     rotaboxes,
     squareword,
     stepdle,
@@ -209,7 +210,7 @@ def parse_results(text: str, timestamp: int = None) -> dict:
     elif "cross nerdle #" in lines[0] and "@nerdlegame" in lines[-1]:
         return nerdlecross(text, timestamp)
 
-    elif "DOMINO FIT #" in lines[0] and "⌚️" in lines[2]:
+    elif "DOMINO FIT #" in lines[0]:
         return dominofit(text, timestamp)
 
     elif "Bandle #" in lines[0] and "https://bandle.app/" in lines[-1]:
@@ -224,9 +225,11 @@ def parse_results(text: str, timestamp: int = None) -> dict:
     elif "Colorfle" in lines[0] and 'accuracy' in lines[-1]:
         return colorfle(text, timestamp)
 
-    elif "rotabox.es" in lines[3] and 'clicks:' in lines[1]:
+    elif len(lines)>= 3 and "rotabox.es" in lines[3] and 'clicks:' in lines[1]:
         return rotaboxes(text, timestamp)
 
+    elif '#Polygonle' in lines[0] and '/' in lines[0]:
+        return polygonle(text, timestamp)
     return None
 
 

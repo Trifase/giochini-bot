@@ -2,7 +2,6 @@
     "456481297": {
         "favs": [
             "Waffle",
-            "WhereTaken",
             "Parole",
             "GuessTheGame",
             "Picsey",
@@ -11,7 +10,8 @@
             "Chrono",
             "Stepdle",
             "Colorfle",
-            "Rotaboxes"
+            "Rotaboxes",
+            "Polygonle"
         ],
         "favs_extra_button": true
     },
@@ -74,9 +74,10 @@
             "Wordle",
             "Worldle",
             "TravleITA",
-            "Chrono"
+            "Chrono",
+            "Stepdle"
         ],
-        "favs_extra_button": false
+        "favs_extra_button": true
     },
     "16337572": {
         "favs": [
@@ -124,8 +125,15 @@
             "Framed",
             "Metaflora",
             "Metazooa",
-            "Moviedle"
-        ]
+            "Moviedle",
+            "NerdleCross",
+            "Bandle",
+            "Colorfle",
+            "Flagle",
+            "Globle",
+            "Nerdle"
+        ],
+        "favs_extra_button": false
     },
     "542430195": {
         "favs": [

@@ -424,9 +424,9 @@ def dominofit(text: str, timestamp: int = None) -> dict:
     result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
     result["day"] = first_line[-1][1:]
-    points = lines[-1][2:]
+    points = lines[-1]
     str_points = time_from_emoji(points.strip())
-    result["tries"] = int(str_points)
+    result["tries"] = int(str_points.strip())
     return result
 
 def bandle(text: str, timestamp: int = None) -> dict:
@@ -501,5 +501,19 @@ def rotaboxes(text: str, timestamp: int = None) -> dict:
     max_points = int(punti.split("/")[-1])
     clicks = int(punti.split("/")[0])
     result["tries"] = clicks - max_points
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result
+
+def polygonle(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Polygonle"
+    first_line = lines[0].split()
+    result["day"] = first_line[1]
+    punti = first_line[2].split("/")[0]
+    if punti == "X":
+        result["tries"] = "X"
+    else:
+        result["tries"] = punti
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
