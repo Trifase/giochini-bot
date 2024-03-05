@@ -468,7 +468,8 @@ def stepdle(text: str, timestamp: int = None) -> dict:
     result["name"] = "Stepdle"
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
-    won = all(x == "🟩" for x in lines[-1])
+    count = lines[-1].count("🟩")
+    won = count == 7
     if won:
         punti = lines[1].split()[0].split('/')[0]
         result["tries"] = punti
