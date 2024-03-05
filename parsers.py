@@ -461,3 +461,18 @@ def chrono(text: str, timestamp: int = None) -> dict:
         result["tries"] = 1
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
+def stepdle(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Stepdle"
+    first_line = lines[0].split()
+    result["day"] = first_line[1][1:]
+    won = all(x == "🟩" for x in lines[-1])
+    if won:
+        punti = lines[1].split()[0].split('/')[0]
+        result["tries"] = punti
+    else:
+        result["tries"] = "X"
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result

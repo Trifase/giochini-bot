@@ -66,6 +66,7 @@ from parsers import (
     parole2,
     picsey,
     squareword,
+    stepdle,
     tempoindovinr,
     timeguesser,
     tradle,
@@ -214,6 +215,9 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "CHRONO  #" in lines[0] and "https://chrono.ques" in lines[-1]:
         return chrono(text, timestamp)
+
+    elif "Stepdle #" in lines[0]:
+        return stepdle(text, timestamp)
     return None
 
 
