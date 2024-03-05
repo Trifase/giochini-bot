@@ -99,7 +99,6 @@ def correct_name(name: str) -> str:
     return list(GAMES.keys())[[x.lower() for x in GAMES.keys()].index(name.lower())]
 
 
-
 def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
     today = get_day_from_date(game, datetime.date.today())
     date_str = f"{get_date_from_day(game, day).strftime('%Y-%m-%d')}"
@@ -122,7 +121,7 @@ def time_from_emoji(input_string: str) -> str:
     for key, value in emojidict.items():
         input_string = input_string.replace(key, str(value))
 
-    input_string = ''.join([x for x in input_string if x in "0123456789"])
+    input_string = "".join([x for x in input_string if x in "0123456789"])
     return input_string
 
 

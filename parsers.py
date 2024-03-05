@@ -429,6 +429,7 @@ def dominofit(text: str, timestamp: int = None) -> dict:
     result["tries"] = int(str_points.strip())
     return result
 
+
 def bandle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
@@ -442,6 +443,7 @@ def bandle(text: str, timestamp: int = None) -> dict:
         result["tries"] = punti
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
 
 def chrono(text: str, timestamp: int = None) -> dict:
     result = {}
@@ -462,6 +464,7 @@ def chrono(text: str, timestamp: int = None) -> dict:
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
+
 def stepdle(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
@@ -471,12 +474,13 @@ def stepdle(text: str, timestamp: int = None) -> dict:
     count = lines[-1].count("🟩")
     won = count == 7
     if won:
-        punti = lines[1].split()[0].split('/')[0]
+        punti = lines[1].split()[0].split("/")[0]
         result["tries"] = punti
     else:
         result["tries"] = "X"
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
 
 def colorfle(text: str, timestamp: int = None) -> dict:
     result = {}
@@ -492,6 +496,7 @@ def colorfle(text: str, timestamp: int = None) -> dict:
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
+
 def rotaboxes(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
@@ -504,6 +509,7 @@ def rotaboxes(text: str, timestamp: int = None) -> dict:
     result["tries"] = clicks - max_points
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
 
 def polygonle(text: str, timestamp: int = None) -> dict:
     result = {}

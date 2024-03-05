@@ -222,13 +222,13 @@ def parse_results(text: str, timestamp: int = None) -> dict:
     elif "Stepdle #" in lines[0]:
         return stepdle(text, timestamp)
 
-    elif "Colorfle" in lines[0] and 'accuracy' in lines[-1]:
+    elif "Colorfle" in lines[0] and "accuracy" in lines[-1]:
         return colorfle(text, timestamp)
 
-    elif len(lines)>= 3 and "rotabox.es" in lines[3] and 'clicks:' in lines[1]:
+    elif len(lines) >= 3 and "rotabox.es" in lines[3] and "clicks:" in lines[1]:
         return rotaboxes(text, timestamp)
 
-    elif '#Polygonle' in lines[0] and '/' in lines[0]:
+    elif "#Polygonle" in lines[0] and "/" in lines[0]:
         return polygonle(text, timestamp)
     return None
 
@@ -682,9 +682,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
         if play_is_lost:
-            logging.info(
-            f"Aggiungo tentativo di {result['user_name']} per {result['name']} #{result['day']} (fallito)"
-        )
+            logging.info(f"Aggiungo tentativo di {result['user_name']} per {result['name']} #{result['day']} (fallito)")
             return
 
         today_game = int(get_day_from_date(result["name"], datetime.date.today()))
