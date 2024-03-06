@@ -62,6 +62,9 @@ class GameFilter(MessageFilter):
 
         if "#travle " in message.text and "https://imois.in/games/travle" in message.text:
             return True
+        
+        if "https://www.chronophoto.app/daily.html" in message.text and "Round 1" in message.text and "Round 4:" in message.text:
+            return True
 
         return False
 
@@ -82,6 +85,9 @@ def get_day_from_date(game: str, date: datetime.date | str = None) -> str:
 
     if isinstance(date, str) and game == "Picsey":
         date = datetime.datetime.strptime(date, "%m.%d.%y").date()
+
+    if isinstance(date, str) and game == "Chronophoto":
+        date = datetime.datetime.strptime(date, "%d/%m/%Y").date()
 
     if date is None:
         date = datetime.date.today()
@@ -134,6 +140,10 @@ def process_tries(game: str, tries: int | str) -> int | str:
     # For Timeguesser, scores are points, the more the better. Max points is 50_000 so we save them as differences from max.
     if game == "TimeGuesser":
         tries = 50_000 - tries
+
+    # For Chronophoto, scores are points, the more the better. Max points is 5_000 so we save them as differences from max.
+    if game == "Chronophoto":
+        tries = 5_000 - tries
 
     # For TempoIndovinr, scores are points, the more the better. Max points is 1_000 so we save them as differences from max.
     if game == "TempoIndovinr":

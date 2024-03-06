@@ -524,3 +524,17 @@ def polygonle(text: str, timestamp: int = None) -> dict:
         result["tries"] = punti
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
+
+def chronophoto(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Chronophoto"
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    first_line = lines[0].split()
+    result["day"] = get_day_from_date("Chronophoto", first_line[-1])
+    points = first_line[5]
+    result["tries"] = 5_000 - int(points)
+    if result["tries"] == 0:
+        result["tries"] = "X"
+    return result

@@ -48,6 +48,7 @@ from parsers import (
     angle,
     bandle,
     chrono,
+    chronophoto,
     cloudle,
     colorfle,
     connections,
@@ -230,6 +231,10 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "#Polygonle" in lines[0] and "/" in lines[0]:
         return polygonle(text, timestamp)
+
+    elif "I got a score of" in lines[0] and "chronophoto.app" in lines[-1]:
+        return chronophoto(text, timestamp)
+
     return None
 
 
