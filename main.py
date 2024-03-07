@@ -330,9 +330,7 @@ def make_games_classifica(days: int = 0) -> str:
     return classifica
 
 
-def make_menu_setting_favs(
-    favs: list = [], favs_extra_button: bool = False, user_id: str = None, row_length: int = 2
-) -> InlineKeyboardMarkup:
+def make_menu_setting_favs(favs: list = [], favs_extra_button: bool = False, user_id: str = None, row_length: int = 2) -> InlineKeyboardMarkup:
     keyboard = []
     games = [x for x in GAMES.keys()]
     games = sorted(games)
@@ -464,7 +462,7 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if data == "cls_do_nothing":
         return
 
-    _, game, message_id, day = data.split("_")
+    _, game, _, day = data.split("_")
 
     classifica_text = make_single_classifica(
         game, chat_id=update.effective_chat.id, day=day, limit=6, user_id=update.effective_user.id
@@ -487,7 +485,7 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
 
 
-async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # giochi = [f"<code>{x}</code>" for x in GAMES.keys()]
     # giochi = " · ".join(giochi)
     message = [
@@ -926,7 +924,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
             .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             .limit(3)
         )
-        for i in range(len(query_alternate)):
+        for i, _ in enumerate(query_alternate):
             try:
                 if not query_alternate[i].lost:
                     name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
@@ -1038,7 +1036,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
         # Score Processing
         if model == "standard":
-            for i in range(len(query)):
+            for i, _ in enumerate(query):
                 try:
                     name = f"{query[i].user_id}_|_{query[i].user_name}"
                     points[name] += 3 - i
@@ -1237,7 +1235,7 @@ def main():
     app.add_handler(CommandHandler("giochiamo", manual_daily_reminder), 1)
     app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "stats", "statistiche"], mystats), 1)
-    app.add_handler(CommandHandler("help", help), 1)
+    app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
     app.add_handler(CommandHandler("backup", manual_backup), 1)
     app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)

@@ -62,7 +62,7 @@ class GameFilter(MessageFilter):
 
         if "#travle " in message.text and "https://imois.in/games/travle" in message.text:
             return True
-        
+
         if "https://www.chronophoto.app/daily.html" in message.text and "Round 1" in message.text and "Round 4:" in message.text:
             return True
 
