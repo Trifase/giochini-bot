@@ -1056,7 +1056,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
                 .limit(3)
             )
-            for i in range(len(query_alternate)):
+            for i,_ in enumerate(query_alternate):
                 try:
                     if not query[i].lost:
                         name = f"{query[i].user_id}_|_{query[i].user_name}"
@@ -1072,7 +1072,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
                 .limit(3)
             )
-            for i in range(len(query_alternate)):
+            for i,_ in enumerate(query_alternate):
                 try:
                     if not query[i].lost:
                         name = f"{query[i].user_id}_|_{query[i].user_name}"
@@ -1084,7 +1084,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
             limit = 3
             if len(query) < limit:
                 continue
-            for i in range(len(query)):
+            for i, _ in enumerate(query):
                 try:
                     name = f"{query[i].user_id}_|_{query[i].user_name}"
                     points[name] += 3 - i
