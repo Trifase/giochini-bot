@@ -2,7 +2,7 @@ import datetime
 
 import peewee
 
-TOKEN = ""
+TOKEN = 0
 DBPATH = "sqlite.db"
 DBPATH_TEST = "tests.db"
 ID_GIOCHINI = 0

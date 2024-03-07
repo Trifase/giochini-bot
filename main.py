@@ -330,7 +330,7 @@ def make_games_classifica(days: int = 0) -> str:
     return classifica
 
 
-def make_menu_setting_favs(favs: list = [], favs_extra_button: bool = False, user_id: str = None, row_length: int = 2) -> InlineKeyboardMarkup:
+def make_menu_setting_favs(favs: list = None, favs_extra_button: bool = False, user_id: str = None, row_length: int = 2) -> InlineKeyboardMarkup:
     keyboard = []
     games = [x for x in GAMES.keys()]
     games = sorted(games)
