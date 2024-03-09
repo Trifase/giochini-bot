@@ -44,7 +44,7 @@ class GameFilter(MessageFilter):
         if not message.text:
             return False
 
-        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅"]
+        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅", "🌕", "🌗", "🌘", "🌑"]
 
         # Se ha qualche emoji colorata, probabilmente è un messaggio di un gioco
         if any(c in message.text for c in quadratini):
@@ -144,6 +144,14 @@ def process_tries(game: str, tries: int | str) -> int | str:
     # For Chronophoto, scores are points, the more the better. Max points is 5_000 so we save them as differences from max.
     if game == "Chronophoto":
         tries = 5_000 - tries
+
+    # For FoodGuessr, scores are points, the more the better. Max points is 15_000 so we save them as differences from max.
+    if game == "FoodGuessr":
+        tries = 15_000 - tries
+
+    # For Spellcheck, scores are green squares, the more the better. Max points is 15 so we save them as differences from max.
+    if game == "Spellcheck":
+        tries = 15 - tries
 
     # For TempoIndovinr, scores are points, the more the better. Max points is 1_000 so we save them as differences from max.
     if game == "TempoIndovinr":

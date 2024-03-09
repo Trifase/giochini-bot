@@ -538,3 +538,24 @@ def chronophoto(text: str, timestamp: int = None) -> dict:
     if result["tries"] == 0:
         result["tries"] = "X"
     return result
+
+def foodguessr(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "FoodGuessr"
+    # Foodguessr doesn't have a #day, so we parse the date and get our own numeration (Mar 9, 2024 -> 200)
+    result["day"] = get_day_from_date("FoodGuessr", datetime.date.today())
+    points = lines[4].split()[2].replace(',','').replace('.','')
+    result["tries"] = 15_000 - int(points)
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result
+
+def spellcheck(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    first_line = lines[0].split()
+    result["name"] = "Spellcheck"
+    result["day"] = first_line[1][1:]
+    result["tries"] = 15 - text.count('🟩')
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    return result

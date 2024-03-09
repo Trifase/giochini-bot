@@ -56,6 +56,7 @@ from parsers import (
     dominofit,
     flagle,
     framed,
+    foodguessr,
     globle,
     guessthegame,
     highfive,
@@ -69,6 +70,7 @@ from parsers import (
     picsey,
     polygonle,
     rotaboxes,
+    spellcheck,
     squareword,
     stepdle,
     tempoindovinr,
@@ -234,6 +236,12 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "I got a score of" in lines[0] and "chronophoto.app" in lines[-1]:
         return chronophoto(text, timestamp)
+    
+    elif "FoodGuessr" in lines[0] and "Play: https://foodguessr.com" in lines[-1]:
+        return foodguessr(text, timestamp)
+
+    elif "Spellcheck #" in lines[0]:
+        return spellcheck(text, timestamp)
 
     return None
 
