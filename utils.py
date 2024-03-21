@@ -1,4 +1,5 @@
 import datetime
+from collections import defaultdict
 
 import httpx
 import peewee
@@ -6,7 +7,7 @@ from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
 
-from config import GAMES, MEDALS, TOKEN, Medaglia, Punteggio
+from config import GAMES, ID_GIOCHINI, MEDALS, TOKEN, Medaglia, Punteggio
 
 
 @dataclass
@@ -44,7 +45,10 @@ class GameFilter(MessageFilter):
         if not message.text:
             return False
 
-        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅", "🌕", "🌗", "🌘", "🌑"]
+        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅", "🌕", "🌗", "🌘", "🌑",]
+
+        if b"\xE2\xAC\x9B".decode("utf-8") in message.text:
+            return True
 
         # Se ha qualche emoji colorata, probabilmente è un messaggio di un gioco
         if any(c in message.text for c in quadratini):
@@ -63,10 +67,112 @@ class GameFilter(MessageFilter):
         if "#travle " in message.text and "https://imois.in/games/travle" in message.text:
             return True
 
-        if "https://www.chronophoto.app/daily.html" in message.text and "Round 1" in message.text and "Round 4:" in message.text:
+        if (
+            "https://www.chronophoto.app/daily.html" in message.text
+            and "Round 1" in message.text
+            and "Round 4:" in message.text
+        ):
             return True
 
         return False
+
+
+def daily_ranking(model: str = "alternate-with-lost"):
+    """Creates the daily ranking for all games."""
+    points = defaultdict(int)
+    today = datetime.date.today()
+
+    # Score Calculation models:
+
+    # standard: 3 points to the first, 2 points to the second and 1 point to the third, no matter how many plays there are.
+
+    # skip-empty: same as the standard, but games with less than limit plays (default: 3) are not counted at all
+
+    # alternate: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
+    # It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
+    # BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
+
+    # alternate-with-lost: same as alternate, but we count lost plays.
+
+    for game in GAMES.keys():
+        day = get_day_from_date(game, today)
+
+        query = (
+            Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+            .where(
+                Punteggio.day == day,
+                Punteggio.game == game,
+                Punteggio.chat_id == ID_GIOCHINI,
+                Punteggio.lost == False,
+            )
+            .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+            .limit(3)
+        )
+
+        # Score Processing
+        if model == "standard":
+            for i, _ in enumerate(query):
+                try:
+                    name = f"{query[i].user_id}_|_{query[i].user_name}"
+                    points[name] += 3 - i
+                except IndexError:
+                    pass
+
+        if model == "alternate":
+            # This include lost plays, that we filter out when we assign points.
+            query_alternate = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+                .where(
+                    Punteggio.day == day,
+                    Punteggio.game == game,
+                    Punteggio.chat_id == ID_GIOCHINI,
+                    Punteggio.lost == False,
+                )
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+                .limit(3)
+            )
+            for i, _ in enumerate(query_alternate):
+                try:
+                    if not query[i].lost:
+                        name = f"{query[i].user_id}_|_{query[i].user_name}"
+                        points[name] += len(query) - i
+                except IndexError:
+                    pass
+
+        if model == "alternate-with-lost":
+            # This include lost plays
+            query_alternate = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+                .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+                .limit(3)
+            )
+            for i, _ in enumerate(query_alternate):
+                try:
+                    if not query[i].lost:
+                        name = f"{query[i].user_id}_|_{query[i].user_name}"
+                        points[name] += len(query_alternate) - i
+                except IndexError:
+                    pass
+
+        if model == "skip-empty":
+            limit = 3
+            if len(query) < limit:
+                continue
+            for i, _ in enumerate(query):
+                try:
+                    name = f"{query[i].user_id}_|_{query[i].user_name}"
+                    points[name] += 3 - i
+                except IndexError:
+                    pass
+
+    cambiamenti = dict(points)
+    cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
+    return cambiamenti
+
+
+def str_as_int(string: str) -> int:
+    return int(string.replace(".", ""))
 
 
 def get_day_from_date(game: str, date: datetime.date | str = None) -> str:

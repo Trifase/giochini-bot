@@ -31,19 +31,19 @@ GAMES = {
         "emoji": "🇮🇹",
         "url": "https://par-le.github.io/gioco/",
     },
-    'Bandle': {
-        'category': 'Immagini, giochi e film',
-        'date': datetime.date(2024, 3, 3),
-        'day': '564',
-        'emoji': '🎛️',
-        'url': 'https://bandle.app/'
+    "Bandle": {
+        "category": "Immagini, giochi e film",
+        "date": datetime.date(2024, 3, 3),
+        "day": "564",
+        "emoji": "🎛️",
+        "url": "https://bandle.app/",
     },
-    'Chrono': {
-        'category': 'Logica',
-        'date': datetime.date(2024, 3, 4),
-        'day': '734',
-        'emoji': '🎛️',
-        'url': 'https://chrono.quest'
+    "Chrono": {
+        "category": "Logica",
+        "date": datetime.date(2024, 3, 4),
+        "day": "734",
+        "emoji": "🎛️",
+        "url": "https://chrono.quest",
     },
     "Contexto": {
         "category": "Giochi di parole",

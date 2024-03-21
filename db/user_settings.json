@@ -8,10 +8,11 @@
             "Connections",
             "NerdleCross",
             "Chrono",
-            "Stepdle",
             "Colorfle",
             "Rotaboxes",
-            "Polygonle"
+            "Polygonle",
+            "FoodGuessr",
+            "Spellcheck"
         ],
         "favs_extra_button": true
     },
@@ -78,7 +79,8 @@
             "Stepdle",
             "Colorfle",
             "Bandle",
-            "Chronophoto"
+            "Chronophoto",
+            "FoodGuessr"
         ],
         "favs_extra_button": true
     },
@@ -95,7 +97,8 @@
             "Waffle",
             "WhereTaken",
             "Worldle"
-        ]
+        ],
+        "favs_extra_button": true
     },
     "430695876": {
         "favs": [
@@ -116,7 +119,8 @@
             "Travle",
             "Waffle",
             "Wordle"
-        ]
+        ],
+        "favs_extra_button": false
     },
     "286213405": {
         "favs": [
@@ -151,8 +155,13 @@
             "Squareword",
             "Travle",
             "Wordle",
-            "Waffle",
-            "DominoFit"
+            "DominoFit",
+            "Bandle",
+            "Chrono",
+            "Polygonle",
+            "Spellcheck",
+            "Stepdle",
+            "TravleITA"
         ],
         "favs_extra_button": false
     },
@@ -164,5 +173,34 @@
             "Waffle",
             "Squareword"
         ]
+    },
+    "61260596": {
+        "favs": [
+            "Travle",
+            "TravleITA",
+            "Wordle",
+            "Parole",
+            "Metazooa",
+            "Globle",
+            "Flagle",
+            "Connections",
+            "Cloudle",
+            "Angle",
+            "Worldle"
+        ],
+        "favs_extra_button": false
+    },
+    "94105827": {
+        "favs": [
+            "Travle",
+            "Waffle",
+            "Wordle",
+            "Worldle",
+            "Stepdle",
+            "Parole",
+            "FoodGuessr",
+            "Squareword"
+        ],
+        "favs_extra_button": false
     }
 }

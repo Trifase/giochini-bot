@@ -18,8 +18,10 @@ def wordle(text: str, timestamp: int = None) -> dict:
     lines = text.splitlines()
     result["name"] = "Wordle"
     first_line = lines[0].split()
-    result["day"] = first_line[1]
-    result["tries"] = first_line[2].split("/")[0]
+    result["day"] = (
+        first_line[1].replace(".", "").replace(",", "")
+    )  # Wordle ti odio, chi cazzo scrive 1000 come "1.000" o "1,000"
+    result["tries"] = first_line[-1].split("/")[0]
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
@@ -520,8 +522,13 @@ def polygonle(text: str, timestamp: int = None) -> dict:
     punti = first_line[2].split("/")[0]
     if punti == "X":
         result["tries"] = "X"
+
+    elif punti == "🎯":
+        result["tries"] = "1"
+
     else:
         result["tries"] = punti
+
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
@@ -539,16 +546,18 @@ def chronophoto(text: str, timestamp: int = None) -> dict:
         result["tries"] = "X"
     return result
 
+
 def foodguessr(text: str, timestamp: int = None) -> dict:
     result = {}
     lines = text.splitlines()
     result["name"] = "FoodGuessr"
     # Foodguessr doesn't have a #day, so we parse the date and get our own numeration (Mar 9, 2024 -> 200)
     result["day"] = get_day_from_date("FoodGuessr", datetime.date.today())
-    points = lines[4].split()[2].replace(',','').replace('.','')
+    points = lines[4].split()[2].replace(",", "").replace(".", "")
     result["tries"] = 15_000 - int(points)
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
 
 def spellcheck(text: str, timestamp: int = None) -> dict:
     result = {}
@@ -556,6 +565,6 @@ def spellcheck(text: str, timestamp: int = None) -> dict:
     first_line = lines[0].split()
     result["name"] = "Spellcheck"
     result["day"] = first_line[1][1:]
-    result["tries"] = 15 - text.count('🟩')
+    result["tries"] = 15 - text.count("🟩")
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result

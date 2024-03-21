@@ -6,7 +6,6 @@ import sys
 import time
 import traceback
 import zipfile
-from collections import defaultdict
 
 import peewee
 import pytz
@@ -55,8 +54,8 @@ from parsers import (
     contexto,
     dominofit,
     flagle,
-    framed,
     foodguessr,
+    framed,
     globle,
     guessthegame,
     highfive,
@@ -87,12 +86,14 @@ from utils import (
     Classifica,
     GameFilter,
     correct_name,
+    daily_ranking,
     get_day_from_date,
     longest_streak,
     make_buttons,
     medaglie_count,
     personal_stats,
     process_tries,
+    str_as_int,
     streak_at_day,
 )
 
@@ -450,6 +451,7 @@ async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
+    logging.info(f"È accaduto un errore! {tb_list[2]}\n{tb_list[1]}")
 
     await context.bot.send_message(
         chat_id=ID_BOTCENTRAL,
@@ -651,7 +653,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         result["user_id"] = update.message.from_user.id
 
         query = Punteggio.select().where(
-            Punteggio.day == int(result["day"]),
+            Punteggio.day == str_as_int(result["day"]),
             Punteggio.game == result["name"],
             Punteggio.user_id == result["user_id"],
             Punteggio.chat_id == update.effective_chat.id,
@@ -676,7 +678,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_html(f"<code>{rawtext}</code>")
 
             return
-        streak = streak_at_day(user_id=int(result["user_id"]), game=result["name"], day=int(result["day"]))
+        streak = streak_at_day(user_id=int(result["user_id"]), game=result["name"], day=str_as_int(result["day"]))
 
         Punteggio.create(
             date=datetime.datetime.now(),
@@ -685,7 +687,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             user_id=int(result["user_id"]),
             user_name=result["user_name"],
             game=result["name"],
-            day=int(result["day"]),
+            day=str_as_int(result["day"]),
             tries=int(result["tries"]),
             extra=str(result.get("stars", None)),
             streak=streak + 1,
@@ -698,7 +700,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         today_game = int(get_day_from_date(result["name"], datetime.date.today()))
 
-        if int(result["day"]) in [today_game, today_game - 1]:
+        if str_as_int(result["day"]) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"])
             if classifica:
@@ -725,7 +727,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         else:
             await update.message.reply_text(
-                f'Ho salvato il tuo punteggio di {int(today_game) - int(result["day"])} giorni fa.'
+                f'Ho salvato il tuo punteggio di {int(today_game) - str_as_int(result["day"])} giorni fa.'
             )
 
         logging.info(
@@ -897,51 +899,11 @@ async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
-    points = defaultdict(int)
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
-    for game in GAMES.keys():
-        day = get_day_from_date(game, yesterday)
 
-        # OLD STANDARD MODEL
-        # query = (
-        #     Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-        #     .where(
-        #         Punteggio.day == day,
-        #         Punteggio.game == game,
-        #         # Punteggio.chat_id == update.effective_chat.id)
-        #         Punteggio.chat_id == ID_GIOCHINI,
-        #         Punteggio.lost == False,
-        #     )
-        #     .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-        #     .limit(3)
-        # )
-
-        # for i in range(len(query)):
-        #     try:
-        #         name = f"{query[i].user_id}_|_{query[i].user_name}"
-        #         points[name] += 3 - i
-        #     except IndexError:
-        #         pass
-
-        # ALTERNATE MODEL
-        # This include lost plays, that we filter out when we assign points.
-        query_alternate = (
-            Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-            .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
-            .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-            .limit(3)
-        )
-        for i, _ in enumerate(query_alternate):
-            try:
-                if not query_alternate[i].lost:
-                    name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
-                    points[name] += len(query_alternate) - i
-            except IndexError:
-                pass
-
-    cambiamenti = dict(points)
-    cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
+    model = 'alternate-with-lost'
+    cambiamenti = daily_ranking(model)
 
     message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
 
@@ -1005,20 +967,6 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    points = defaultdict(int)
-    today = datetime.date.today()
-
-    # Score Calculation models:
-    # standard: standard calculation model: 3 points to the first, 2 points to the second and 1 point to the third, no matter how many plays there are.
-    #
-    # alternate: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
-    #           It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
-    #           BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
-    #
-    # alternate-with-lost: same as alternate, but we count lost plays.
-
-    #
-    # skip-empty: same as the standard, but games with less than limit plays (default: 3) are not counted at all
     model = "alternate-with-lost"
     if "-skip-empty" in context.args:
         model = "skip-empty"
@@ -1027,80 +975,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     elif "-altern-with-lost" in context.args:
         model = "alternate-with-lost"
 
-    for game in GAMES.keys():
-        day = get_day_from_date(game, today)
-
-        query = (
-            Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-            .where(
-                Punteggio.day == day,
-                Punteggio.game == game,
-                Punteggio.chat_id == ID_GIOCHINI,
-                Punteggio.lost == False,
-            )
-            .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-            .limit(3)
-        )
-
-        # Score Processing
-        if model == "standard":
-            for i, _ in enumerate(query):
-                try:
-                    name = f"{query[i].user_id}_|_{query[i].user_name}"
-                    points[name] += 3 - i
-                except IndexError:
-                    pass
-
-        if model == "alternate":
-            # This include lost plays, that we filter out when we assign points.
-            query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-                .where(
-                    Punteggio.day == day,
-                    Punteggio.game == game,
-                    Punteggio.chat_id == ID_GIOCHINI,
-                    Punteggio.lost == False,
-                )
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-                .limit(3)
-            )
-            for i,_ in enumerate(query_alternate):
-                try:
-                    if not query[i].lost:
-                        name = f"{query[i].user_id}_|_{query[i].user_name}"
-                        points[name] += len(query) - i
-                except IndexError:
-                    pass
-
-        if model == "alternate-with-lost":
-            # This include lost plays
-            query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-                .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-                .limit(3)
-            )
-            for i,_ in enumerate(query_alternate):
-                try:
-                    if not query[i].lost:
-                        name = f"{query[i].user_id}_|_{query[i].user_name}"
-                        points[name] += len(query_alternate) - i
-                except IndexError:
-                    pass
-
-        if model == "skip-empty":
-            limit = 3
-            if len(query) < limit:
-                continue
-            for i, _ in enumerate(query):
-                try:
-                    name = f"{query[i].user_id}_|_{query[i].user_name}"
-                    points[name] += 3 - i
-                except IndexError:
-                    pass
-
-    cambiamenti = dict(points)
-    cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
+    cambiamenti = daily_ranking(model)
 
     message = "Ecco la classifica temporanea di oggi:\n"
 
@@ -1113,7 +988,6 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
     return
-
 
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     categorie = set([GAMES[x]["category"] for x in GAMES.keys()])
@@ -1205,6 +1079,35 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
         f'<pre><code class="language-python">{rawtext}</code></pre>', reply_markup=ReplyKeyboardRemove()
     )
 
+async def enable_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id == ADMIN_ID:
+        if 'debug_message' not in context.bot_data:
+            context.bot_data['debug_mode'] = True
+        context.bot_data['debug_mode'] = True
+        await update.message.reply_html(f"Debug mode: {context.bot_data['debug_mode']}")
+    return
+
+async def disable_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id == ADMIN_ID:
+        if 'debug_message' not in context.bot_data:
+            context.bot_data['debug_mode'] = False
+        context.bot_data['debug_mode'] = False
+        await update.message.reply_html(f"Debug mode: {context.bot_data['debug_mode']}")
+    return
+
+async def spell_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if 'debug_mode' not in context.bot_data:
+        context.bot_data['debug_mode'] = False
+
+    if context.bot_data['debug_mode']:
+        text = update.message.text
+        mess = ''
+        for c in text:
+            mess += f"{c}: {ord(c)}\n"
+
+        await update.message.reply_html(f'<pre><code class="language-python">{mess}</code></pre>')
+
+    return
 
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
@@ -1268,6 +1171,10 @@ def main():
     app.add_handler(CallbackQueryHandler(fav_extra_toggle, pattern=r"^fav_more"))
 
     app.add_handler(CallbackQueryHandler(mytoday_full, pattern=r"^myday_more"))
+
+    app.add_handler(MessageHandler(filters.ALL, spell_message), -150)
+    app.add_handler(CommandHandler("enable_debug", enable_debug), 211)
+    app.add_handler(CommandHandler("disable_debug", disable_debug), 212)
 
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 
