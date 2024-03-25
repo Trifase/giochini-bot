@@ -70,6 +70,7 @@ from parsers import (
     polygonle,
     rotaboxes,
     spellcheck,
+    spotle,
     squareword,
     stepdle,
     tempoindovinr,
@@ -243,6 +244,9 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 
     elif "Spellcheck #" in lines[0]:
         return spellcheck(text, timestamp)
+
+    elif "Spotle #" in lines[0] and "spotle.io" in lines[-1]:
+        return spotle(text, timestamp)
 
     return None
 
@@ -903,7 +907,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     yesterday = today - datetime.timedelta(days=1)
 
     model = 'alternate-with-lost'
-    cambiamenti = daily_ranking(model)
+    cambiamenti = daily_ranking(model, yesterday)
 
     message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
 

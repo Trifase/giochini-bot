@@ -77,10 +77,12 @@ class GameFilter(MessageFilter):
         return False
 
 
-def daily_ranking(model: str = "alternate-with-lost"):
+def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = None):
     """Creates the daily ranking for all games."""
     points = defaultdict(int)
     today = datetime.date.today()
+    if not from_day:
+        from_day = today
 
     # Score Calculation models:
 
@@ -95,7 +97,7 @@ def daily_ranking(model: str = "alternate-with-lost"):
     # alternate-with-lost: same as alternate, but we count lost plays.
 
     for game in GAMES.keys():
-        day = get_day_from_date(game, today)
+        day = get_day_from_date(game, from_day)
 
         query = (
             Punteggio.select(Punteggio.user_name, Punteggio.user_id)

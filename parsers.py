@@ -568,3 +568,22 @@ def spellcheck(text: str, timestamp: int = None) -> dict:
     result["tries"] = 15 - text.count("🟩")
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
+
+
+def spotle(text: str, timestamp: int = None) -> dict:
+    result = {}
+    lines = text.splitlines()
+    result["name"] = "Spotle"
+    result["timestamp"] = timestamp if timestamp else int(time.time())
+    first_line = lines[0].split()
+    result["day"] = first_line[1][1:-1]
+    punteggio = lines[2].replace(" ", "")
+    punteggio_bonificato = ''
+    for char in punteggio:
+        if char in ["⬛", "🟥", "🟩", "⬜"]:
+            punteggio_bonificato += char
+    if "🟩" not in punteggio or "❌" in punteggio:
+        result["tries"] = "X"
+    else:
+        result["tries"] = str(punteggio_bonificato.index("🟩") + 1)
+    return result
