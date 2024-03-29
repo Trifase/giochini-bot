@@ -128,6 +128,13 @@ giochini_results_filter = GameFilter()
 def parse_results(text: str, timestamp: int = None) -> dict:
     lines = text.splitlines()
 
+    # filters out single emojis and such
+    if len(text) < 3:
+        return None
+    
+    if 'https://cuedle.fun' in text:
+        return 'ignora'
+
     if "Wordle" in lines[0]:
         return wordle(text, timestamp)
 
@@ -273,7 +280,7 @@ def make_single_classifica(
         .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
         .limit(limit)
     )
-
+    # print(query.sql())
     if not query:
         return None
 
@@ -640,6 +647,10 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     result = parse_results(update.message.text, int(datetime.datetime.timestamp(update.effective_message.date)))
     play_is_lost = False
+    if result == 'ignora':
+        await update.message.set_reaction(reaction="👌")
+        return
+    
     if result == "wrong_parole":
         if update.effective_user.id == 31866384:
             await update.message.reply_text(

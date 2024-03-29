@@ -138,7 +138,11 @@
             "Colorfle",
             "Flagle",
             "Globle",
-            "Nerdle"
+            "Nerdle",
+            "DominoFit",
+            "FoodGuessr",
+            "Spellcheck",
+            "Spotle"
         ],
         "favs_extra_button": false
     },
@@ -153,15 +157,13 @@
             "Parole",
             "Picsey",
             "Squareword",
-            "Travle",
             "Wordle",
             "DominoFit",
             "Bandle",
             "Chrono",
             "Polygonle",
             "Spellcheck",
-            "Stepdle",
-            "TravleITA"
+            "Stepdle"
         ],
         "favs_extra_button": false
     },

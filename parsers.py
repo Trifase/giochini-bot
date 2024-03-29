@@ -27,17 +27,26 @@ def wordle(text: str, timestamp: int = None) -> dict:
 
 
 def worldle(text: str, timestamp: int = None) -> dict:
+    # https://emojiterra.com/speaking-head/
+    # https://www.utf8-chartable.de/unicode-utf8-table.pl
     result = {}
     lines = text.splitlines()
     result["name"] = "Worldle"
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
-    result["tries"] = first_line[2].split("/")[0]
+    result["tries"] = first_line[3].split("/")[0]
     result["timestamp"] = timestamp if timestamp else int(time.time())
-    stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
-    cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))
-    coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))
-    result["stars"] = stars + cityscape + coin
+    bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))       # 🧭
+    stars = text.count(b"\xe2\xad\x90".decode("utf-8"))             # ⭐️
+    flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))          # 🚩
+    abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))           # 🔤
+    language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))      # 🗣
+    population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))    # 👫
+    coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))          # 🪙
+    cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))     # 🏙
+    area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))          # 📐
+
+    result["stars"] = bussola + stars + flag + abc + language + population + coin + cityscape + area
     return result
 
 
@@ -463,6 +472,11 @@ def chrono(text: str, timestamp: int = None) -> dict:
         result["tries"] = 2
     elif punti == "🥇":
         result["tries"] = 1
+    if result['tries'] in [1, 2, 3] and len(lines) >= 4:
+        for line in lines:
+            if line.startswith('⏱'):
+                result["stars"] = 10_000 - float(line.split(':')[-1].strip())
+                break
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
