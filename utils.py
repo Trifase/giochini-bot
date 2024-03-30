@@ -698,5 +698,5 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
 
 # update_streak()
 
-streak =streak_at_day(user_id='95357956', game='Waffle', day=int('797'))
-print(streak)
+# streak =streak_at_day(user_id='95357956', game='Waffle', day=int('797'))
+# print(streak)

@@ -137,7 +137,7 @@ def flagle(text: str, timestamp: int = None) -> dict:
     result["name"] = "Flagle"
     first_line = lines[0].split()
     result["day"] = first_line[1][1:]
-    result["tries"] = first_line[2].split("/")[0]
+    result["tries"] = first_line[3].split("/")[0]
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 
@@ -148,7 +148,7 @@ def wheretaken(text: str, timestamp: int = None) -> dict:
     result["name"] = "WhereTaken"
     first_line = lines[0].split()
     result["day"] = first_line[2][1:]
-    result["tries"] = first_line[3].split("/")[0]
+    result["tries"] = first_line[4].split("/")[0]
     result["timestamp"] = timestamp if timestamp else int(time.time())
     # This is because emojis have hidden personalities
     result["stars"] = text.count(b"\xe2\xad\x90".decode("utf-8"))
@@ -434,7 +434,7 @@ def dominofit(text: str, timestamp: int = None) -> dict:
     result["name"] = "DominoFit"
     result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
-    result["day"] = first_line[-1][1:]
+    result["day"] = first_line[-2][1:]
     points = lines[-1]
     str_points = time_from_emoji(points.strip())
     result["tries"] = int(str_points.strip())
