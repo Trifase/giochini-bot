@@ -96,7 +96,9 @@
             "Tradle",
             "Waffle",
             "WhereTaken",
-            "Worldle"
+            "Worldle",
+            "TravleITA",
+            "Connections"
         ],
         "favs_extra_button": true
     },
@@ -202,6 +204,16 @@
             "Parole",
             "FoodGuessr",
             "Squareword"
+        ],
+        "favs_extra_button": false
+    },
+    "96000757": {
+        "favs": [
+            "Travle",
+            "WhereTaken",
+            "Globle",
+            "GuessTheGame",
+            "Moviedle"
         ],
         "favs_extra_button": false
     }

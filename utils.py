@@ -67,6 +67,9 @@ class GameFilter(MessageFilter):
         if "#travle " in message.text and "https://imois.in/games/travle" in message.text:
             return True
 
+        if "DOMINO FIT #" in message.text and any(x in message.text for x in ['🏅', '🥈', '🥉']):
+            return True
+
         if (
             "https://www.chronophoto.app/daily.html" in message.text
             and "Round 1" in message.text
@@ -297,6 +300,7 @@ def is_connection_completed(connection: list[str]) -> bool:
 
 
 def streak_at_day(user_id, game, day) -> int:
+    # print(f'Searching streak for {user_id}, {game}, {day}')
     day = int(day)
     streak = 0
 
@@ -313,15 +317,17 @@ def streak_at_day(user_id, game, day) -> int:
     gamedays = set([int(x.day) for x in games])
     # print(gamedays)
 
-    if day not in gamedays:
-        return streak
+    # day can never be in gamedays. Dumb.
+    # if day not in gamedays:
+        # return streak
 
-    for day in range(day, 0, -1):
+    for day in range(day-1, 0, -1):
         if day in gamedays:
             streak += 1
         else:
             break
 
+    # print(f'Streak found: {streak}')
     return streak
 
 
@@ -335,11 +341,12 @@ def longest_streak(user_id, game) -> int:
 
 def update_streak():
     c = 0
-    for punt in Punteggio.select().where(Punteggio.streak < 2):
+    for punt in Punteggio.select().where(Punteggio.streak < 500):
         c += 1
         streak = streak_at_day(punt.user_id, punt.game, int(punt.day))
-        print(f"Selected: [{c}] {punt.user_id} {punt.game} {punt.day} {punt.streak} | calc-streak: {streak}")
-        punt.streak = streak
+        if c % 500 == 0:
+            print(f"Selected: [{c}] {punt.user_id} {punt.game} {punt.day} {punt.streak} | calc-streak: {streak}")
+        punt.streak = streak + 1
         # print(f"New Streak: {punt.streak}")
         punt.save()
 
@@ -413,6 +420,80 @@ def personal_stats(user_id: int) -> str:
         result += total_loses_string
     return result
 
+
+def group_stats(chat_id: int) -> str:
+    message = "Ecco le classifiche globali:\n\n"
+    
+    # Totali x giocate. 
+    total_plays = (
+        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id).scalar()
+    )
+    total_lost = (
+        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id, Punteggio.lost == True).scalar()
+    )
+    max_day = (
+        Punteggio.select(peewee.fn.MAX(Punteggio.date).alias("max_day")).where(Punteggio.chat_id == chat_id).scalar()
+    )
+    min_day = (
+        Punteggio.select(peewee.fn.MIN(Punteggio.date).alias("min_day")).where(Punteggio.chat_id == chat_id).scalar()
+    )
+    tracked_games = (
+        Punteggio.select(Punteggio.game).where(Punteggio.chat_id == chat_id).distinct().count()
+    )
+    #three most played games
+    most_played_games = (
+        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+        .where(Punteggio.chat_id == chat_id)
+        .group_by(Punteggio.game)
+        .order_by(peewee.fn.COUNT(Punteggio.game).desc())
+        .limit(3)
+    )
+    least_played_games = (
+        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+        .where(Punteggio.chat_id == chat_id)
+        .group_by(Punteggio.game)
+        .order_by(peewee.fn.COUNT(Punteggio.game).asc())
+        .limit(3)
+    )
+    most_played_games = ', '.join([f'{x.game} ({x.c})' for x in most_played_games])
+    least_played_games = ', '.join([f'{x.game} ({x.c})' for x in least_played_games])
+
+    total_players = (
+        Punteggio.select(Punteggio.user_id).where(Punteggio.chat_id == chat_id).distinct().count()
+    )
+
+
+    most_active_players = (
+        Punteggio.select(Punteggio.user_name, peewee.fn.COUNT(Punteggio.user_name).alias("c"))
+        .where(Punteggio.chat_id == chat_id)
+        .group_by(Punteggio.user_name)
+        .order_by(peewee.fn.COUNT(Punteggio.user_name).desc())
+        .limit(3)
+    )
+    most_active_players = ', '.join([f'{x.user_name} ({x.c})' for x in most_active_players])
+
+    # the record with the longest streak, with game name, username, day
+    longest_streak = (
+        Punteggio.select(Punteggio.streak, Punteggio.game, Punteggio.user_name, Punteggio.day)
+        .where(Punteggio.chat_id == chat_id)
+        .order_by(Punteggio.streak.desc())
+        .limit(1)
+    )
+
+    # day differences between two dates in YYYY-MM-DD format
+    day_diff = (max_day - min_day).days
+
+    message += f'Ci sono {total_plays} partire registrate in {day_diff} giorni, dal {min_day} al {max_day}.\n'
+    message += f'In media sono {round(total_plays/day_diff, 2)} giocate al giorno.\n'
+    message += f'In totale sono state perse {total_lost} partite (il {round(total_lost/total_plays*100, 2)}%).\n\n'
+    message += f'Ci sono {tracked_games} giochi tracciati.\n'
+    message += f'I tre giochi più giocati sono: {most_played_games}.\n'
+    message += f'I tre giochi meno giocati sono: {least_played_games}.\n\n'
+    message += f'Ci sono {total_players} giocatori registrati.\n'
+    message += f'I tre giocatori più attivi sono: {most_active_players}.\n\n'
+    message += f'Il record di streak più lungo è di {longest_streak[0].streak} partite a {longest_streak[0].game}, di {longest_streak[0].user_name}.\n'
+
+    return message
 
 def new_classifica():
     classifica = [
@@ -698,5 +779,6 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
 
 # update_streak()
 
-# streak =streak_at_day(user_id='95357956', game='Waffle', day=int('797'))
+# streak =streak_at_day(user_id=31866384, game='Cloudle', day='736')
+print(group_stats(-1001681280224))
 # print(streak)

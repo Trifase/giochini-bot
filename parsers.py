@@ -520,9 +520,9 @@ def rotaboxes(text: str, timestamp: int = None) -> dict:
     result["day"] = lines[3].split("/")[-1]
     punti = lines[1]
     punti = punti.split("clicks: ")[-1]
-    max_points = int(punti.split("/")[-1])
+    # max_points = int(punti.split("/")[-1])
     clicks = int(punti.split("/")[0])
-    result["tries"] = clicks - max_points
+    result["tries"] = clicks
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
 

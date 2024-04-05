@@ -89,6 +89,7 @@ from utils import (
     correct_name,
     daily_ranking,
     get_day_from_date,
+    group_stats,
     longest_streak,
     make_buttons,
     medaglie_count,
@@ -691,9 +692,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             rawtext = pprint.pformat(result)
             # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
             await update.message.reply_html(f"<code>{rawtext}</code>")
-
             return
+
         streak = streak_at_day(user_id=int(result["user_id"]), game=result["name"], day=str_as_int(result["day"]))
+        # streak is how many consecutive plays there are before this one. So we add 1 to it when saving the score.
 
         Punteggio.create(
             date=datetime.datetime.now(),
@@ -898,6 +900,9 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = f"Ho qualche problema, scusa ({e})"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    if update.effective_user.id == ADMIN_ID and '-group' in context.args:
+        group_message = group_stats(update.effective_chat.id)
+        await update.message.reply_text(group_message, parse_mode="HTML", disable_web_page_preview=True)
 
 
 async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1119,7 +1124,7 @@ async def spell_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         mess = ''
         for c in text:
             mess += f"{c}: {ord(c)}\n"
-
+        await update.message.reply_html(f'<pre><code class="language-python">{text.encode("unicode-escape")}</code></pre>')
         await update.message.reply_html(f'<pre><code class="language-python">{mess}</code></pre>')
 
     return
