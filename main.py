@@ -540,17 +540,23 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     ]
     message_text = "\n".join(message)
     await update.effective_message.reply_text(message_text, parse_mode="HTML")
+    # This will delete the original command after some time (iirc default 10 secs)
+    await delete_original_command(update, context)
 
 
 async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
         return await classificona(update, context)
 
+    # This will delete the original command after some time (iirc default 10 secs)
+    await delete_original_command(update, context)
+
     # print(context.args)
     # print(context.args[0].lower())
     # print([x.lower() for x in GAMES.keys()])
     if context.args[0].lower() not in [x.lower() for x in GAMES.keys()]:
         return await classificona(update, context)
+
     else:
         game = correct_name(context.args[0])
         day = get_day_from_date(game, datetime.date.today())
@@ -566,7 +572,6 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
         await update.effective_message.reply_text(
             classifica_text, reply_markup=buttons, parse_mode="HTML", disable_web_page_preview=True
         )
-    return
 
 
 async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -775,52 +780,64 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # message = 'Ecco a cosa hai già giocato oggi:\n'
     played_today = set()
     not_played_today = set()
+    not_played_favs = []
+    not_played_regs = []
+    favorites = []
+    solo_preferiti = False
+
+    if str(update.effective_user.id) in context.bot_data["settings"]:
+        favorites = context.bot_data["settings"][str(update.effective_user.id)]["favs"]
+        solo_preferiti = context.bot_data["settings"][str(update.effective_user.id)].get("favs_extra_button", False)
+
+    # Divido i giochi in giocati e non giocati
     for game in GAMES.keys():
         day = get_day_from_date(game, datetime.date.today())
         query = Punteggio.select().where(
             Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == update.message.from_user.id
         )
+
         if query:
             played_today.add(game)
-            # tries = query[0].tries
-            # lost = query[0].lost
-            # if lost:
-            #     tries = "X"
-            # message += f'{GAMES[game]["emoji"]} {game} #{day} ({query[0].tries})\n'
         else:
             not_played_today.add(game)
 
-    if not played_today:
-        message = "Non hai giocato a nulla oggi.\n\n"
-        # for game in not_played_today:
-        #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
-
-    elif not_played_today:
-        message = "Ti manca da giocare:\n\n"
-
-    favs = []
-    regs = []
-    favorites = []
-    solo_preferiti = False
-    if str(update.effective_user.id) in context.bot_data["settings"]:
-        favorites = context.bot_data["settings"][str(update.effective_user.id)]["favs"]
-        solo_preferiti = context.bot_data["settings"][str(update.effective_user.id)].get("favs_extra_button", False)
-
+    # divido i non giocati tra favs e regulars
     for game in not_played_today:
         if game in favorites:
-            favs.append(game)
+            not_played_favs.append(game)
         else:
-            regs.append(game)
-    if favs:
-        for game in favs:
-            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>\n'
-    message += "\n"
-    if regs and not solo_preferiti:
-        for game in regs:
-            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+            not_played_regs.append(game)
 
+    # non ha giocate
+    if not played_today:
+        message = "Non hai giocato a nulla oggi.\n\n"
+
+    # ha giocato a tutti i giochi
     elif not not_played_today:
         message = "Hai giocato a tutto!"
+
+    # ha giocato a qualcosa
+    else:
+        if not_played_favs:
+            message = "Ti manca da giocare:\n\n"
+
+        elif not not_played_favs and favorites:
+            message = "Hai giocato a tutti i preferiti!\n\n"
+
+        else:
+            message = "Ti manca da giocare:\n\n"
+
+
+    if not_played_favs:
+        for game in not_played_favs:
+            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>\n'
+
+    message += "\n"
+
+    if not_played_regs and not solo_preferiti:
+        for game in not_played_regs:
+            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+
     if solo_preferiti:
         buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myday_more_{update.effective_user.id}")]]
         keyboard = InlineKeyboardMarkup(buttons)
@@ -887,10 +904,13 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = "Lista dei giochi:\n"
+
     for game in GAMES.keys():
         message += f'{GAMES[game]["emoji"]} {game}: {GAMES[game]["url"]}\n'
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    # This will delete the original command after some time (iirc default 10 secs)
+    await delete_original_command(update, context)
 
 
 async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1007,7 +1027,8 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
-    return
+    # This will delete the original command after some time (iirc default 10 secs)
+    await delete_original_command(update, context)
 
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     categorie = set([GAMES[x]["category"] for x in GAMES.keys()])
@@ -1050,6 +1071,13 @@ async def minimize_post(context: ContextTypes.DEFAULT_TYPE) -> None:
         await message.delete()
     else:
         await message.edit_text("Punteggio salvato.")
+
+
+async def delete_original_command(update: Update, context: ContextTypes.DEFAULT_TYPE, after_seconds: int = 10) -> None:
+    command_msg = update.message
+    context.job_queue.run_once(
+        delete_post, after_seconds, data=[command_msg], name=f"myday_delete_{str(update.effective_message.id)}"
+    )
 
 
 async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:

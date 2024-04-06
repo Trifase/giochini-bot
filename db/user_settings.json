@@ -1,18 +1,7 @@
 {
     "456481297": {
         "favs": [
-            "Waffle",
-            "Parole",
-            "GuessTheGame",
-            "Picsey",
-            "Connections",
-            "NerdleCross",
-            "Chrono",
-            "Colorfle",
-            "Rotaboxes",
-            "Polygonle",
-            "FoodGuessr",
-            "Spellcheck"
+            "Parole"
         ],
         "favs_extra_button": true
     },
@@ -91,10 +80,8 @@
             "GuessTheGame",
             "Parole",
             "TempoIndovinr",
-            "TimeGuesser",
             "Travle",
             "Tradle",
-            "Waffle",
             "WhereTaken",
             "Worldle",
             "TravleITA",

@@ -455,8 +455,8 @@ def group_stats(chat_id: int) -> str:
         .order_by(peewee.fn.COUNT(Punteggio.game).asc())
         .limit(3)
     )
-    most_played_games = ', '.join([f'{x.game} ({x.c})' for x in most_played_games])
-    least_played_games = ', '.join([f'{x.game} ({x.c})' for x in least_played_games])
+    most_played_games = '\n'.join([f'- {x.game} ({x.c})' for x in most_played_games])
+    least_played_games = '\n'.join([f'- {x.game} ({x.c})' for x in least_played_games])
 
     total_players = (
         Punteggio.select(Punteggio.user_id).where(Punteggio.chat_id == chat_id).distinct().count()
@@ -470,7 +470,7 @@ def group_stats(chat_id: int) -> str:
         .order_by(peewee.fn.COUNT(Punteggio.user_name).desc())
         .limit(3)
     )
-    most_active_players = ', '.join([f'{x.user_name} ({x.c})' for x in most_active_players])
+    most_active_players = '\n'.join([f'- {x.user_name} ({x.c})' for x in most_active_players])
 
     # the record with the longest streak, with game name, username, day
     longest_streak = (
@@ -486,12 +486,12 @@ def group_stats(chat_id: int) -> str:
     message += f'Ci sono {total_plays} partire registrate in {day_diff} giorni, dal {min_day} al {max_day}.\n'
     message += f'In media sono {round(total_plays/day_diff, 2)} giocate al giorno.\n'
     message += f'In totale sono state perse {total_lost} partite (il {round(total_lost/total_plays*100, 2)}%).\n\n'
-    message += f'Ci sono {tracked_games} giochi tracciati.\n'
-    message += f'I tre giochi più giocati sono: {most_played_games}.\n'
-    message += f'I tre giochi meno giocati sono: {least_played_games}.\n\n'
-    message += f'Ci sono {total_players} giocatori registrati.\n'
-    message += f'I tre giocatori più attivi sono: {most_active_players}.\n\n'
-    message += f'Il record di streak più lungo è di {longest_streak[0].streak} partite a {longest_streak[0].game}, di {longest_streak[0].user_name}.\n'
+    message += f'Ci sono {tracked_games} giochi tracciati.\n\n'
+    message += f'I tre giochi più giocati sono:\n{most_played_games}\n\n'
+    message += f'I tre giochi meno giocati sono:\n{least_played_games}\n\n'
+    message += f'Ci sono {total_players} giocatori registrati.\n\n'
+    message += f'I tre giocatori più attivi sono:\n{most_active_players}\n\n'
+    message += f'Lo streak più lungo è di {longest_streak[0].streak} partite consecutive a {longest_streak[0].game}, di {longest_streak[0].user_name}.\n'
 
     return message
 
@@ -780,5 +780,5 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
 # update_streak()
 
 # streak =streak_at_day(user_id=31866384, game='Cloudle', day='736')
-print(group_stats(-1001681280224))
+# print(group_stats(-1001681280224))
 # print(streak)
