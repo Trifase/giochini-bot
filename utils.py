@@ -781,5 +781,5 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
 # streak =streak_at_day(user_id=31866384, game='Cloudle', day='736')
 # print(group_stats(-1001681280224))
 # print(streak)
-from games import Wordle
-print(Wordle.__module__)
+# from games import Wordle
+# print(Wordle.__module__)

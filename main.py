@@ -685,8 +685,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return
 
         if result.get("tries") == "X":
-            await update.message.reply_text("Hai perso loooool")
             if update.effective_chat.id != ID_TESTING:
+                await update.message.reply_text("Hai perso loooool")
                 await update.message.set_reaction(reaction="🤷‍♂️")
             result["tries"] = "9999999"  # Tries have to be popupated nonetheless
             play_is_lost = True
@@ -694,9 +694,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.effective_chat.id == ID_TESTING:
             import pprint
 
-            rawtext = pprint.pformat(result)
+            rawresult = pprint.pformat(result, width=300)
+            rawtext = pprint.pformat(update.message.text, width=300)
             # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
-            await update.message.reply_html(f"<code>{rawtext}</code>")
+            await update.message.reply_html(f'<pre><code class="language-python">{rawtext}</code></pre><pre><code class="language-python">{rawresult}</code></pre><pre><code class="language-python">{update.message.text}</code></pre>')
             return
 
         streak = streak_at_day(user_id=int(result["user_id"]), game=result["name"], day=str_as_int(result["day"]))
