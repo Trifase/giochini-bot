@@ -18,9 +18,8 @@ def wordle(text: str, timestamp: int = None) -> dict:
     lines = text.splitlines()
     result["name"] = "Wordle"
     first_line = lines[0].split()
-    result["day"] = (
-        first_line[1].replace(".", "").replace(",", "")
-    )  # Wordle ti odio, chi cazzo scrive 1000 come "1.000" o "1,000"
+    # Wordle ti odio, chi cazzo scrive 1000 come "1.000" o "1,000"
+    result["day"] = (first_line[1].replace(".", "").replace(",", ""))
     result["tries"] = first_line[-1].split("/")[0]
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
