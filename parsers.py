@@ -1,7 +1,10 @@
 import datetime
 import time
 
-from utils import get_day_from_date, is_connection_completed, time_from_emoji
+from utils import get_day_from_date
+
+from games import is_connection_completed, time_from_emoji
+from games import ALL_GAMES as GAMES
 
 # Every parser in this file will parse a text-result from a website and produce a dictionary with the following characteristics:
 # dict = {
@@ -123,7 +126,7 @@ def globle(text: str, timestamp: int = None) -> dict:
     result["name"] = "Globle"
     result["timestamp"] = timestamp if timestamp else int(time.time())
     # Globle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-    result["day"] = get_day_from_date("Globle", lines[0])
+    result["day"] = get_day_from_date(GAMES["Globle"]['date'], GAMES["Globle"]['day'], "Globle", lines[0])
     for line in lines:
         if "=" in line:
             result["tries"] = line.split("=")[-1][1:]
@@ -174,7 +177,7 @@ def cloudle(text: str, timestamp: int = None) -> dict:
     result["name"] = "Cloudle"
     first_line = lines[0].split()
     # Cloudle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-    result["day"] = get_day_from_date("Cloudle", datetime.date.today())
+    result["day"] = get_day_from_date(GAMES["Cloudle"]['date'], GAMES["Cloudle"]['day'], "Cloudle", datetime.date.today())
     result["tries"] = first_line[-1].split("/")[0]
     result["timestamp"] = timestamp if timestamp else int(time.time())
     return result
@@ -186,7 +189,7 @@ def highfive(text: str, timestamp: int = None) -> dict:
     result["name"] = "HighFive"
     result["timestamp"] = timestamp if timestamp else int(time.time())
     # HighFive doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-    result["day"] = get_day_from_date("HighFive", lines[-1])
+    result["day"] = get_day_from_date(GAMES["HighFive"]['date'], GAMES["HighFive"]['day'],"HighFive", lines[-1])
     result["tries"] = str(0 - int(lines[0].split()[3]))
     return result
 
@@ -237,7 +240,7 @@ def moviedle(text: str, timestamp: int = None) -> dict:
     first_line = lines[0].split()
     point_line = lines[2][3:]
     # Moviedle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-    result["day"] = get_day_from_date("Moviedle", first_line[-1])
+    result["day"] = get_day_from_date(GAMES["Moviedle"]['date'], GAMES["Moviedle"]['day'], "Moviedle", first_line[-1])
     punteggio = point_line.replace(" ", "")
     punteggio_bonificato = ""
     # Moviedle uses black-magic squares that inject empty invisible spaces fugging up the count. We remove them with a whitelisted chars list.
@@ -259,7 +262,7 @@ def murdle(text: str, timestamp: int = None) -> dict:
     result["timestamp"] = timestamp if timestamp else int(time.time())
     day = lines[1].split()[-1]
     # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-    result["day"] = get_day_from_date("Murdle", day)
+    result["day"] = get_day_from_date(GAMES["Murdle"]['date'], GAMES["Murdle"]['day'], "Murdle", day)
     points_line = lines[4]
     punteggio = points_line.split()[-1]
     if "❌" in points_line:
@@ -301,7 +304,7 @@ def picsey(text: str, timestamp: int = None) -> dict:
     lines = text.splitlines()
     date = lines[0].split()[-1]
     result["name"] = "Picsey"
-    result["day"] = get_day_from_date("Picsey", date)
+    result["day"] = get_day_from_date(GAMES["Picsey"]['date'], GAMES["Picsey"]['day'], "Picsey", date)
     points = lines[2].split("p/")[0]
     # Picsey uses positive poits, from 0 to 100. We as usual save 100-n and then revert it when printing the results.
     result["tries"] = 100 - int(points)
@@ -552,7 +555,7 @@ def chronophoto(text: str, timestamp: int = None) -> dict:
     result["name"] = "Chronophoto"
     result["timestamp"] = timestamp if timestamp else int(time.time())
     first_line = lines[0].split()
-    result["day"] = get_day_from_date("Chronophoto", first_line[-1])
+    result["day"] = get_day_from_date(GAMES["Chronophoto"]['date'], GAMES["Chronophoto"]['day'], "Chronophoto", first_line[-1])
     points = first_line[5]
     result["tries"] = 5_000 - int(points)
     if result["tries"] == 0:
@@ -565,7 +568,7 @@ def foodguessr(text: str, timestamp: int = None) -> dict:
     lines = text.splitlines()
     result["name"] = "FoodGuessr"
     # Foodguessr doesn't have a #day, so we parse the date and get our own numeration (Mar 9, 2024 -> 200)
-    result["day"] = get_day_from_date("FoodGuessr", datetime.date.today())
+    result["day"] = get_day_from_date(GAMES["FoodGuessr"]['date'], GAMES["FoodGuessr"]['day'], "FoodGuessr", datetime.date.today())
     points = lines[4].split()[2].replace(",", "").replace(".", "")
     result["tries"] = 15_000 - int(points)
     result["timestamp"] = timestamp if timestamp else int(time.time())

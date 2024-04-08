@@ -33,7 +33,6 @@ from telegram.ext import (
 from config import (
     ADMIN_ID,
     BACKUP_DEST,
-    GAMES,
     ID_BOTCENTRAL,
     ID_GIOCHINI,
     ID_TESTING,
@@ -43,6 +42,9 @@ from config import (
     Punteggio,
     Punti,
 )
+
+from games import ALL_GAMES as GAMES
+from games import ALL_CLASSES as giochini
 from parsers import (
     angle,
     bandle,
@@ -262,7 +264,7 @@ def parse_results(text: str, timestamp: int = None) -> dict:
 def make_single_classifica(
     game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True
 ) -> str:
-    day = day or get_day_from_date(game, datetime.date.today())
+    day = day or get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
     # print(f"Making classifica for {game} #{day}")
     emoji = GAMES[game]["emoji"]
     url = GAMES[game]["url"]
@@ -559,7 +561,7 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
 
     else:
         game = correct_name(context.args[0])
-        day = get_day_from_date(game, datetime.date.today())
+        day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
 
         classifica_text = make_single_classifica(
             game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id
@@ -651,7 +653,17 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    result = parse_results(update.message.text, int(datetime.datetime.timestamp(update.effective_message.date)))
+    new_mode = True
+    if not new_mode:
+        result = parse_results(update.message.text, int(datetime.datetime.timestamp(update.effective_message.date)))
+    else:
+        for giochino in giochini:
+            giochino = giochino(update)
+            # print(f"{giochino._name} - can handle? {giochino.can_handle_this}")
+            if giochino.can_handle_this:
+                result = giochino.punteggio
+                break
+
     play_is_lost = False
     if result == 'ignora':
         await update.message.set_reaction(reaction="👌")
@@ -694,10 +706,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.effective_chat.id == ID_TESTING:
             import pprint
 
-            rawresult = pprint.pformat(result, width=300)
-            rawtext = pprint.pformat(update.message.text, width=300)
+            rawresult = pprint.pformat(result, width=300).replace('<', 'less').replace('>', 'more')
+            rawtext = pprint.pformat(update.message.text, width=300).replace('<', 'less').replace('>', 'more')
             # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
-            await update.message.reply_html(f'<pre><code class="language-python">{rawtext}</code></pre><pre><code class="language-python">{rawresult}</code></pre><pre><code class="language-python">{update.message.text}</code></pre>')
+            await update.message.reply_html(f'<code>{rawtext},\n</code>\n\n<code>{rawresult},\n</code><pre><code class="language-python">{update.message.text.replace("<", "less").replace(">", "more")}</code></pre>')
             return
 
         streak = streak_at_day(user_id=int(result["user_id"]), game=result["name"], day=str_as_int(result["day"]))
@@ -721,7 +733,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logging.info(f"Aggiungo tentativo di {result['user_name']} per {result['name']} #{result['day']} (fallito)")
             return
 
-        today_game = int(get_day_from_date(result["name"], datetime.date.today()))
+        today_game = int(get_day_from_date(GAMES[result["name"]]['date'], GAMES[result["name"]]['day'], result["name"], datetime.date.today()))
 
         if str_as_int(result["day"]) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
@@ -792,7 +804,7 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Divido i giochi in giocati e non giocati
     for game in GAMES.keys():
-        day = get_day_from_date(game, datetime.date.today())
+        day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
         query = Punteggio.select().where(
             Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == update.message.from_user.id
         )
@@ -862,7 +874,7 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     played_today = set()
     not_played_today = set()
     for game in GAMES.keys():
-        day = get_day_from_date(game, datetime.date.today())
+        day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
         query = Punteggio.select().where(
             Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id
         )
@@ -1038,11 +1050,11 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
         message += f"<b>{categoria}</b>\n"
         for game in GAMES.keys():
             if GAMES[game]["category"] == categoria:
-                day = get_day_from_date(game, datetime.date.today())
+                day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
                 message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
         message += "\n"
     # for game in GAMES.keys():
-    #     day = get_day_from_date(game, datetime.date.today())
+    #     day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
     #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
     mypost = await context.bot.send_message(
         chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode="HTML"
