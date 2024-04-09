@@ -3,14 +3,14 @@ from collections import defaultdict
 
 import httpx
 import peewee
-
 from dataclassy import dataclass
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Bot, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext.filters import MessageFilter
 
 from config import ID_GIOCHINI, MEDALS, TOKEN, Medaglia, Punteggio
-from games import get_day_from_date
 from games import ALL_GAMES as GAMES
+from games import get_day_from_date
+
 
 @dataclass
 class Classifica:
@@ -47,7 +47,25 @@ class GameFilter(MessageFilter):
         if not message.text:
             return False
 
-        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅", "🌕", "🌗", "🌘", "🌑",]
+        quadratini = [
+            "🟥",
+            "🟩",
+            "⬜️",
+            "🟨",
+            "⬛️",
+            "🟦",
+            "🟢",
+            "⚫️",
+            "🟡",
+            "🟠",
+            "🔵",
+            "🟣",
+            "✅",
+            "🌕",
+            "🌗",
+            "🌘",
+            "🌑",
+        ]
 
         if b"\xE2\xAC\x9B".decode("utf-8") in message.text:
             return True
@@ -69,52 +87,16 @@ class GameFilter(MessageFilter):
         if "#travle " in message.text and "https://imois.in/games/travle" in message.text:
             return True
 
-        if "DOMINO FIT #" in message.text and any(x in message.text for x in ['🏅', '🥈', '🥉']):
+        if "DOMINO FIT #" in message.text and any(x in message.text for x in ["🏅", "🥈", "🥉"]):
             return True
 
-        if all(x in message.text for x in ["❌", "🎧"]): # spotle
+        if all(x in message.text for x in ["❌", "🎧"]):  # spotle
             return True
 
-        if (
-            "https://www.chronophoto.app/daily.html" in message.text
-            and "Round 1" in message.text
-            and "Round 4:" in message.text
-        ):
+        if "https://www.chronophoto.app/daily.html" in message.text and "Round 1" in message.text and "Round 4:" in message.text:
             return True
 
         return False
-
-
-def generate_sample_update(text):
-    updict = {
-        'message': {
-            'channel_chat_created': False,
-            'chat': {
-                'id': -1001180175690,
-                'title': 'Testing some bots',
-                'type': 'supergroup'
-                },
-            'date': 0,
-            'delete_chat_photo': False,
-            'from': {
-                    'first_name': 'Trifase',
-                    'id': 456481297,
-                    'is_bot': False,
-                    'is_premium': True,
-                    'language_code': 'en',
-                    'username': 'Trifase'
-                    },
-            'group_chat_created': False,
-            'message_id': 19378,
-            'message_thread_id': 19376,
-            'text': text
-        },
-        'update_id': 922829533}
-
-    # Creo un fake update
-    bot = Bot("123456789")
-    upd = Update.de_json(updict, bot)
-    return upd
 
 
 def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = None):
@@ -137,7 +119,7 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
     # alternate-with-lost: same as alternate, but we count lost plays.
     # GAMES = get_games()
     for game in GAMES.keys():
-        day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, from_day)
+        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, from_day)
 
         query = (
             Punteggio.select(Punteggio.user_name, Punteggio.user_id)
@@ -216,10 +198,12 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
 def str_as_int(string: str) -> int:
     return int(string.replace(".", ""))
 
+
 def get_date_from_day(game: str, day: str) -> datetime.date:
     # GAMES = get_games()
     days_difference = int(GAMES[game]["day"]) - int(day)
     return GAMES[game]["date"] - datetime.timedelta(days=days_difference)
+
 
 def correct_name(name: str) -> str:
     # GAMES = get_games()
@@ -227,7 +211,7 @@ def correct_name(name: str) -> str:
 
 
 def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
-    today = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
+    today = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
     date_str = f"{get_date_from_day(game, day).strftime('%Y-%m-%d')}"
     day = int(day)
     buttons = InlineKeyboardMarkup(
@@ -241,7 +225,6 @@ def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
         ]
     )
     return buttons
-
 
 
 def process_tries(game: str, tries: int | str) -> int | str:
@@ -283,6 +266,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
         tries = 6 - tries
     return tries
 
+
 def streak_at_day(user_id, game, day) -> int:
     # print(f'Searching streak for {user_id}, {game}, {day}')
     day = int(day)
@@ -303,9 +287,9 @@ def streak_at_day(user_id, game, day) -> int:
 
     # day can never be in gamedays. Dumb.
     # if day not in gamedays:
-        # return streak
+    # return streak
 
-    for day in range(day-1, 0, -1):
+    for day in range(day - 1, 0, -1):
         if day in gamedays:
             streak += 1
         else:
@@ -316,9 +300,7 @@ def streak_at_day(user_id, game, day) -> int:
 
 
 def longest_streak(user_id, game) -> int:
-    streak = Punteggio.select(peewee.fn.MAX(Punteggio.streak)).where(
-        Punteggio.user_id == user_id, Punteggio.game == game
-    )
+    streak = Punteggio.select(peewee.fn.MAX(Punteggio.streak)).where(Punteggio.user_id == user_id, Punteggio.game == game)
 
     return streak.scalar()
 
@@ -360,9 +342,7 @@ def personal_stats(user_id: int) -> str:
     )
     most_played = most_played_query[0].game
     most_played_count = most_played_query[0].c
-    most_played_string = (
-        f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
-    )
+    most_played_string = f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
 
     # gioco meno giocato
     least_played_query = (
@@ -377,9 +357,7 @@ def personal_stats(user_id: int) -> str:
     least_played_string = f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
 
     # giocate totali
-    total_plays = (
-        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id).scalar()
-    )
+    total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id).scalar()
 
     # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
     single_play_minutes = 2
@@ -407,24 +385,14 @@ def personal_stats(user_id: int) -> str:
 
 def group_stats(chat_id: int) -> str:
     message = "Ecco le classifiche globali:\n\n"
-    
-    # Totali x giocate. 
-    total_plays = (
-        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id).scalar()
-    )
-    total_lost = (
-        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id, Punteggio.lost == True).scalar()
-    )
-    max_day = (
-        Punteggio.select(peewee.fn.MAX(Punteggio.date).alias("max_day")).where(Punteggio.chat_id == chat_id).scalar()
-    )
-    min_day = (
-        Punteggio.select(peewee.fn.MIN(Punteggio.date).alias("min_day")).where(Punteggio.chat_id == chat_id).scalar()
-    )
-    tracked_games = (
-        Punteggio.select(Punteggio.game).where(Punteggio.chat_id == chat_id).distinct().count()
-    )
-    #three most played games
+
+    # Totali x giocate.
+    total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id).scalar()
+    total_lost = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id, Punteggio.lost == True).scalar()
+    max_day = Punteggio.select(peewee.fn.MAX(Punteggio.date).alias("max_day")).where(Punteggio.chat_id == chat_id).scalar()
+    min_day = Punteggio.select(peewee.fn.MIN(Punteggio.date).alias("min_day")).where(Punteggio.chat_id == chat_id).scalar()
+    tracked_games = Punteggio.select(Punteggio.game).where(Punteggio.chat_id == chat_id).distinct().count()
+    # three most played games
     most_played_games = (
         Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
         .where(Punteggio.chat_id == chat_id)
@@ -439,13 +407,10 @@ def group_stats(chat_id: int) -> str:
         .order_by(peewee.fn.COUNT(Punteggio.game).asc())
         .limit(3)
     )
-    most_played_games = '\n'.join([f'- {x.game} ({x.c})' for x in most_played_games])
-    least_played_games = '\n'.join([f'- {x.game} ({x.c})' for x in least_played_games])
+    most_played_games = "\n".join([f"- {x.game} ({x.c})" for x in most_played_games])
+    least_played_games = "\n".join([f"- {x.game} ({x.c})" for x in least_played_games])
 
-    total_players = (
-        Punteggio.select(Punteggio.user_id).where(Punteggio.chat_id == chat_id).distinct().count()
-    )
-
+    total_players = Punteggio.select(Punteggio.user_id).where(Punteggio.chat_id == chat_id).distinct().count()
 
     most_active_players = (
         Punteggio.select(Punteggio.user_name, peewee.fn.COUNT(Punteggio.user_name).alias("c"))
@@ -454,7 +419,7 @@ def group_stats(chat_id: int) -> str:
         .order_by(peewee.fn.COUNT(Punteggio.user_name).desc())
         .limit(3)
     )
-    most_active_players = '\n'.join([f'- {x.user_name} ({x.c})' for x in most_active_players])
+    most_active_players = "\n".join([f"- {x.user_name} ({x.c})" for x in most_active_players])
 
     # the record with the longest streak, with game name, username, day
     longest_streak = (
@@ -467,17 +432,18 @@ def group_stats(chat_id: int) -> str:
     # day differences between two dates in YYYY-MM-DD format
     day_diff = (max_day - min_day).days
 
-    message += f'Ci sono {total_plays} partire registrate in {day_diff} giorni, dal {min_day} al {max_day}.\n'
-    message += f'In media sono {round(total_plays/day_diff, 2)} giocate al giorno.\n'
-    message += f'In totale sono state perse {total_lost} partite (il {round(total_lost/total_plays*100, 2)}%).\n\n'
-    message += f'Ci sono {tracked_games} giochi tracciati.\n\n'
-    message += f'I tre giochi più giocati sono:\n{most_played_games}\n\n'
-    message += f'I tre giochi meno giocati sono:\n{least_played_games}\n\n'
-    message += f'Ci sono {total_players} giocatori registrati.\n\n'
-    message += f'I tre giocatori più attivi sono:\n{most_active_players}\n\n'
-    message += f'Lo streak più lungo è di {longest_streak[0].streak} partite consecutive a {longest_streak[0].game}, di {longest_streak[0].user_name}.\n'
+    message += f"Ci sono {total_plays} partire registrate in {day_diff} giorni, dal {min_day} al {max_day}.\n"
+    message += f"In media sono {round(total_plays/day_diff, 2)} giocate al giorno.\n"
+    message += f"In totale sono state perse {total_lost} partite (il {round(total_lost/total_plays*100, 2)}%).\n\n"
+    message += f"Ci sono {tracked_games} giochi tracciati.\n\n"
+    message += f"I tre giochi più giocati sono:\n{most_played_games}\n\n"
+    message += f"I tre giochi meno giocati sono:\n{least_played_games}\n\n"
+    message += f"Ci sono {total_players} giocatori registrati.\n\n"
+    message += f"I tre giocatori più attivi sono:\n{most_active_players}\n\n"
+    message += f"Lo streak più lungo è di {longest_streak[0].streak} partite consecutive a {longest_streak[0].game}, di {longest_streak[0].user_name}.\n"
 
     return message
+
 
 def new_classifica():
     classifica = [
@@ -700,9 +666,7 @@ def new_classifica():
     pprint.pprint(classifica_users)
 
     for user in classifica_users:
-        print(
-            f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n"
-        )
+        print(f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n")
 
 
 def medaglie_count(monthly=True) -> None:
@@ -759,7 +723,6 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
     async with httpx.AsyncClient() as client:
         await client.post(api_url, json=dati)
         # risposta_json = risposta.json()
-
 
 
 # Testing

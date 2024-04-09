@@ -9,6 +9,7 @@ import zipfile
 
 import peewee
 import pytz
+
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -42,49 +43,8 @@ from config import (
     Punteggio,
     Punti,
 )
-
-from games import ALL_GAMES as GAMES
 from games import ALL_CLASSES as giochini
-from parsers import (
-    angle,
-    bandle,
-    chrono,
-    chronophoto,
-    cloudle,
-    colorfle,
-    connections,
-    contexto,
-    dominofit,
-    flagle,
-    foodguessr,
-    framed,
-    globle,
-    guessthegame,
-    highfive,
-    metaflora,
-    metazooa,
-    moviedle,
-    murdle,
-    nerdle,
-    nerdlecross,
-    parole2,
-    picsey,
-    polygonle,
-    rotaboxes,
-    spellcheck,
-    spotle,
-    squareword,
-    stepdle,
-    tempoindovinr,
-    timeguesser,
-    tradle,
-    travle,
-    travle_ita,
-    waffle,
-    wheretaken,
-    wordle,
-    worldle,
-)
+from games import ALL_GAMES as GAMES
 from utils import (
     Classifica,
     GameFilter,
@@ -128,143 +88,8 @@ locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 giochini_results_filter = GameFilter()
 
 
-def parse_results(text: str, timestamp: int = None) -> dict:
-    lines = text.splitlines()
-
-    # filters out single emojis and such
-    if len(text) < 3:
-        return None
-    
-    if 'https://cuedle.fun' in text:
-        return 'ignora'
-
-    if "Wordle" in lines[0]:
-        return wordle(text, timestamp)
-
-    elif "Worldle" in lines[0]:
-        return worldle(text, timestamp)
-
-    # elif 'Par🇮🇹le' in lines[0] and '°' in lines[0]:
-    #     return parole(text, timestamp)
-
-    elif "Par🇮🇹le" in lines[0]:
-        if "°" not in lines[0]:
-            return parole2(text, timestamp)
-        else:
-            return "wrong_parole"
-
-    elif "contexto.me" in lines[0]:
-        return contexto(text, timestamp)
-
-    elif "#Tradle" in lines[0]:
-        return tradle(text, timestamp)
-
-    elif "#GuessTheGame" in lines[0]:
-        return guessthegame(text, timestamp)
-
-    elif "#globle" in lines[-1]:
-        return globle(text, timestamp)
-
-    elif "#Flagle" in lines[0]:
-        return flagle(text, timestamp)
-
-    elif "WhereTaken" in lines[0]:
-        return wheretaken(text, timestamp)
-
-    elif "#waffle" in lines[0]:
-        return waffle(text, timestamp)
-
-    elif "Cloudle -" in lines[0]:
-        return cloudle(text, timestamp)
-
-    elif "https://highfivegame.app/2" in lines[-1]:
-        return highfive(text, timestamp)
-
-    elif "TimeGuessr" in lines[0]:
-        return timeguesser(text, timestamp)
-
-    elif "Moviedle" in lines[0]:
-        return moviedle(text, timestamp)
-
-    elif "Framed" in lines[0]:
-        return framed(text, timestamp)
-
-    elif "Murdle" in lines[1]:
-        return murdle(text, timestamp)
-
-    elif "Connections" in lines[0]:
-        return connections(text, timestamp)
-
-    elif "nerdlegame" in lines[0]:
-        return nerdle(text, timestamp)
-
-    elif "Picsey" in lines[0]:
-        return picsey(text, timestamp)
-
-    elif "squareword.org" in lines[0]:
-        return squareword(text, timestamp)
-
-    elif "Animal" in lines[0] and "#metazooa" in lines[-1]:
-        return metazooa(text, timestamp)
-
-    elif "Plant" in lines[0] and "#metaflora" in lines[-1]:
-        return metaflora(text, timestamp)
-
-    elif "Angle" in lines[0]:
-        return angle(text, timestamp)
-
-    elif "experiments/tempoindovinr/" in lines[-1]:
-        return tempoindovinr(text, timestamp)
-
-    elif "#travle_ita" in lines[0] and "/ita" in lines[-1]:
-        return travle_ita(text, timestamp)
-
-    elif "#travle" in lines[0] and "travle.earth" in lines[-1]:
-        return travle(text, timestamp)
-
-    elif "cross nerdle #" in lines[0] and "@nerdlegame" in lines[-1]:
-        return nerdlecross(text, timestamp)
-
-    elif "DOMINO FIT #" in lines[0]:
-        return dominofit(text, timestamp)
-
-    elif "Bandle #" in lines[0] and "https://bandle.app/" in lines[-1]:
-        return bandle(text, timestamp)
-
-    elif "CHRONO  #" in lines[0] and "https://chrono.ques" in lines[-1]:
-        return chrono(text, timestamp)
-
-    elif "Stepdle #" in lines[0]:
-        return stepdle(text, timestamp)
-
-    elif "Colorfle" in lines[0] and "accuracy" in lines[-1]:
-        return colorfle(text, timestamp)
-
-    elif len(lines) >= 3 and "rotabox.es" in lines[3] and "clicks:" in lines[1]:
-        return rotaboxes(text, timestamp)
-
-    elif "#Polygonle" in lines[0] and "/" in lines[0]:
-        return polygonle(text, timestamp)
-
-    elif "I got a score of" in lines[0] and "chronophoto.app" in lines[-1]:
-        return chronophoto(text, timestamp)
-    
-    elif "FoodGuessr" in lines[0] and "Play: https://foodguessr.com" in lines[-1]:
-        return foodguessr(text, timestamp)
-
-    elif "Spellcheck #" in lines[0]:
-        return spellcheck(text, timestamp)
-
-    elif "Spotle #" in lines[0] and "spotle.io" in lines[-1]:
-        return spotle(text, timestamp)
-
-    return None
-
-
-def make_single_classifica(
-    game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True
-) -> str:
-    day = day or get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
+def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True) -> str:
+    day = day or get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
     # print(f"Making classifica for {game} #{day}")
     emoji = GAMES[game]["emoji"]
     url = GAMES[game]["url"]
@@ -384,9 +209,7 @@ async def fav_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if game not in favs:
         favs.append(game)
     json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(
-        favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"]
-    )
+    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"])
     reply_keyboard = InlineKeyboardMarkup(keyboard)
     await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
 
@@ -403,9 +226,7 @@ async def fav_del(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if game in favs:
         favs.remove(game)
     json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(
-        favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"]
-    )
+    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"])
     reply_keyboard = InlineKeyboardMarkup(keyboard)
     await update.effective_message.edit_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
 
@@ -452,9 +273,7 @@ async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     favs = settings[user_id]["favs"]
     # json.dump(settings, open("db/user_settings.json", "w"), indent=4)
-    keyboard = make_menu_setting_favs(
-        favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"]
-    )
+    keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"])
 
     reply_keyboard = InlineKeyboardMarkup(keyboard)
 
@@ -488,9 +307,7 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     _, game, _, day = data.split("_")
 
-    classifica_text = make_single_classifica(
-        game, chat_id=update.effective_chat.id, day=day, limit=6, user_id=update.effective_user.id
-    )
+    classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, day=day, limit=6, user_id=update.effective_user.id)
     # date_str = f"== {get_date_from_day(game, day).strftime('%Y-%m-%d')} =="
     # classifica_text = f'{date_str}\n{classifica_text}'
 
@@ -561,19 +378,15 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
 
     else:
         game = correct_name(context.args[0])
-        day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
+        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
 
-        classifica_text = make_single_classifica(
-            game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id
-        )
+        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id)
 
         if not classifica_text:
             classifica_text = "Non c'è niente da vedere qui."
         buttons = make_buttons(game, update.effective_message.message_id, day)
 
-        await update.effective_message.reply_text(
-            classifica_text, reply_markup=buttons, parse_mode="HTML", disable_web_page_preview=True
-        )
+        await update.effective_message.reply_text(classifica_text, reply_markup=buttons, parse_mode="HTML", disable_web_page_preview=True)
 
 
 async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -653,32 +466,16 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    new_mode = True
-    if not new_mode:
-        result = parse_results(update.message.text, int(datetime.datetime.timestamp(update.effective_message.date)))
-    else:
-        for giochino in giochini:
-            giochino = giochino(update)
-            # print(f"{giochino._name} - can handle? {giochino.can_handle_this}")
-            if giochino.can_handle_this:
-                result = giochino.punteggio
-                break
+    for giochino in giochini:
+        giochino = giochino(update)
+        # print(f"{giochino._name} - can handle? {giochino.can_handle_this}")
+        if giochino.can_handle_this:
+            result = giochino.punteggio
+            break
 
     play_is_lost = False
-    if result == 'ignora':
+    if result == "ignora":
         await update.message.set_reaction(reaction="👌")
-        return
-    
-    if result == "wrong_parole":
-        if update.effective_user.id == 31866384:
-            await update.message.reply_text(
-                'LARA TI PREGO PER FAVORE DAI CHE CAZZO TI SCONGIURO <a href="https://par-le.github.io/gioco/">IL NUOVO PAROLE</a> GRAZIE OK grazie dai ciao',
-                parse_mode="HTML",
-            )
-        else:
-            await update.message.reply_text(
-                'Per favore fai <a href="https://par-le.github.io/gioco/">il nuovo parole</a>', parse_mode="HTML"
-            )
         return
 
     if result:
@@ -706,10 +503,12 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.effective_chat.id == ID_TESTING:
             import pprint
 
-            rawresult = pprint.pformat(result, width=300).replace('<', 'less').replace('>', 'more')
-            rawtext = pprint.pformat(update.message.text, width=300).replace('<', 'less').replace('>', 'more')
+            rawresult = pprint.pformat(result, width=300).replace("<", "less").replace(">", "more")
+            rawtext = pprint.pformat(update.message.text, width=300).replace("<", "less").replace(">", "more")
             # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
-            await update.message.reply_html(f'<code>{rawtext},\n</code>\n\n<code>{rawresult},\n</code><pre><code class="language-python">{update.message.text.replace("<", "less").replace(">", "more")}</code></pre>')
+            await update.message.reply_html(
+                f'<code>{rawtext},\n</code>\n\n<code>{rawresult},\n</code><pre><code class="language-python">{update.message.text.replace("<", "less").replace(">", "more")}</code></pre>'
+            )
             return
 
         streak = streak_at_day(user_id=int(result["user_id"]), game=result["name"], day=str_as_int(result["day"]))
@@ -733,7 +532,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logging.info(f"Aggiungo tentativo di {result['user_name']} per {result['name']} #{result['day']} (fallito)")
             return
 
-        today_game = int(get_day_from_date(GAMES[result["name"]]['date'], GAMES[result["name"]]['day'], result["name"], datetime.date.today()))
+        today_game = int(get_day_from_date(GAMES[result["name"]]["date"], GAMES[result["name"]]["day"], result["name"], datetime.date.today()))
 
         if str_as_int(result["day"]) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
@@ -751,23 +550,15 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         classifica += "\nLongest streak: current"
                 mymsg = await update.message.reply_html(classifica)
                 await mymsg.reply_to_message.set_reaction(reaction="✍")
-                context.job_queue.run_once(
-                    minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}"
-                )
+                context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
             else:
                 mymsg = await update.message.reply_html("Ah, non l'ha ancora fatto nessuno, fico.")
-                context.job_queue.run_once(
-                    delete_post, 60, data=[mymsg], name=f"delete_post_{str(update.effective_message.id)}"
-                )
+                context.job_queue.run_once(delete_post, 60, data=[mymsg], name=f"delete_post_{str(update.effective_message.id)}")
 
         else:
-            await update.message.reply_text(
-                f'Ho salvato il tuo punteggio di {int(today_game) - str_as_int(result["day"])} giorni fa.'
-            )
+            await update.message.reply_text(f'Ho salvato il tuo punteggio di {int(today_game) - str_as_int(result["day"])} giorni fa.')
 
-        logging.info(
-            f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})"
-        )
+        logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
 
     else:
         await update.message.reply_text("Non ho capito, scusa")
@@ -804,10 +595,8 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Divido i giochi in giocati e non giocati
     for game in GAMES.keys():
-        day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
-        query = Punteggio.select().where(
-            Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == update.message.from_user.id
-        )
+        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == update.message.from_user.id)
 
         if query:
             played_today.add(game)
@@ -840,7 +629,6 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             message = "Ti manca da giocare:\n\n"
 
-
     if not_played_favs:
         for game in not_played_favs:
             message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>\n'
@@ -854,15 +642,11 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if solo_preferiti:
         buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myday_more_{update.effective_user.id}")]]
         keyboard = InlineKeyboardMarkup(buttons)
-        mymsg = await update.message.reply_text(
-            message, parse_mode="HTML", disable_web_page_preview=True, reply_markup=keyboard
-        )
+        mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True, reply_markup=keyboard)
     else:
         mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
     command_msg = update.message
-    context.job_queue.run_once(
-        delete_post, 60, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}"
-    )
+    context.job_queue.run_once(delete_post, 60, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}")
 
 
 async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -874,10 +658,8 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     played_today = set()
     not_played_today = set()
     for game in GAMES.keys():
-        day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
-        query = Punteggio.select().where(
-            Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id
-        )
+        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
         if query:
             played_today.add(game)
         else:
@@ -933,7 +715,7 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = f"Ho qualche problema, scusa ({e})"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    if update.effective_user.id == ADMIN_ID and '-group' in context.args:
+    if update.effective_user.id == ADMIN_ID and "-group" in context.args:
         group_message = group_stats(update.effective_chat.id)
         await update.message.reply_text(group_message, parse_mode="HTML", disable_web_page_preview=True)
 
@@ -955,7 +737,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
 
-    model = 'alternate-with-lost'
+    model = "alternate-with-lost"
     cambiamenti = daily_ranking(model, yesterday)
 
     message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
@@ -1013,9 +795,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     medaglie_str = medaglie_count()
 
-    await context.bot.send_message(
-        chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode="HTML", disable_web_page_preview=True
-    )
+    await context.bot.send_message(chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode="HTML", disable_web_page_preview=True)
     context.bot_data["manual_riassunto"] = False
 
 
@@ -1043,6 +823,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     # This will delete the original command after some time (iirc default 10 secs)
     await delete_original_command(update, context)
 
+
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     categorie = set([GAMES[x]["category"] for x in GAMES.keys()])
     message = "Buongiorno, ecco a cosa si gioca oggi!\n\n"
@@ -1050,15 +831,13 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
         message += f"<b>{categoria}</b>\n"
         for game in GAMES.keys():
             if GAMES[game]["category"] == categoria:
-                day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
+                day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
                 message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
         message += "\n"
     # for game in GAMES.keys():
     #     day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
     #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
-    mypost = await context.bot.send_message(
-        chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode="HTML"
-    )
+    mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode="HTML")
     await mypost.pin(disable_notification=True)
 
 
@@ -1088,9 +867,7 @@ async def minimize_post(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def delete_original_command(update: Update, context: ContextTypes.DEFAULT_TYPE, after_seconds: int = 10) -> None:
     command_msg = update.message
-    context.job_queue.run_once(
-        delete_post, after_seconds, data=[command_msg], name=f"myday_delete_{str(update.effective_message.id)}"
-    )
+    context.job_queue.run_once(delete_post, after_seconds, data=[command_msg], name=f"myday_delete_{str(update.effective_message.id)}")
 
 
 async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1114,9 +891,7 @@ async def launch_web_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [
             KeyboardButton(
                 "Show me my Web-App!",
-                web_app=WebAppInfo(
-                    "https://trifase.github.io/emily-mini-app/index.html?type=sale&sort=price_descending&page=43"
-                ),  # obviously, set yours here.
+                web_app=WebAppInfo("https://trifase.github.io/emily-mini-app/index.html?type=sale&sort=price_descending&page=43"),  # obviously, set yours here.
                 #    callback_data='webapp_launch'
             )
         ]
@@ -1136,39 +911,41 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
     # print('callback data:', update.callback_query.data)
     # wat = await context.bot.answer_callback_query(update.callback_query.id)
     # print(wat)
-    await update.message.reply_html(
-        f'<pre><code class="language-python">{rawtext}</code></pre>', reply_markup=ReplyKeyboardRemove()
-    )
+    await update.message.reply_html(f'<pre><code class="language-python">{rawtext}</code></pre>', reply_markup=ReplyKeyboardRemove())
+
 
 async def enable_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id == ADMIN_ID:
-        if 'debug_message' not in context.bot_data:
-            context.bot_data['debug_mode'] = True
-        context.bot_data['debug_mode'] = True
+        if "debug_message" not in context.bot_data:
+            context.bot_data["debug_mode"] = True
+        context.bot_data["debug_mode"] = True
         await update.message.reply_html(f"Debug mode: {context.bot_data['debug_mode']}")
     return
+
 
 async def disable_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id == ADMIN_ID:
-        if 'debug_message' not in context.bot_data:
-            context.bot_data['debug_mode'] = False
-        context.bot_data['debug_mode'] = False
+        if "debug_message" not in context.bot_data:
+            context.bot_data["debug_mode"] = False
+        context.bot_data["debug_mode"] = False
         await update.message.reply_html(f"Debug mode: {context.bot_data['debug_mode']}")
     return
 
-async def spell_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if 'debug_mode' not in context.bot_data:
-        context.bot_data['debug_mode'] = False
 
-    if context.bot_data['debug_mode']:
+async def spell_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "debug_mode" not in context.bot_data:
+        context.bot_data["debug_mode"] = False
+
+    if context.bot_data["debug_mode"]:
         text = update.message.text
-        mess = ''
+        mess = ""
         for c in text:
             mess += f"{c}: {ord(c)}\n"
         await update.message.reply_html(f'<pre><code class="language-python">{text.encode("unicode-escape")}</code></pre>')
         await update.message.reply_html(f'<pre><code class="language-python">{mess}</code></pre>')
 
     return
+
 
 async def post_init(app: Application) -> None:
     Punteggio.create_table()

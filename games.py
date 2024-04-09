@@ -1,8 +1,32 @@
-import inspect
-import time
 import datetime
+import inspect
 import sys
+import time
+
 from dataclassy import dataclass
+from telegram import Bot, Update
+
+
+def generate_sample_update(text):
+    updict = {
+        "message": {
+            "channel_chat_created": False,
+            "chat": {"id": -1001180175690, "title": "Testing some bots", "type": "supergroup"},
+            "date": 10,
+            "delete_chat_photo": False,
+            "from": {"first_name": "Trifase", "id": 456481297, "is_bot": False, "is_premium": True, "language_code": "en", "username": "Trifase"},
+            "group_chat_created": False,
+            "message_id": 19378,
+            "message_thread_id": 19376,
+            "text": text,
+        },
+        "update_id": 922829533,
+    }
+
+    # Creo un fake update
+    bot = Bot("123456789")
+    upd = Update.de_json(updict, bot)
+    return upd
 
 
 def time_from_emoji(input_string: str) -> str:
@@ -12,6 +36,7 @@ def time_from_emoji(input_string: str) -> str:
 
     input_string = "".join([x for x in input_string if x in "0123456789"])
     return input_string
+
 
 def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
     if isinstance(date, str) and game == "Globle":
@@ -40,11 +65,13 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
     days_difference = game_date - date
     return str(int(game_day) - days_difference.days)
 
+
 def is_connection_block_completed(block: str) -> bool:
     color = block[0]
     if block == color * 4:
         return True
     return False
+
 
 def is_connection_completed(connection: list[str]) -> bool:
     completed_blocks = 0
@@ -121,8 +148,8 @@ class Wordle(Giochino):
         "Wordle 821 X/6\n\n🟨🟩⬛️⬛️⬛️\n⬛️🟩🟩⬛️⬛️\n⬛️🟩🟩⬛️⬛️\n⬛️🟩🟩⬛️⬛️\n⬛️🟩🟩⬛️⬛️\n⬛️🟩🟩🟩⬛️",
     ]
     expected = [
-        {"day": "1011", "name": "Wordle", "timestamp": 0, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "821", "name": "Wordle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1011", "name": "Wordle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "821", "name": "Wordle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Wordle"
@@ -172,8 +199,8 @@ class Parole(Giochino):
         "Par🇮🇹le 813 X/6\n\n⬜️🟨🟨⬜️⬜️\n🟨🟩⬜️⬜️🟩\n⬜️🟩🟩⬜️🟩\n⬜️🟩🟩⬜️🟩\n⬜️🟩🟩⬜️🟩\n🟩🟩🟩⬜️🟩",
     ]
     expected = [
-        {"day": "825", "name": "Parole", "timestamp": 0, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "813", "name": "Parole", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "825", "name": "Parole", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "813", "name": "Parole", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Parole"
@@ -230,8 +257,8 @@ class Bandle(Giochino):
         "Bandle #579 x/6\n⬛️⬛️⬛️⬛️⬛️⬛️\nFound: 3/5 (60%)\n#Bandle #Heardle #Wordle \n https://bandle.app/"
     ]
     expected = [
-        {"day": "597", "name": "Bandle", "timestamp": 0, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "579", "name": "Bandle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "597", "name": "Bandle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "579", "name": "Bandle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Bandle"
@@ -294,10 +321,34 @@ class Chrono(Giochino):
         "😬 CHRONO  #748\n\n🟢⚪️🟢⚪️⚪️🟢\n🟢⚪️⚪️⚪️🟢🟢\n🟢⚪️⚪️⚪️🟢🟢\n\n⏱: 81.8\n🔥: 0\nhttps://chrono.quest",
     ]
     expected = [
-        {"day": "749","name": "Chrono","stars": 9949.2,"timestamp": 0,"tries": 1,"user_id": 456481297,"user_name": "Trifase",},
-        {"day": "760","name": "Chrono","stars": 9966.7,"timestamp": 0,"tries": 2,"user_id": 456481297,"user_name": "Trifase",},
-        {"day": "748","name": "Chrono","stars": 9944.2,"timestamp": 0,"tries": 3,"user_id": 456481297,"user_name": "Trifase",},
-        {"day": "748", "name": "Chrono", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {
+            "day": "749",
+            "name": "Chrono",
+            "stars": 9949.2,
+            "timestamp": 10,
+            "tries": 1,
+            "user_id": 456481297,
+            "user_name": "Trifase",
+        },
+        {
+            "day": "760",
+            "name": "Chrono",
+            "stars": 9966.7,
+            "timestamp": 10,
+            "tries": 2,
+            "user_id": 456481297,
+            "user_name": "Trifase",
+        },
+        {
+            "day": "748",
+            "name": "Chrono",
+            "stars": 9944.2,
+            "timestamp": 10,
+            "tries": 3,
+            "user_id": 456481297,
+            "user_name": "Trifase",
+        },
+        {"day": "748", "name": "Chrono", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Chrono"
@@ -309,7 +360,7 @@ class Chrono(Giochino):
 
     has_extra: True
     can_lose: True
-    
+
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
@@ -369,10 +420,10 @@ class Contexto(Giochino):
         "I played contexto.me #465 but I gave up in 31 guesses and 10 hints.\n\n🟩🟩🟩 22\n🟨 10\n🟥 9",
     ]
     expected = [
-        {"day": "556", "name": "Contexto", "timestamp": 0, "tries": "57", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "522", "name": "Contexto", "timestamp": 0, "tries": 54, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "471", "name": "Contexto", "timestamp": 0, "tries": 267, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "465", "name": "Contexto", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "556", "name": "Contexto", "timestamp": 10, "tries": "57", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "522", "name": "Contexto", "timestamp": 10, "tries": 54, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "471", "name": "Contexto", "timestamp": 10, "tries": 267, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "465", "name": "Contexto", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Contexto"
@@ -398,7 +449,6 @@ class Contexto(Giochino):
 
         if self.can_handle_this:
             self.parse()
-
 
     @property
     def can_handle_this(self):
@@ -438,9 +488,9 @@ class Stepdle(Giochino):
         "Stepdle #536\n20/20 4-6 5-9 6-3 7-2\n⬜️🟨🟨⬜️\n🟨⬜️🟨🟨\n🟩🟩🟩⬜️\n🟩🟩🟩⬜️\n🟩🟩🟩⬜️\n🟩🟩🟩🟩\n⬜️⬜️⬜️⬜️⬜️\n⬜️⬜️⬜️⬜️🟩\n⬜️🟩⬜️⬜️🟩\n⬜️🟨🟨⬜️🟩\n⬜️🟩⬜️⬜️🟩\n🟨🟩⬜️⬜️🟩\n⬜️🟩🟨⬜️🟩\n🟩🟩⬜️🟩🟩\n🟩🟩🟩🟩🟩\n⬜️⬜️⬜️⬜️⬜️🟩\n⬜️🟩🟨⬜️🟨⬜️\n🟩🟩🟩🟩🟩🟩\n⬜️🟨🟨⬜️⬜️🟨⬜️\n⬜️⬜️🟨⬜️🟨🟩🟨",
     ]
     expected = [
-        {"day": "536", "name": "Stepdle", "timestamp": 0, "tries": "16", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "537", "name": "Stepdle", "timestamp": 0, "tries": "20", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "536", "name": "Stepdle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "536", "name": "Stepdle", "timestamp": 10, "tries": "16", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "537", "name": "Stepdle", "timestamp": 10, "tries": "20", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "536", "name": "Stepdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Stepdle"
@@ -504,9 +554,33 @@ class Waffle(Giochino):
         "#waffle629 X/5\n\n🟩🟩🟩🟩🟩\n🟩⬜️🟩⬜️🟩\n🟩🟩🟩🟩🟩\n🟩⬜️🟩⬜️🟩\n🟩⬛️🟩⬛️🟩\n\n💔 streak: 0\nwafflegame.net",
     ]
     expected = [
-        { "day": "807", "name": "Waffle", "stars": 1, "timestamp": 0, "tries": 14, "user_id": 456481297, "user_name": "Trifase", },
-        { "day": "807", "name": "Waffle", "stars": 5, "timestamp": 0, "tries": 10, "user_id": 456481297, "user_name": "Trifase", },
-        { "day": "629", "name": "Waffle", "stars": 0, "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase", },
+        {
+            "day": "807",
+            "name": "Waffle",
+            "stars": 1,
+            "timestamp": 10,
+            "tries": 14,
+            "user_id": 456481297,
+            "user_name": "Trifase",
+        },
+        {
+            "day": "807",
+            "name": "Waffle",
+            "stars": 5,
+            "timestamp": 10,
+            "tries": 10,
+            "user_id": 456481297,
+            "user_name": "Trifase",
+        },
+        {
+            "day": "629",
+            "name": "Waffle",
+            "stars": 0,
+            "timestamp": 10,
+            "tries": "X",
+            "user_id": 456481297,
+            "user_name": "Trifase",
+        },
     ]
 
     _name = "Waffle"
@@ -560,12 +634,8 @@ class Waffle(Giochino):
 
 @dataclass
 class HighFive(Giochino):
-    examples = [
-        "🖐 I scored 27 points on today's HighFive! Can you beat me?\n\n🟠🟠\n🟢🟢🟢🟢\n🔵\n🟣🟣🟣🟣🟣\n\nhttps://highfivegame.app/2024-02-28"
-    ]
-    expected = [
-        {"day": "350", "name": "HighFive", "timestamp": 0, "tries": "-27", "user_id": 456481297, "user_name": "Trifase"}
-    ]
+    examples = ["🖐 I scored 27 points on today's HighFive! Can you beat me?\n\n🟠🟠\n🟢🟢🟢🟢\n🔵\n🟣🟣🟣🟣🟣\n\nhttps://highfivegame.app/2024-02-28"]
+    expected = [{"day": "350", "name": "HighFive", "timestamp": 10, "tries": "-27", "user_id": 456481297, "user_name": "Trifase"}]
 
     _name = "HighFive"
     _category = "Giochi di parole"
@@ -622,9 +692,9 @@ class Polygonle(Giochino):
         "#Polygonle 617 😔/6\n\u2004⬢\u2004\u2005◢\u2005\u2005◥\u2005\u2005◥\u2005\u2005◤\u2005\u2005◥\u2005\u2005◢\u2005\n⬜️⬜️⬜️⬜️⬜️🟨⬜️\n⬜️🟩⬜️🟨⬜️⬜️⬜️\n⬜️⬜️⬜️⬜️⬜️🟩⬜️\n⬜️⬜️🟨⬜️🟩🟩⬜️\n⬜️⬜️⬜️⬜️🟨⬜️⬜️\n⬜️⬜️⬜️⬜️⬜️🟩⬜️\nhttps://www.polygonle.com",
     ]
     expected = [
-        {"day": "614", "name": "Polygonle", "timestamp": 0, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "613", "name": "Polygonle", "timestamp": 0, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "617", "name": "Polygonle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "614", "name": "Polygonle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "613", "name": "Polygonle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "617", "name": "Polygonle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Polygonle"
@@ -689,12 +759,12 @@ class Connections(Giochino):
         "Connections \nPuzzle #302\n🟨🟨🟨🟨\n🟪🟩🟪🟪\n🟪🟪🟪🟦\n🟪🟦🟪🟪\n🟪🟪🟩🟪",
     ]
     expected = [
-        {"day": "299", "name": "Connections", "timestamp": 0, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "300", "name": "Connections", "timestamp": 0, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "299", "name": "Connections", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "300", "name": "Connections", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
         {
             "day": "302",
             "name": "Connections",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -761,7 +831,7 @@ class Squareword(Giochino):
         {
             "day": "777",
             "name": "Squareword",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "14",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -769,7 +839,7 @@ class Squareword(Giochino):
         {
             "day": "793",
             "name": "Squareword",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "7",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -836,7 +906,7 @@ class Worldle(Giochino):
             "day": "807",
             "name": "Worldle",
             "stars": 2,
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "1",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -845,7 +915,7 @@ class Worldle(Giochino):
             "day": "808",
             "name": "Worldle",
             "stars": 0,
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "4",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -854,7 +924,7 @@ class Worldle(Giochino):
             "day": "808",
             "name": "Worldle",
             "stars": 0,
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -868,7 +938,6 @@ class Worldle(Giochino):
     _emoji = "🗺️"
     _url = "https://worldle.teuteuf.fr"
 
-    
     has_extra: False
     can_lose: True
 
@@ -920,8 +989,8 @@ class Tradle(Giochino):
         "#Tradle #761 X/6\n🟩🟨⬜⬜⬜\n🟩🟩🟩🟨⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\nhttps://games.oec.world/en/tradle",
     ]
     expected = [
-        {"day": "761", "name": "Tradle", "timestamp": 0, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "761", "name": "Tradle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Tradle"
@@ -980,9 +1049,9 @@ class Flagle(Giochino):
         "#Flagle #773 (04.04.2024) X/6\n🟥🟥🟥\n🟥🟥🟥\nhttps://www.flagle.io",
     ]
     expected = [
-        {"day": "777", "name": "Flagle", "timestamp": 0, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "773", "name": "Flagle", "timestamp": 0, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "773", "name": "Flagle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "777", "name": "Flagle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Flagle"
@@ -1040,8 +1109,8 @@ class Globle(Giochino):
         "🌎 Mar 5, 2024 🌍\n🔥 1 | Avg. Guesses: 6.88\n🟨🟨🟧🟧🟥🟧🟧🟥\n🟥🟥🟧🟨🟥🟥🟩 = 15\n\nhttps://globle-game.com\n#globle",
     ]
     expected = [
-        {"day": "481", "name": "Globle", "timestamp": 0, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "456", "name": "Globle", "timestamp": 0, "tries": "15", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "481", "name": "Globle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "456", "name": "Globle", "timestamp": 10, "tries": "15", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Globle"
@@ -1107,7 +1176,7 @@ class WhereTaken(Giochino):
             "day": "407",
             "name": "WhereTaken",
             "stars": 0,
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1116,7 +1185,7 @@ class WhereTaken(Giochino):
             "day": "407",
             "name": "WhereTaken",
             "stars": 2,
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1125,7 +1194,7 @@ class WhereTaken(Giochino):
             "day": "399",
             "name": "WhereTaken",
             "stars": 4,
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "1",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1134,7 +1203,7 @@ class WhereTaken(Giochino):
             "day": "398",
             "name": "WhereTaken",
             "stars": 1,
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "4",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1207,7 +1276,7 @@ class Cloudle(Giochino):
         {
             "day": f'{get_day_from_date(_date, _day, "Cloudle", datetime.date.today())}',
             "name": "Cloudle",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "4",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1215,7 +1284,7 @@ class Cloudle(Giochino):
         {
             "day": f'{get_day_from_date(_date, _day, "Cloudle", datetime.date.today())}',
             "name": "Cloudle",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1275,7 +1344,7 @@ class GuessTheGame(Giochino):
         {
             "day": "693",
             "name": "GuessTheGame",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1283,7 +1352,7 @@ class GuessTheGame(Giochino):
         {
             "day": "695",
             "name": "GuessTheGame",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1291,7 +1360,7 @@ class GuessTheGame(Giochino):
         {
             "day": "692",
             "name": "GuessTheGame",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "1",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1299,7 +1368,7 @@ class GuessTheGame(Giochino):
         {
             "day": "684",
             "name": "GuessTheGame",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "5",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1365,8 +1434,8 @@ class Framed(Giochino):
         "Framed #758\n🎥 🟥 🟥 🟥 🟩 ⬛ ⬛\n\nhttps://framed.wtf",
     ]
     expected = [
-        {"day": "756", "name": "Framed", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "758", "name": "Framed", "timestamp": 0, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "756", "name": "Framed", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "758", "name": "Framed", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Framed"
@@ -1430,7 +1499,7 @@ class TimeGuessr(Giochino):
         {
             "day": "268",
             "name": "TimeGuessr",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": 16010,
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1438,7 +1507,7 @@ class TimeGuessr(Giochino):
         {
             "day": "282",
             "name": "TimeGuessr",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": 7786,
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -1502,10 +1571,10 @@ class Moviedle(Giochino):
         "#Moviedle #2024-01-21 \n\n 🎥 ⬛️ ⬛️ 🟩 ⬜️ ⬜️ ⬜️  \n\n https://likewisetv.com/arcade/moviedle",
     ]
     expected = [
-        {"day": "459", "name": "Moviedle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "420", "name": "Moviedle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "458", "name": "Moviedle", "timestamp": 0, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "412", "name": "Moviedle", "timestamp": 0, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "459", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "420", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "458", "name": "Moviedle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "412", "name": "Moviedle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Moviedle"
@@ -1573,9 +1642,9 @@ class Picsey(Giochino):
         "Picsey 04.07.24 \nIndustry : Companies \n60p/6t/2g \n🟦🟦🟦🟦🟦🟦 \n🟠🟠",
     ]
     expected = [
-        {"day": "296", "name": "Picsey", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "296", "name": "Picsey", "timestamp": 0, "tries": 34, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "295", "name": "Picsey", "timestamp": 0, "tries": 40, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "296", "name": "Picsey", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "296", "name": "Picsey", "timestamp": 10, "tries": 34, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "295", "name": "Picsey", "timestamp": 10, "tries": 40, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Picsey"
@@ -1638,9 +1707,9 @@ class Colorfle(Giochino):
         "Colorfle 711 5/6 \n⬜🟨⬜\n🟨⬜⬜\n🟨⬜🟨\n🟨🟨🟨\n🟩🟩🟩\nMy average color accuracy was 86%!",
     ]
     expected = [
-        {"day": "679", "name": "Colorfle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "713", "name": "Colorfle", "timestamp": 0, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "711", "name": "Colorfle", "timestamp": 0, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "679", "name": "Colorfle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "713", "name": "Colorfle", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "711", "name": "Colorfle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Colorfle"
@@ -1703,9 +1772,9 @@ class Murdle(Giochino):
         "THE MYSTERY OF THE POISONED GOBLET\nMurdle for 10/31/2023\n\n👤🔪🏡❓     🕰\n✅✅❌✅     3️⃣:1️⃣7️⃣\n\n⚖️\n❌\n\n\n\nhttps://murdle.com",
     ]
     expected = [
-        {"day": "169", "name": "Murdle", "timestamp": 0, "tries": "320", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "159", "name": "Murdle", "timestamp": 0, "tries": "724", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "131", "name": "Murdle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Murdle", "timestamp": 10, "tries": "320", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "159", "name": "Murdle", "timestamp": 10, "tries": "724", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "131", "name": "Murdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Murdle"
@@ -1769,8 +1838,8 @@ class Rotaboxes(Giochino):
         "🟩🟦🟪 streak: 2\n🟥🟧 clicks: 122/31\n🟨 overspin: 45.5\nrotabox.es/497\n🟨🟩🟧🟩🟥🟨\n🟧🟩🟨🟩🟩🟨\n🟥🟥🟥🟥🟨🟥\n🟧🟥🟨🟨🟥🟧",
     ]
     expected = [
-        {"day": "497", "name": "Rotaboxes", "timestamp": 0, "tries": 31, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "497", "name": "Rotaboxes", "timestamp": 0, "tries": 122, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "497", "name": "Rotaboxes", "timestamp": 10, "tries": 31, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "497", "name": "Rotaboxes", "timestamp": 10, "tries": 122, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Rotaboxes"
@@ -1800,7 +1869,7 @@ class Rotaboxes(Giochino):
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
-        _can_handle_this = len(lines) >= 3 and "rotabox.es" in lines[3] and "clicks:" in lines[1]
+        _can_handle_this = len(lines) >= 4 and "rotabox.es" in self.raw_text and "clicks:" in lines[1]
         return _can_handle_this
 
     @property
@@ -1830,8 +1899,8 @@ class Nerdle(Giochino):
         "nerdlegame 791 5/6\n\n🟪⬛️🟪⬛️🟪🟩⬛️⬛️\n🟪🟪🟩⬛️🟪🟩⬛️🟪\n⬛️🟪🟩🟩🟪🟩🟪🟪\n🟩🟪🟩🟩⬛️🟩🟩🟩\n🟩🟩🟩🟩🟩🟩🟩🟩",
     ]
     expected = [
-        {"day": "801", "name": "Nerdle", "timestamp": 0, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "791", "name": "Nerdle", "timestamp": 0, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "801", "name": "Nerdle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "791", "name": "Nerdle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Nerdle"
@@ -1891,10 +1960,10 @@ class Metazooa(Giochino):
         "🦆 Animal #127 🐈\nI was stumped by today's game!\n🟧🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩\n🔥 1 | Avg. Guesses: 9.1\n\nhttps://metazooa.com\n#metazooa",
     ]
     expected = [
-        {"day": "156", "name": "Metazooa", "timestamp": 0, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "249", "name": "Metazooa", "timestamp": 0, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "154", "name": "Metazooa", "timestamp": 0, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "127", "name": "Metazooa", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "156", "name": "Metazooa", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "249", "name": "Metazooa", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "154", "name": "Metazooa", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "127", "name": "Metazooa", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Metazooa"
@@ -1955,9 +2024,9 @@ class Metaflora(Giochino):
         "🌳 Plant #191 🌵\nI was stumped by today's game!\n🟧🟧🟨🟧🟫🟧🟫🟨🟨🟧🟨🟫🟨🟨🟨🟨🟨🟨🟩🟩🟩🟩🟩🟩🟨\n🔥 0 | Avg. Guesses: 0\n\nhttps://flora.metazooa.com\n#metaflora",
     ]
     expected = [
-        {"day": "141", "name": "Metaflora", "timestamp": 0, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "163", "name": "Metaflora", "timestamp": 0, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "191", "name": "Metaflora", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "141", "name": "Metaflora", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "163", "name": "Metaflora", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "191", "name": "Metaflora", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Metaflora"
@@ -2017,8 +2086,8 @@ class Angle(Giochino):
         "#Angle #571 X/4\n⬆️⬆️⬆️⬆️: 2° off\nhttps://www.angle.wtf",
     ]
     expected = [
-        {"day": "657", "name": "Angle", "timestamp": 0, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "571", "name": "Angle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "657", "name": "Angle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "571", "name": "Angle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Angle"
@@ -2082,7 +2151,7 @@ class TempoIndovinr(Giochino):
         {
             "day": "146",
             "name": "TempoIndovinr",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": 407,
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -2090,7 +2159,7 @@ class TempoIndovinr(Giochino):
         {
             "day": "138",
             "name": "TempoIndovinr",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": 273,
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -2154,7 +2223,7 @@ class Chronophoto(Giochino):
         {
             "day": "126",
             "name": "Chronophoto",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": 2048,
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -2162,7 +2231,7 @@ class Chronophoto(Giochino):
         {
             "day": "131",
             "name": "Chronophoto",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": 1520,
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -2228,10 +2297,10 @@ class Travle(Giochino):
         "#travle #481 (?/10) (4 lontano)\n⬛️🟥🟥🟥✅🟧🟥⬛️⬛️⬛️\nhttps://travle.earth",
     ]
     expected = [
-        {"day": "481", "name": "Travle", "timestamp": 0, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "481", "name": "Travle", "timestamp": 0, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "468", "name": "Travle", "timestamp": 0, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "481", "name": "Travle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "481", "name": "Travle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "481", "name": "Travle", "timestamp": 10, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "468", "name": "Travle", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "481", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "Travle"
@@ -2261,7 +2330,7 @@ class Travle(Giochino):
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
-        _can_handle_this = "#travle" in lines[0] and "travle.earth" in lines[-1]
+        _can_handle_this = "#travle " in lines[0] and "travle.earth" in lines[-1]
         return _can_handle_this
 
     @property
@@ -2299,11 +2368,11 @@ class TravleITA(Giochino):
         "#travle_ita #256 (?/9) (1 lontano)\n✅✅🟧🟧🟧✅🟧🟧🟧\nhttps://travle.earth/ita",
     ]
     expected = [
-        {"day": "294", "name": "TravleITA", "timestamp": 0, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "289", "name": "TravleITA", "timestamp": 0, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "215", "name": "TravleITA", "timestamp": 0, "tries": 19, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "213", "name": "TravleITA", "timestamp": 0, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "256", "name": "TravleITA", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "294", "name": "TravleITA", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "289", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "215", "name": "TravleITA", "timestamp": 10, "tries": 19, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "213", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "256", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "TravleITA"
@@ -2368,12 +2437,12 @@ class NerdleCross(Giochino):
         "cross nerdle #198\n⬛️⬜️⬜️⬜️🎁⬜️⬜️⬛️⬛️\n⬛️⬛️⬜️⬛️⬜️⬛️⬛️⬛️⬜️\n🎁⬛️⬜️⬛️🎁⬜️⬜️⬜️🎁\n⬜️⬛️🎁⬛️⬜️⬛️⬛️⬛️🎁\n⬜️🎁🎁⬜️⬜️⬜️🎁⬜️⬜️\n⬜️⬛️⬛️⬛️⬜️⬛️⬜️⬛️🎁\n🎁⬜️⬜️🎁⬜️⬛️⬜️⬛️⬜️\n⬜️⬛️⬛️⬛️⬜️⬛️🎁⬛️⬛️\n⬛️⬛️⬜️⬜️⬜️⬜️🎁⬜️⬛️\n🟩*0 + 🎁*14 + 👀* 1\n@nerdlegame points:0/6",
     ]
     expected = [
-        {"day": "198", "name": "NerdleCross", "timestamp": 0, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "201", "name": "NerdleCross", "timestamp": 0, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "198", "name": "NerdleCross", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "201", "name": "NerdleCross", "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
         {
             "day": "198",
             "name": "NerdleCross",
-            "timestamp": 0,
+            "timestamp": 10,
             "tries": "X",
             "user_id": 456481297,
             "user_name": "Trifase",
@@ -2439,8 +2508,8 @@ class DominoFit(Giochino):
         "DOMINO FIT #47 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️🧙\u200d♂️\n⌚0️⃣2️⃣3️⃣",
     ]
     expected = [
-        {"day": "42", "name": "DominoFit", "timestamp": 0, "tries": 45, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "47", "name": "DominoFit", "timestamp": 0, "tries": 23, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "42", "name": "DominoFit", "timestamp": 10, "tries": 45, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "47", "name": "DominoFit", "timestamp": 10, "tries": 23, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     _name = "DominoFit"
@@ -2510,16 +2579,9 @@ class FoodGuessr(Giochino):
     # FoodGuessr doesn't have any day/date, so we assume it's today.
     day = get_day_from_date(_date, _day, "FoodGuessr", datetime.date.today())
     expected = [
-        {
-            "day": day,
-            "name": "FoodGuessr",
-            "timestamp": 0,
-            "tries": 14355,
-            "user_id": 456481297,
-            "user_name": "Trifase",
-        },
-        {"day": day, "name": "FoodGuessr", "timestamp": 0, "tries": 9758, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": day, "name": "FoodGuessr", "timestamp": 0, "tries": 1500, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 14355, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 9758, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 1500, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     has_extra: False
@@ -2571,9 +2633,9 @@ class Spellcheck(Giochino):
         "Spellcheck #87\n🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥\n\nhttps://spellcheckgame.com/",
     ]
     expected = [
-        {"day": "75", "name": "Spellcheck", "timestamp": 0, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "74", "name": "Spellcheck", "timestamp": 0, "tries": 6, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "87", "name": "Spellcheck", "timestamp": 0, "tries": 15, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "75", "name": "Spellcheck", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "74", "name": "Spellcheck", "timestamp": 10, "tries": 6, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "87", "name": "Spellcheck", "timestamp": 10, "tries": 15, "user_id": 456481297, "user_name": "Trifase"},
     ]
     _name = "Spellcheck"
     _category = "Logica"
@@ -2630,8 +2692,8 @@ class Spotle(Giochino):
         "Spotle #710🎧\n\n⬜⬜⬜⬜⬜⬜⬜⬜⬜❌\n\nspotle.io",
     ]
     expected = [
-        {"day": "710", "name": "Spotle", "timestamp": 0, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "710", "name": "Spotle", "timestamp": 0, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "710", "name": "Spotle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "710", "name": "Spotle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
     _name = "Spotle"
     _category = "Immagini, giochi e film"
@@ -2689,7 +2751,11 @@ class Spotle(Giochino):
 
 
 def get_giochini():
-    return [cls_obj for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass) if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino]
+    return [
+        cls_obj
+        for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+        if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino
+    ]
 
 
 def get_games() -> dict:
@@ -2706,7 +2772,25 @@ def get_games() -> dict:
         }
     return games
 
+
 # This make a dictionary with every game info (grabbed from the list of classes) and it's imported almost everywhere
 ALL_GAMES = get_games()
 # This is a list of every class of game, used to instantiate them
 ALL_CLASSES = get_giochini()
+
+# tests = []
+# for klass in ALL_CLASSES:
+#     tests.extend(klass.examples)
+
+# for test in tests:
+#     upd = generate_sample_update(test)
+#     for giochino in ALL_CLASSES:
+#         giochino = giochino(upd)
+
+#         if giochino.can_handle_this:
+#             result = giochino.punteggio
+#             print(f"{giochino._name} - {giochino.can_handle_this} - {any(x.items() <= result.items() for x in giochino.expected)}")
+#             for x in giochino.expected:
+#                 print(x)
+#             print(f'result = {giochino.punteggio}')
+#             break
