@@ -102,13 +102,13 @@ class Giochino:
     has_extra: bool = False
     can_lose: bool = True
     # Parsed result
-    day: str
-    tries: str
-    timestamp: int
-    stars: str
-    user_name: str
-    user_id: int
-    is_lost: bool
+    day: str = None
+    tries: str = None
+    timestamp: int = None
+    stars: str = None
+    user_name: str = None
+    user_id: int = None
+    is_lost: bool = None
 
     def __str__(self):
         return f"Partita di {self._name} il giorno {self.day} fatta da {self.user_name} ({self.user_id}). Risultato: {self.tries} punti{' (perso)' if self.is_lost else ''}."
@@ -211,13 +211,6 @@ class Parole(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -265,13 +258,6 @@ class Bandle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -330,13 +316,6 @@ class Chrono(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -403,13 +382,6 @@ class Contexto(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -467,13 +439,6 @@ class Stepdle(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -530,13 +495,6 @@ class Waffle(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -582,13 +540,6 @@ class HighFive(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -639,13 +590,6 @@ class Polygonle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -704,13 +648,6 @@ class Connections(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -763,13 +700,6 @@ class Squareword(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -881,13 +811,6 @@ class Tradle(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -939,13 +862,6 @@ class Flagle(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -996,13 +912,6 @@ class Globle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -1060,13 +969,6 @@ class WhereTaken(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -1132,13 +1034,6 @@ class Cloudle(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1192,13 +1087,6 @@ class GuessTheGame(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1251,13 +1139,6 @@ class Framed(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -1313,13 +1194,6 @@ class TimeGuessr(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1372,13 +1246,6 @@ class Moviedle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -1440,13 +1307,6 @@ class Picsey(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1502,13 +1362,6 @@ class Colorfle(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1563,13 +1416,6 @@ class Murdle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -1628,13 +1474,6 @@ class Rotaboxes(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1687,13 +1526,6 @@ class Nerdle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -1748,13 +1580,6 @@ class Metazooa(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1808,13 +1633,6 @@ class Metaflora(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1865,13 +1683,6 @@ class Angle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -1927,13 +1738,6 @@ class TempoIndovinr(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -1983,13 +1787,6 @@ class Chronophoto(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -2045,13 +1842,6 @@ class Travle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -2115,13 +1905,6 @@ class TravleITA(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -2179,13 +1962,6 @@ class NerdleCross(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -2240,13 +2016,6 @@ class DominoFit(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
@@ -2305,13 +2074,6 @@ class FoodGuessr(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -2365,13 +2127,6 @@ class Spellcheck(Giochino):
         self.update = update
         self.raw_text = self.update.message.text
 
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
-
         if self.can_handle_this:
             self.parse()
 
@@ -2420,13 +2175,6 @@ class Spotle(Giochino):
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
-
-        self.user_name = None
-        self.user_id = None
-        self.timestamp = None
-        self.day = None
-        self.tries = None
-        self.stars = None
 
         if self.can_handle_this:
             self.parse()
