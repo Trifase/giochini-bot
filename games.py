@@ -146,7 +146,7 @@ class Giochino:
             "user_name": self.user_name,
             "stars": self.stars,
         }
-    
+
     @property
     def is_lost(self):
         return self.tries == "X"
