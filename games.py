@@ -113,6 +113,13 @@ class Giochino:
     def __str__(self):
         return f"Partita di {self._name} il giorno {self.day} fatta da {self.user_name} ({self.user_id}). Risultato: {self.tries} punti{' (perso)' if self.is_lost else ''}."
 
+    def __init__(self, update):
+        self.update = update
+        self.raw_text = self.update.message.text
+
+        if self.can_handle_this:
+            self.parse()
+
     @property
     def can_handle_this(self):
         return False
@@ -139,6 +146,13 @@ class Giochino:
             "user_name": self.user_name,
             "stars": self.stars,
         }
+    
+    @property
+    def is_lost(self):
+        return self.tries == "X"
+
+    def parse(self):
+        return
 
 
 @dataclass
@@ -159,21 +173,12 @@ class Wordle(Giochino):
         {"day": "821", "name": "Wordle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         _can_handle_this = "Wordle" in self.raw_text and "/" in self.raw_text
         return _can_handle_this
 
-    @property
-    def is_lost(self):
-        return self.tries == "X"
+
 
     def parse(self):
         text = self.raw_text
@@ -207,22 +212,11 @@ class Parole(Giochino):
         {"day": "813", "name": "Parole", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Par🇮🇹le" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -255,22 +249,11 @@ class Bandle(Giochino):
         {"day": "579", "name": "Bandle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Bandle #" in lines[0] and "https://bandle.app/" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -313,22 +296,11 @@ class Chrono(Giochino):
         {"day": "748", "name": "Chrono", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "CHRONO  #" in lines[0] and "https://chrono.ques" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -378,22 +350,11 @@ class Contexto(Giochino):
         {"day": "465", "name": "Contexto", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "contexto.me" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -435,22 +396,11 @@ class Stepdle(Giochino):
         {"day": "536", "name": "Stepdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Stepdle #" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -491,22 +441,11 @@ class Waffle(Giochino):
         {"day": "629", "name": "Waffle", "stars": 0, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#waffle" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -537,22 +476,11 @@ class HighFive(Giochino):
 
     can_lose: False
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "https://highfivegame.app/2" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -587,22 +515,11 @@ class Polygonle(Giochino):
         {"day": "617", "name": "Polygonle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#Polygonle" in lines[0] and "/" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -644,22 +561,11 @@ class Connections(Giochino):
         {"day": "302", "name": "Connections", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Connections" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -697,22 +603,11 @@ class Squareword(Giochino):
         {"day": "793", "name": "Squareword", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "squareword.org" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -748,22 +643,11 @@ class Worldle(Giochino):
         {"day": "808", "name": "Worldle", "stars": 0, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Worldle" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -807,22 +691,11 @@ class Tradle(Giochino):
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#Tradle" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -858,22 +731,11 @@ class Flagle(Giochino):
         {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#Flagle" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -909,22 +771,11 @@ class Globle(Giochino):
         {"day": "456", "name": "Globle", "timestamp": 10, "tries": "15", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#globle" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -966,22 +817,11 @@ class WhereTaken(Giochino):
         {"day": "398", "name": "WhereTaken", "stars": 1, "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "WhereTaken" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1030,22 +870,11 @@ class Cloudle(Giochino):
         },
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Cloudle -" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1083,22 +912,11 @@ class GuessTheGame(Giochino):
         {"day": "684", "name": "GuessTheGame", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#GuessTheGame" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1136,22 +954,11 @@ class Framed(Giochino):
         {"day": "758", "name": "Framed", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Framed" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1190,22 +997,11 @@ class TimeGuessr(Giochino):
         {"day": "282", "name": "TimeGuessr", "timestamp": 10, "tries": 7786, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "TimeGuessr" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1243,22 +1039,11 @@ class Moviedle(Giochino):
         {"day": "412", "name": "Moviedle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Moviedle" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1303,22 +1088,11 @@ class Picsey(Giochino):
         {"day": "295", "name": "Picsey", "timestamp": 10, "tries": 40, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Picsey" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1358,22 +1132,11 @@ class Colorfle(Giochino):
         {"day": "711", "name": "Colorfle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Colorfle" in lines[0] and "accuracy" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1413,22 +1176,11 @@ class Murdle(Giochino):
         {"day": "131", "name": "Murdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Murdle" in lines[1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1470,22 +1222,11 @@ class Rotaboxes(Giochino):
         {"day": "497", "name": "Rotaboxes", "timestamp": 10, "tries": 122, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = len(lines) >= 4 and "rotabox.es" in self.raw_text and "clicks:" in lines[1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1523,22 +1264,11 @@ class Nerdle(Giochino):
         {"day": "791", "name": "Nerdle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "nerdlegame" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1576,22 +1306,11 @@ class Metazooa(Giochino):
         {"day": "127", "name": "Metazooa", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Animal" in lines[0] and "#metazooa" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1629,22 +1348,11 @@ class Metaflora(Giochino):
         {"day": "191", "name": "Metaflora", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Plant" in lines[0] and "#metaflora" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1680,22 +1388,11 @@ class Angle(Giochino):
         {"day": "571", "name": "Angle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Angle" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1734,22 +1431,11 @@ class TempoIndovinr(Giochino):
         {"day": "138", "name": "TempoIndovinr", "timestamp": 10, "tries": 273, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "experiments/tempoindovinr/" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1784,22 +1470,11 @@ class Chronophoto(Giochino):
         {"day": "131", "name": "Chronophoto", "timestamp": 10, "tries": 1520, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "I got a score of" in lines[0] and "chronophoto.app" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1839,22 +1514,11 @@ class Travle(Giochino):
         {"day": "481", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#travle " in lines[0] and "travle.earth" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1901,22 +1565,11 @@ class TravleITA(Giochino):
         {"day": "256", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "#travle_ita" in lines[0] and "/ita" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -1958,22 +1611,11 @@ class NerdleCross(Giochino):
         {"day": "198", "name": "NerdleCross", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "cross nerdle #" in lines[0] and "@nerdlegame" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -2013,22 +1655,11 @@ class DominoFit(Giochino):
         {"day": "47", "name": "DominoFit", "timestamp": 10, "tries": 23, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "DOMINO FIT #" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -2070,22 +1701,11 @@ class FoodGuessr(Giochino):
         {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 1500, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "FoodGuessr" in lines[0] and "Play: https://foodguessr.com" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -2123,22 +1743,11 @@ class Spellcheck(Giochino):
         {"day": "87", "name": "Spellcheck", "timestamp": 10, "tries": 15, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Spellcheck #" in lines[0]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
@@ -2172,22 +1781,11 @@ class Spotle(Giochino):
         {"day": "710", "name": "Spotle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    def __init__(self, update):
-        self.update = update
-        self.raw_text = self.update.message.text
-
-        if self.can_handle_this:
-            self.parse()
-
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
         _can_handle_this = "Spotle #" in lines[0] and "spotle.io" in lines[-1]
         return _can_handle_this
-
-    @property
-    def is_lost(self):
-        return self.tries == "X"
 
     def parse(self):
         text = self.raw_text
