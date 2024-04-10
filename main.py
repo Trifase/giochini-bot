@@ -468,20 +468,27 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     for giochino in giochini:
         giochino = giochino(update)
-        # print(f"{giochino._name} - can handle? {giochino.can_handle_this}")
         if giochino.can_handle_this:
             result = giochino.punteggio
             break
+    else:
+        result = None
 
-    play_is_lost = False
-    if result == "ignora":
+    # This is a way to skip a known, unsupported game.
+    if giochino.message == "ignora":
         await update.message.set_reaction(reaction="👌")
         return
 
-    if result:
-        result["user_name"] = update.message.from_user.full_name
-        result["user_id"] = update.message.from_user.id
+    # If it's a lost game, send a message and change the score to 9999999
+    play_is_lost = False
+    if giochino.is_lost:
+        if update.effective_chat.id != ID_TESTING:
+            await update.message.reply_text(f"{giochino.lost_message}")
+            await update.message.set_reaction(reaction="😭")
+        result["tries"] = "9999999"  # Tries have to be populated nonetheless
+        play_is_lost = True
 
+    if result:
         query = Punteggio.select().where(
             Punteggio.day == str_as_int(result["day"]),
             Punteggio.game == result["name"],
@@ -490,19 +497,13 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
         if query:
-            await update.message.reply_text("Hai già giocato questo round.")
+            await update.message.reply_text(f"Hai già giocato a {giochino.name} oggi.")
+            await update.message.set_reaction(reaction="🤔")
             return
 
-        if result.get("tries") == "X":
-            if update.effective_chat.id != ID_TESTING:
-                await update.message.reply_text("Hai perso loooool")
-                await update.message.set_reaction(reaction="🤷‍♂️")
-            result["tries"] = "9999999"  # Tries have to be popupated nonetheless
-            play_is_lost = True
-
+        # Testing debug
         if update.effective_chat.id == ID_TESTING:
             import pprint
-
             rawresult = pprint.pformat(result, width=300).replace("<", "less").replace(">", "more")
             rawtext = pprint.pformat(update.message.text, width=300).replace("<", "less").replace(">", "more")
             # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
@@ -556,12 +557,18 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.job_queue.run_once(delete_post, 60, data=[mymsg], name=f"delete_post_{str(update.effective_message.id)}")
 
         else:
-            await update.message.reply_text(f'Ho salvato il tuo punteggio di {int(today_game) - str_as_int(result["day"])} giorni fa.')
+            days_ago = int(today_game) - str_as_int(result["day"])
+            if days_ago < 0:
+                await update.message.reply_text('Ho salvato il tuo punteggio del futuro.')
+            else:
+                await update.message.reply_text(f'Ho salvato il tuo punteggio di {days_ago} giorni fa.')
 
         logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
 
     else:
-        await update.message.reply_text("Non ho capito, scusa")
+        await update.message.set_reaction(reaction="🤷‍♂")
+        # await update.message.set_reaction(reaction="🤔")
+        # await update.message.reply_text("Non ho capito, scusa")
 
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
