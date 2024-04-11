@@ -1003,7 +1003,7 @@ class Murdle(Giochino):
     @property
     def can_handle_this(self):
         lines = self.raw_text.splitlines()
-        _can_handle_this = "Murdle" in lines[1]
+        _can_handle_this = len(lines) > 1 and "Murdle" in lines[1]
         return _can_handle_this
 
     def parse(self):
@@ -1578,16 +1578,23 @@ class Travle(Giochino):
     _url = "https://travle.earth"
 
     examples = [
-        "#travle #481 (5/10)\n✅✅✅✅✅\nhttps://travle.earth",
-        "#travle #481 (8/10)\n✅✅✅✅🟧🟧🟧✅\nhttps://travle.earth",
-        "#travle #468 (8/13) (3 suggerimenti)\n✅✅✅✅✅✅🟧✅\nhttps://travle.earth",
-        "#travle #481 (?/10) (4 lontano)\n⬛️🟥🟥🟥✅🟧🟥⬛️⬛️⬛️\nhttps://travle.earth",
+        # "#travle #481 (5/10)\n✅✅✅✅✅\nhttps://travle.earth",
+        # "#travle #481 (8/10)\n✅✅✅✅🟧🟧🟧✅\nhttps://travle.earth",
+        # "#travle #468 (8/13) (3 suggerimenti)\n✅✅✅✅✅✅🟧✅\nhttps://travle.earth",
+        # "#travle #481 (?/10) (4 lontano)\n⬛️🟥🟥🟥✅🟧🟥⬛️⬛️⬛️\nhttps://travle.earth",
+        '#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth',
+        '#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth'
+        '#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth'
+
     ]
     expected = [
-        {"day": "481", "name": "Travle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "481", "name": "Travle", "timestamp": 10, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "468", "name": "Travle", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "481", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "481", "name": "Travle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "481", "name": "Travle", "timestamp": 10, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "468", "name": "Travle", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "481", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @property
@@ -1606,14 +1613,17 @@ class Travle(Giochino):
         lines = text.splitlines()
         first_line = lines[0].split()
         self.day = first_line[1][1:]
-        tries = first_line[2].split("/")[0][1:]
-        if tries == "?":
+        if '✅' not in lines[1]:
             self.tries = "X"
         else:
-            hints = 0
-            if len(first_line) > 3:
-                hints = first_line[3][1:]
-            self.tries = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+            self.tries = first_line[2][1:]
+        # if tries == "?":
+        #     self.tries = "X"
+        # else:
+        #     hints = 0
+        #     if len(first_line) > 3:
+        #         hints = first_line[3][1:]
+        #     self.tries = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
         self.stars = None
 
 
@@ -1627,18 +1637,25 @@ class TravleITA(Giochino):
     _url = "https://travle.earth/ita"
 
     examples = [
-        "#travle_ita #294 (4/9)\n✅✅✅✅\nhttps://travle.earth/ita",
-        "#travle_ita #289 (13/14) (1 hint)\n✅🟧✅✅🟧✅🟧🟧🟧✅✅✅✅\nhttps://travle.earth/ita",
-        "#travle_ita #215 (13/13) (3 Hinweise)\n🟧🟥✅✅🟧✅✅🟧🟥🟧✅✅✅\nhttps://travle.earth/ita",
-        "#travle_ita #213 (8/9) (3 suggerimenti)\n🟧✅🟧🟧✅🟥✅✅\nhttps://travle.earth/ita",
-        "#travle_ita #256 (?/9) (1 lontano)\n✅✅🟧🟧🟧✅🟧🟧🟧\nhttps://travle.earth/ita",
+        # "#travle_ita #294 (4/9)\n✅✅✅✅\nhttps://travle.earth/ita",
+        # "#travle_ita #289 (13/14) (1 hint)\n✅🟧✅✅🟧✅🟧🟧🟧✅✅✅✅\nhttps://travle.earth/ita",
+        # "#travle_ita #215 (13/13) (3 Hinweise)\n🟧🟥✅✅🟧✅✅🟧🟥🟧✅✅✅\nhttps://travle.earth/ita",
+        # "#travle_ita #213 (8/9) (3 suggerimenti)\n🟧✅🟧🟧✅🟥✅✅\nhttps://travle.earth/ita",
+        # "#travle_ita #256 (?/9) (1 lontano)\n✅✅🟧🟧🟧✅🟧🟧🟧\nhttps://travle.earth/ita",
+        '#travle_ita #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth/ita',
+        '#travle_ita #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth/ita'
+        '#travle_ita #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth/ita'
     ]
     expected = [
-        {"day": "294", "name": "TravleITA", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "289", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "215", "name": "TravleITA", "timestamp": 10, "tries": 19, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "213", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "256", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "294", "name": "TravleITA", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "289", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "215", "name": "TravleITA", "timestamp": 10, "tries": 19, "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "213", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        # {"day": "256", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        
+        {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @property
@@ -1657,14 +1674,18 @@ class TravleITA(Giochino):
         lines = text.splitlines()
         first_line = lines[0].split()
         self.day = first_line[1][1:]
-        tries = first_line[2].split("/")[0][1:]
-        if tries == "?":
+        if '✅' not in lines[1]:
             self.tries = "X"
         else:
-            hints = 0
-            if len(first_line) > 3:
-                hints = first_line[3][1:]
-            self.tries = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+            self.tries = first_line[2][1:]
+        # if tries == "?":
+        #     self.tries = "X"
+        # else:
+        #     hints = 0
+        #     if len(first_line) > 3:
+        #         hints = first_line[3][1:]
+        #     self.tries = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+        self.stars = None
 
 
 @dataclass
@@ -1871,19 +1892,20 @@ ALL_GAMES = get_games()
 # This is a list of every class of game, used to instantiate them
 ALL_CLASSES = get_giochini()
 
-# tests = []
-# for klass in ALL_CLASSES:
-#     tests.extend(klass.examples)
+def test(print_debug):
+    giochini = [cls_obj for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass) if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino and cls_obj.examples]
+    # giochini = [Wordle, Parole, Bandle, Chrono]
+    for gioco in giochini:
+        for i in range(len(gioco.examples)):
+            update = generate_sample_update(gioco.examples[i])
+            giochino = gioco(update)
+            print(f'[{i}] ==== {giochino._name} ====')
+            if print_debug:
+                print(f'info = {giochino.info}')
+                print(f'expected = {giochino.expected[i]}')
+                print(f'punteggio = {giochino.punteggio}')
+            assert(all(x in giochino.punteggio.items() for x in giochino.expected[i].items()))
+            print('test_passed ✅')
+            print()
 
-# for test in tests:
-#     upd = generate_sample_update(test)
-#     for giochino in ALL_CLASSES:
-#         giochino = giochino(upd)
-
-#         if giochino.can_handle_this:
-#             result = giochino.punteggio
-#             print(f"{giochino._name} - {giochino.can_handle_this} - {any(x.items() <= result.items() for x in giochino.expected)}")
-#             for x in giochino.expected:
-#                 print(x)
-#             print(f'result = {giochino.punteggio}')
-#             break
+# test(False)

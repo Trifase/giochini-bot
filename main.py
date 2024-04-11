@@ -502,7 +502,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if query:
             await update.message.reply_text(f"Hai già giocato a {giochino.name} oggi.")
-            await update.message.set_reaction(reaction="🤔")
+            await update.message.set_reaction(reaction="🤨")
             return
 
         # Testing debug
@@ -571,7 +571,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     else:
         # No game found for this particular update
-        await update.message.set_reaction(reaction="🤷‍♂")
+        await update.message.set_reaction(reaction="🤔")
 
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
