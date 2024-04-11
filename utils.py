@@ -47,53 +47,25 @@ class GameFilter(MessageFilter):
         if not message.text:
             return False
 
-        quadratini = [
-            "🟥",
-            "🟩",
-            "⬜️",
-            "🟨",
-            "⬛️",
-            "🟦",
-            "🟢",
-            "⚫️",
-            "🟡",
-            "🟠",
-            "🔵",
-            "🟣",
-            "✅",
-            "🌕",
-            "🌗",
-            "🌘",
-            "🌑",
-        ]
-
-        if b"\xE2\xAC\x9B".decode("utf-8") in message.text:
-            return True
-
-        # Se ha qualche emoji colorata, probabilmente è un messaggio di un gioco
+        # A generic 'it has emoji = it's a paste from a game' filter
+        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅", "🌕", "🌗", "🌘", "🌑"]
         if any(c in message.text for c in quadratini):
             return True
 
-        # Eccezione per Plotwords, che non usa emoji
-        if "Plotwords" in message.text and "Clues used" in message.text:
-            return True
-
-        if "Murdle for" in message.text and ("❌" in message.text or "✅" in message.text) and "🔪" in message.text:
-            return True
-
-        if "#Angle" in message.text and ("⬇️" in message.text or "⬆️" in message.text or "🎉" in message.text):
-            return True
-
-        if "#travle " in message.text and "https://imois.in/games/travle" in message.text:
-            return True
-
-        if "DOMINO FIT #" in message.text and any(x in message.text for x in ["🏅", "🥈", "🥉"]):
-            return True
-
-        if all(x in message.text for x in ["❌", "🎧"]):  # spotle
-            return True
-
-        if "https://www.chronophoto.app/daily.html" in message.text and "Round 1" in message.text and "Round 4:" in message.text:
+        # A curated list of specific cases for specific games
+        if any(
+            [
+                b"\xE2\xAC\x9B".decode("utf-8") in message.text,  # A particular flavour of ⬛
+                "Plotwords" in message.text and "Clues used" in message.text,
+                "I solved" in message.text and "New York Times Mini Crossword" in message.text,
+                "Murdle for" in message.text and ("❌" in message.text or "✅" in message.text) and "🔪" in message.text,
+                "#Angle" in message.text and ("⬇️" in message.text or "⬆️" in message.text or "🎉" in message.text),
+                "#travle " in message.text and "https://imois.in/games/travle" in message.text,
+                "DOMINO FIT #" in message.text and any(x in message.text for x in ["🏅", "🥈", "🥉"]),
+                all(x in message.text for x in ["❌", "🎧"]),
+                "https://www.chronophoto.app/daily.html" in message.text and "Round 1" in message.text and "Round 4:" in message.text,
+            ]
+        ):
             return True
 
         return False

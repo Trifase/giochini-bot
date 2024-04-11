@@ -501,7 +501,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
         if query:
-            await update.message.reply_text(f"Hai già giocato a {giochino.name} oggi.")
+            await update.message.reply_text(f"Hai già giocato a {giochino._name} oggi.")
             await update.message.set_reaction(reaction="🤨")
             return
 
