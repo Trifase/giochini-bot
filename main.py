@@ -466,12 +466,16 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Iterate all games to find the FIRST that can handle the update.
+    # Order matters. Maybe it's worth to order them in order of frequency of use?
+    # Only the first game matched will be used to parse.
     for giochino in giochini:
         giochino = giochino(update)
         if giochino.can_handle_this:
             result = giochino.punteggio
             break
     else:
+        # No game found
         result = None
 
     # This is a way to skip a known, unsupported game.
@@ -566,9 +570,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
 
     else:
+        # No game found for this particular update
         await update.message.set_reaction(reaction="🤷‍♂")
-        # await update.message.set_reaction(reaction="🤔")
-        # await update.message.reply_text("Non ho capito, scusa")
 
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

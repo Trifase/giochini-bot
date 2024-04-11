@@ -85,23 +85,23 @@ def is_connection_completed(connection: list[str]) -> bool:
 
 @dataclass
 class Giochino:
-    # Infos
-    _name: str
-    _emoji: str
-    _category: str
-    _date: datetime.date
-    _day: str
-    _url: str
-    # Input
-    update: str
-    raw_text: str
-    # Tests
-    examples: list[str]
-    expected: list[dict]
-    # Misc
-    has_extra: bool = False
-    can_lose: bool = True
-    lost_message: str = "Hai perso :("
+    # Information about the game
+    _name: str = None
+    _emoji: str = None
+    _category: str = None
+    _date: datetime.date = None
+    _day: str = None
+    _url: str = None
+    # Telegram input
+    update: str = None
+    raw_text: str = None
+    # Tests and expected results
+    examples: list[str] = None
+    expected: list[dict] = None
+    # Misc information about the game/class
+    has_extra: bool = False   # if the game has additional points, currently set but unused
+    can_lose: bool = True  # if the game can be lost (e.g has a copypaste string for lost plays), set but unused
+    lost_message: str = "Hai perso :("  # per-game lose message
     hidden_game: bool = False  # set this to true to hide game from list/dicts/info
     # Parsed result
     day: str = None
@@ -111,9 +111,9 @@ class Giochino:
     user_name: str = None
     user_id: int = None
     is_lost: bool = None
-    # Result information
-    message: str = ""
-    parsed: bool = False
+    # Result misc information
+    message: str = None  # a message property used to handle specific case. At the moment is only used for unsupported games.
+    parsed: bool = False  # A boolean set to true when a game successfully parse a play
 
     def __str__(self):
         return f"Partita di {self._name} il giorno {self.day} fatta da {self.user_name} ({self.user_id}). Risultato: {self.tries} punti{' (perso)' if self.is_lost else ''}."
@@ -126,6 +126,7 @@ class Giochino:
             self.parse()
             self.parsed = True
 
+    # Used to define conditions to tell if this game matches the input update.
     @property
     def can_handle_this(self):
         return False
