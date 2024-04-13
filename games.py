@@ -95,6 +95,8 @@ class GameFilter(MessageFilter):
         # Iterate all games to find the FIRST that can handle the update.
         # Order matters. Maybe it's worth to order them in order of frequency of use?
         # Only the first game matched will be used to parse.
+        # Returning a dictionary and setting data_filter = true means that PTB will build 
+        # a context.property (context.giochino) with the selected class. We just grab it on the other end.
         for giochino in ALL_CLASSES:
             if giochino.can_handle_this(message.text):
                 return {"giochino": [giochino]}
@@ -141,7 +143,7 @@ class Giochino:
         self.update = update
         self.raw_text = self.update.message.text
 
-        if self.can_handle_this:
+        if self.can_handle_this(self.raw_text):
             self.parse()
             self.parsed = True
 
