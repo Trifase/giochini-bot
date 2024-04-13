@@ -5,7 +5,6 @@ import httpx
 import peewee
 from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext.filters import MessageFilter
 
 from config import ID_GIOCHINI, MEDALS, TOKEN, Medaglia, Punteggio
 from games import ALL_GAMES as GAMES
@@ -40,35 +39,6 @@ class Classifica:
         if self.last:
             classifica += f"{self.last}"
         return classifica
-
-
-class GameFilter(MessageFilter):
-    def filter(self, message):
-        if not message.text:
-            return False
-
-        # A generic 'it has emoji = it's a paste from a game' filter
-        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅", "🌕", "🌗", "🌘", "🌑"]
-        if any(c in message.text for c in quadratini):
-            return True
-
-        # A curated list of specific cases for specific games
-        if any(
-            [
-                b"\xE2\xAC\x9B".decode("utf-8") in message.text,  # A particular flavour of ⬛
-                "Plotwords" in message.text and "Clues used" in message.text,
-                "I solved" in message.text and "New York Times Mini Crossword" in message.text,
-                "Murdle for" in message.text and ("❌" in message.text or "✅" in message.text) and "🔪" in message.text,
-                "#Angle" in message.text and ("⬇️" in message.text or "⬆️" in message.text or "🎉" in message.text),
-                "#travle " in message.text and "https://imois.in/games/travle" in message.text,
-                "DOMINO FIT #" in message.text and any(x in message.text for x in ["🏅", "🥈", "🥉"]),
-                all(x in message.text for x in ["❌", "🎧"]),
-                "https://www.chronophoto.app/daily.html" in message.text and "Round 1" in message.text and "Round 4:" in message.text,
-            ]
-        ):
-            return True
-
-        return False
 
 
 def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = None):

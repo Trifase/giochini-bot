@@ -5,6 +5,7 @@ import time
 
 from dataclassy import dataclass
 from telegram import Bot, Update
+from telegram.ext.filters import MessageFilter
 
 
 def generate_sample_update(text):
@@ -83,6 +84,24 @@ def is_connection_completed(connection: list[str]) -> bool:
     return False
 
 
+class GameFilter(MessageFilter):
+    def __init__(self):
+        self.data_filter = True
+
+    def filter(self, message):
+        if not message.text:
+            return False
+
+        # Iterate all games to find the FIRST that can handle the update.
+        # Order matters. Maybe it's worth to order them in order of frequency of use?
+        # Only the first game matched will be used to parse.
+        for giochino in ALL_CLASSES:
+            if giochino.can_handle_this(message.text):
+                return {"giochino": [giochino]}
+        else:
+            return False
+
+
 @dataclass
 class Giochino:
     # Information about the game
@@ -99,7 +118,7 @@ class Giochino:
     examples: list[str] = None
     expected: list[dict] = None
     # Misc information about the game/class
-    has_extra: bool = False   # if the game has additional points, currently set but unused
+    has_extra: bool = False  # if the game has additional points, currently set but unused
     can_lose: bool = True  # if the game can be lost (e.g has a copypaste string for lost plays), set but unused
     lost_message: str = "Hai perso :("  # per-game lose message
     hidden_game: bool = False  # set this to true to hide game from list/dicts/info
@@ -127,8 +146,8 @@ class Giochino:
             self.parsed = True
 
     # Used to define conditions to tell if this game matches the input update.
-    @property
-    def can_handle_this(self):
+    @staticmethod
+    def can_handle_this(raw_text):
         return False
 
     @property
@@ -170,16 +189,32 @@ class UnsupportedGame(Giochino):
     message = "ignora"
     hidden_game = True
 
-    @property
-    def can_handle_this(self):
+    @staticmethod
+    def can_handle_this(raw_text):
         _can_handle_this = any(
             [
-                "https://cuedle.fun" in self.raw_text,  # Cuedle
-                "🔊" in self.raw_text and "#Heardle" in self.raw_text,  # Headle
-                "I solved" in self.raw_text and "New York Times Mini Crossword" in self.raw_text,  # NY Mini Crossword
-                "Strands #" in self.raw_text and "🔵" in self.raw_text,  # Strands
+                "https://cuedle.fun" in raw_text,  # Cuedle
+                "🔊" in raw_text and "#Heardle" in raw_text,  # Headle
+                "I solved" in raw_text and "New York Times Mini Crossword" in raw_text,  # NY Mini Crossword
+                "Strands #" in raw_text and "🔵" in raw_text,  # Strands
             ]
         )
+        return _can_handle_this
+
+    @property
+    def punteggio(self):
+        return None
+
+
+@dataclass
+class UnknownGame(Giochino):
+    message = "sconosciuto"
+    hidden_game = True
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        quadratini = ["🟥", "🟩", "⬜️", "🟨", "⬛️", "🟦", "🟢", "⚫️", "🟡", "🟠", "🔵", "🟣", "✅", "🌕", "🌗", "🌘", "🌑"]
+        _can_handle_this = any(c in raw_text for c in quadratini)
         return _can_handle_this
 
     @property
@@ -205,9 +240,9 @@ class Angle(Giochino):
         {"day": "571", "name": "Angle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Angle" in lines[0]
         return _can_handle_this
 
@@ -246,9 +281,9 @@ class Bandle(Giochino):
         {"day": "579", "name": "Bandle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Bandle #" in lines[0] and "https://bandle.app/" in lines[-1]
         return _can_handle_this
 
@@ -293,9 +328,9 @@ class Chrono(Giochino):
         {"day": "748", "name": "Chrono", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "CHRONO  #" in lines[0] and "https://chrono.ques" in lines[-1]
         return _can_handle_this
 
@@ -345,9 +380,9 @@ class Chronophoto(Giochino):
         {"day": "131", "name": "Chronophoto", "timestamp": 10, "tries": 1520, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "I got a score of" in lines[0] and "chronophoto.app" in lines[-1]
         return _can_handle_this
 
@@ -400,9 +435,9 @@ class Cloudle(Giochino):
         },
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Cloudle -" in lines[0]
         return _can_handle_this
 
@@ -440,9 +475,9 @@ class Colorfle(Giochino):
         {"day": "711", "name": "Colorfle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Colorfle" in lines[0] and "accuracy" in lines[-1]
         return _can_handle_this
 
@@ -486,9 +521,9 @@ class Connections(Giochino):
         {"day": "302", "name": "Connections", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Connections" in lines[0]
         return _can_handle_this
 
@@ -530,9 +565,9 @@ class Contexto(Giochino):
         {"day": "465", "name": "Contexto", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "contexto.me" in lines[0]
         return _can_handle_this
 
@@ -576,9 +611,9 @@ class DominoFit(Giochino):
         {"day": "47", "name": "DominoFit", "timestamp": 10, "tries": 23, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "DOMINO FIT #" in lines[0]
         return _can_handle_this
 
@@ -618,9 +653,9 @@ class Flagle(Giochino):
         {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#Flagle" in lines[0]
         return _can_handle_this
 
@@ -662,9 +697,9 @@ class FoodGuessr(Giochino):
         {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 1500, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "FoodGuessr" in lines[0] and "Play: https://foodguessr.com" in lines[-1]
         return _can_handle_this
 
@@ -700,9 +735,9 @@ class Framed(Giochino):
         {"day": "758", "name": "Framed", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Framed" in lines[0]
         return _can_handle_this
 
@@ -743,9 +778,9 @@ class Globle(Giochino):
         {"day": "456", "name": "Globle", "timestamp": 10, "tries": "15", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#globle" in lines[-1]
         return _can_handle_this
 
@@ -786,9 +821,9 @@ class GuessTheGame(Giochino):
         {"day": "684", "name": "GuessTheGame", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#GuessTheGame" in lines[0]
         return _can_handle_this
 
@@ -824,9 +859,9 @@ class HighFive(Giochino):
 
     can_lose: False
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "https://highfivegame.app/2" in lines[-1]
         return _can_handle_this
 
@@ -863,9 +898,9 @@ class Metaflora(Giochino):
         {"day": "191", "name": "Metaflora", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Plant" in lines[0] and "#metaflora" in lines[-1]
         return _can_handle_this
 
@@ -907,9 +942,9 @@ class Metazooa(Giochino):
         {"day": "127", "name": "Metazooa", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Animal" in lines[0] and "#metazooa" in lines[-1]
         return _can_handle_this
 
@@ -951,9 +986,9 @@ class Moviedle(Giochino):
         {"day": "412", "name": "Moviedle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Moviedle" in lines[0]
         return _can_handle_this
 
@@ -1000,9 +1035,9 @@ class Murdle(Giochino):
         {"day": "131", "name": "Murdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = len(lines) > 1 and "Murdle" in lines[1]
         return _can_handle_this
 
@@ -1046,9 +1081,9 @@ class Nerdle(Giochino):
         {"day": "791", "name": "Nerdle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "nerdlegame" in lines[0]
         return _can_handle_this
 
@@ -1086,9 +1121,9 @@ class NerdleCross(Giochino):
         {"day": "198", "name": "NerdleCross", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "cross nerdle #" in lines[0] and "@nerdlegame" in lines[-1]
         return _can_handle_this
 
@@ -1128,9 +1163,9 @@ class Parole(Giochino):
         {"day": "813", "name": "Parole", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Par🇮🇹le" in lines[0]
         return _can_handle_this
 
@@ -1167,9 +1202,9 @@ class Picsey(Giochino):
         {"day": "295", "name": "Picsey", "timestamp": 10, "tries": 40, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Picsey" in lines[0]
         return _can_handle_this
 
@@ -1211,9 +1246,9 @@ class Polygonle(Giochino):
         {"day": "617", "name": "Polygonle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#Polygonle" in lines[0] and "/" in lines[0]
         return _can_handle_this
 
@@ -1257,10 +1292,10 @@ class Rotaboxes(Giochino):
         {"day": "497", "name": "Rotaboxes", "timestamp": 10, "tries": 122, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
-        _can_handle_this = len(lines) >= 4 and "rotabox.es" in self.raw_text and "clicks:" in lines[1]
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = len(lines) >= 4 and "rotabox.es" in raw_text and "clicks:" in lines[1]
         return _can_handle_this
 
     def parse(self):
@@ -1301,9 +1336,9 @@ class Spellcheck(Giochino):
         {"day": "87", "name": "Spellcheck", "timestamp": 10, "tries": 15, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Spellcheck #" in lines[0]
         return _can_handle_this
 
@@ -1339,9 +1374,9 @@ class Spotle(Giochino):
         {"day": "710", "name": "Spotle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Spotle #" in lines[0] and "spotle.io" in lines[-1]
         return _can_handle_this
 
@@ -1386,9 +1421,9 @@ class Squareword(Giochino):
         {"day": "793", "name": "Squareword", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "squareword.org" in lines[0]
         return _can_handle_this
 
@@ -1426,9 +1461,9 @@ class Stepdle(Giochino):
         {"day": "536", "name": "Stepdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Stepdle #" in lines[0]
         return _can_handle_this
 
@@ -1471,9 +1506,9 @@ class TempoIndovinr(Giochino):
         {"day": "138", "name": "TempoIndovinr", "timestamp": 10, "tries": 273, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "experiments/tempoindovinr/" in lines[-1]
         return _can_handle_this
 
@@ -1510,9 +1545,9 @@ class TimeGuessr(Giochino):
         {"day": "282", "name": "TimeGuessr", "timestamp": 10, "tries": 7786, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "TimeGuessr" in lines[0]
         return _can_handle_this
 
@@ -1548,9 +1583,9 @@ class Tradle(Giochino):
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#Tradle" in lines[0]
         return _can_handle_this
 
@@ -1582,10 +1617,8 @@ class Travle(Giochino):
         # "#travle #481 (8/10)\n✅✅✅✅🟧🟧🟧✅\nhttps://travle.earth",
         # "#travle #468 (8/13) (3 suggerimenti)\n✅✅✅✅✅✅🟧✅\nhttps://travle.earth",
         # "#travle #481 (?/10) (4 lontano)\n⬛️🟥🟥🟥✅🟧🟥⬛️⬛️⬛️\nhttps://travle.earth",
-        '#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth',
-        '#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth'
-        '#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth'
-
+        "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",
+        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth" "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",
     ]
     expected = [
         # {"day": "481", "name": "Travle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
@@ -1597,9 +1630,9 @@ class Travle(Giochino):
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#travle " in lines[0] and "travle.earth" in lines[-1]
         return _can_handle_this
 
@@ -1613,7 +1646,7 @@ class Travle(Giochino):
         lines = text.splitlines()
         first_line = lines[0].split()
         self.day = first_line[1][1:]
-        if '✅' not in lines[1]:
+        if "✅" not in lines[1]:
             self.tries = "X"
         else:
             self.tries = first_line[2][1:]
@@ -1642,9 +1675,8 @@ class TravleITA(Giochino):
         # "#travle_ita #215 (13/13) (3 Hinweise)\n🟧🟥✅✅🟧✅✅🟧🟥🟧✅✅✅\nhttps://travle.earth/ita",
         # "#travle_ita #213 (8/9) (3 suggerimenti)\n🟧✅🟧🟧✅🟥✅✅\nhttps://travle.earth/ita",
         # "#travle_ita #256 (?/9) (1 lontano)\n✅✅🟧🟧🟧✅🟧🟧🟧\nhttps://travle.earth/ita",
-        '#travle_ita #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth/ita',
-        '#travle_ita #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth/ita'
-        '#travle_ita #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth/ita'
+        "#travle_ita #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth/ita",
+        "#travle_ita #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth/ita" "#travle_ita #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth/ita",
     ]
     expected = [
         # {"day": "294", "name": "TravleITA", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
@@ -1652,15 +1684,14 @@ class TravleITA(Giochino):
         # {"day": "215", "name": "TravleITA", "timestamp": 10, "tries": 19, "user_id": 456481297, "user_name": "Trifase"},
         # {"day": "213", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
         # {"day": "256", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        
         {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#travle_ita" in lines[0] and "/ita" in lines[-1]
         return _can_handle_this
 
@@ -1674,7 +1705,7 @@ class TravleITA(Giochino):
         lines = text.splitlines()
         first_line = lines[0].split()
         self.day = first_line[1][1:]
-        if '✅' not in lines[1]:
+        if "✅" not in lines[1]:
             self.tries = "X"
         else:
             self.tries = first_line[2][1:]
@@ -1708,9 +1739,9 @@ class Waffle(Giochino):
         {"day": "629", "name": "Waffle", "stars": 0, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "#waffle" in lines[0]
         return _can_handle_this
 
@@ -1753,9 +1784,9 @@ class WhereTaken(Giochino):
         {"day": "398", "name": "WhereTaken", "stars": 1, "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "WhereTaken" in lines[0]
         return _can_handle_this
 
@@ -1791,9 +1822,9 @@ class Wordle(Giochino):
         {"day": "821", "name": "Wordle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        _can_handle_this = "Wordle" in self.raw_text and "/" in self.raw_text
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Wordle" in raw_text and "/" in raw_text
         return _can_handle_this
 
     def parse(self):
@@ -1830,9 +1861,9 @@ class Worldle(Giochino):
         {"day": "808", "name": "Worldle", "stars": 0, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
-    @property
-    def can_handle_this(self):
-        lines = self.raw_text.splitlines()
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
         _can_handle_this = "Worldle" in lines[0]
         return _can_handle_this
 
@@ -1861,11 +1892,16 @@ class Worldle(Giochino):
 
 #######
 def get_giochini():
-    return [
+    klasses = [
         cls_obj
         for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
-        if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino
+        if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino and not cls_obj.hidden_game
+        # TODO: some sort of frequency-of-use ordering?
     ]
+    # Order matters - this have to be the last
+    klasses.append(UnsupportedGame)
+    klasses.append(UnknownGame)
+    return klasses
 
 
 def get_games() -> dict:
@@ -1892,20 +1928,26 @@ ALL_GAMES = get_games()
 # This is a list of every class of game, used to instantiate them
 ALL_CLASSES = get_giochini()
 
+
 def test(print_debug):
-    giochini = [cls_obj for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass) if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino and cls_obj.examples]
+    giochini = [
+        cls_obj
+        for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+        if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino and cls_obj.examples
+    ]
     # giochini = [Wordle, Parole, Bandle, Chrono]
     for gioco in giochini:
         for i in range(len(gioco.examples)):
             update = generate_sample_update(gioco.examples[i])
             giochino = gioco(update)
-            print(f'[{i}] ==== {giochino._name} ====')
+            print(f"[{i}] ==== {giochino._name} ====")
             if print_debug:
-                print(f'info = {giochino.info}')
-                print(f'expected = {giochino.expected[i]}')
-                print(f'punteggio = {giochino.punteggio}')
-            assert(all(x in giochino.punteggio.items() for x in giochino.expected[i].items()))
-            print('test_passed ✅')
+                print(f"info = {giochino.info}")
+                print(f"expected = {giochino.expected[i]}")
+                print(f"punteggio = {giochino.punteggio}")
+            assert all(x in giochino.punteggio.items() for x in giochino.expected[i].items())
+            print("test_passed ✅")
             print()
+
 
 # test(False)

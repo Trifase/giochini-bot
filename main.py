@@ -9,7 +9,6 @@ import zipfile
 
 import peewee
 import pytz
-
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -45,9 +44,9 @@ from config import (
 )
 from games import ALL_CLASSES as giochini
 from games import ALL_GAMES as GAMES
+from games import GameFilter
 from utils import (
     Classifica,
-    GameFilter,
     correct_name,
     daily_ranking,
     get_day_from_date,
@@ -466,22 +465,21 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Iterate all games to find the FIRST that can handle the update.
-    # Order matters. Maybe it's worth to order them in order of frequency of use?
-    # Only the first game matched will be used to parse.
-    for giochino in giochini:
-        giochino = giochino(update)
-        if giochino.can_handle_this:
-            result = giochino.punteggio
-            break
-    else:
-        # No game found
-        result = None
+
+    # context.giochino will be a list of a single class that can handle the game, built by the GameFilter
+    giochino = context.giochino[0]
+    giochino = giochino(update)
+    result = giochino.punteggio
 
     # This is a way to skip a known, unsupported game.
     if giochino.message == "ignora":
         await update.message.set_reaction(reaction="👌")
         return
+
+    if giochino.message == "sconosciuto":
+        await update.message.set_reaction(reaction="🤔")
+        return
+
 
     # If it's a lost game, send a message and change the score to 9999999
     play_is_lost = False
@@ -492,7 +490,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         result["tries"] = "9999999"  # Tries have to be populated nonetheless
         play_is_lost = True
 
-    if result:
+    if result:  # should always be the case
         query = Punteggio.select().where(
             Punteggio.day == str_as_int(result["day"]),
             Punteggio.game == result["name"],
@@ -569,9 +567,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
 
-    else:
-        # No game found for this particular update
-        await update.message.set_reaction(reaction="🤔")
+    else:  # should never be the case
+        print('wtf?')
+        
 
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -986,7 +984,7 @@ def main():
     app = builder.build()
 
     j = app.job_queue
-    j.run_daily(daily_reminder, datetime.time(hour=8, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(daily_reminder, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(riassunto_serale, datetime.time(hour=1, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
 
