@@ -569,7 +569,6 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     else:  # should never be the case
         print('wtf?')
-        
 
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

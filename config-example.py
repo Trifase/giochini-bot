@@ -14,6 +14,7 @@ db_test = peewee.SqliteDatabase(DBPATH_TEST)
 
 MEDALS = {1: "🥇 ", 2: "🥈 ", 3: "🥉 "}
 
+
 class Punteggio(peewee.Model):
     date = peewee.DateField()
     timestamp = peewee.IntegerField()

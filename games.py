@@ -95,13 +95,12 @@ class GameFilter(MessageFilter):
         # Iterate all games to find the FIRST that can handle the update.
         # Order matters. Maybe it's worth to order them in order of frequency of use?
         # Only the first game matched will be used to parse.
-        # Returning a dictionary and setting data_filter = true means that PTB will build 
+        # Returning a dictionary and setting data_filter = true means that PTB will build
         # a context.property (context.giochino) with the selected class. We just grab it on the other end.
         for giochino in ALL_CLASSES:
             if giochino.can_handle_this(message.text):
                 return {"giochino": [giochino]}
-        else:
-            return False
+        return False
 
 
 @dataclass
@@ -142,6 +141,11 @@ class Giochino:
     def __init__(self, update):
         self.update = update
         self.raw_text = self.update.message.text
+
+        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
+        self.user_name = self.update.message.from_user.full_name
+        self.user_id = self.update.message.from_user.id
+        self.timestamp = timestamp if timestamp else int(time.time())
 
         if self.can_handle_this(self.raw_text):
             self.parse()
@@ -250,10 +254,6 @@ class Angle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         points = lines[0].split()[-1].split("/")[0]
@@ -262,6 +262,46 @@ class Angle(Giochino):
             self.tries = "X"
         else:
             self.tries = points
+        self.stars = None
+
+
+@dataclass
+class Apparle(Giochino):
+    _name = "Apparle"
+    _category = "Immagini, giochi e film"
+    _date = datetime.date(2024, 4, 14)
+    _day = "45"
+    _emoji = "💵"
+    _url = "https://www.apparle.com"
+
+    examples = [
+        "Apparle #28 1/6\n🏆 -1.2%\n\nhttps://apparle.com",
+        "Apparle #28 3/6\n⬇️ +50%\n⬆️ -13.7%\n💵 -1.2%\n\nhttps://apparle.com",
+        "Apparle #45 6/6\n⬆️ -32.2%\n⬆️ -66.1%\n⬆️ -83.1%\n⬆️ -66.1%\n⬆️ -57.6%\n💵 0%\n\nhttps://apparle.com",
+        "Apparle #45 6/6\n⬆️ -84.7%\n⬆️ -16.1%\n⬇️ +102.5%\n⬇️ +68.6%\n⬇️ +145.8%\n❌ +154.2%\n\nhttps://apparle.com",
+    ]
+    expected = [
+        {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "Apparle #" in lines[0] and "https://apparle.com" in lines[-1]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        points = lines[0].split()[-1].split("/")[0]
+        self.day = lines[0].split()[1][1:]
+        self.tries = points
+        if "❌" in lines:
+            self.tries = "X"
         self.stars = None
 
 
@@ -291,10 +331,6 @@ class Bandle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -338,10 +374,6 @@ class Chrono(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -390,10 +422,6 @@ class Chronophoto(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -445,10 +473,6 @@ class Cloudle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -485,10 +509,6 @@ class Colorfle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -531,10 +551,6 @@ class Connections(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = lines[1].split()[-1][1:]
@@ -575,10 +591,6 @@ class Contexto(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -621,10 +633,6 @@ class DominoFit(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -663,10 +671,6 @@ class Flagle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -707,10 +711,6 @@ class FoodGuessr(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = get_day_from_date(self._date, self._day, "FoodGuessr", datetime.date.today())
@@ -745,10 +745,6 @@ class Framed(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -788,10 +784,6 @@ class Globle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = get_day_from_date(self._date, self._day, "Globle", lines[0])
@@ -831,10 +823,6 @@ class GuessTheGame(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -869,10 +857,6 @@ class HighFive(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = get_day_from_date(self._date, self._day, "HighFive", lines[-1])
@@ -908,10 +892,6 @@ class Metaflora(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = lines[0].split()[2][1:]
@@ -952,10 +932,6 @@ class Metazooa(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = lines[0].split()[2][1:]
@@ -996,10 +972,6 @@ class Moviedle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1045,10 +1017,6 @@ class Murdle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         day = lines[1].split()[-1]
@@ -1091,10 +1059,6 @@ class Nerdle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1131,10 +1095,6 @@ class NerdleCross(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1173,10 +1133,6 @@ class Parole(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1212,10 +1168,6 @@ class Picsey(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         date = lines[0].split()[-1]
@@ -1256,10 +1208,6 @@ class Polygonle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1302,10 +1250,6 @@ class Rotaboxes(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = lines[3].split("/")[-1]
@@ -1346,10 +1290,6 @@ class Spellcheck(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1384,10 +1324,6 @@ class Spotle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1431,10 +1367,6 @@ class Squareword(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1471,10 +1403,6 @@ class Stepdle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1516,10 +1444,6 @@ class TempoIndovinr(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         self.day = lines[0].split()[-1]
@@ -1555,10 +1479,6 @@ class TimeGuessr(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1593,10 +1513,6 @@ class Tradle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1640,10 +1556,6 @@ class Travle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1699,10 +1611,6 @@ class TravleITA(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1749,10 +1657,6 @@ class Waffle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1794,10 +1698,6 @@ class WhereTaken(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
@@ -1871,10 +1771,6 @@ class Worldle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
-        self.timestamp = timestamp if timestamp else int(time.time())
 
         lines = text.splitlines()
         first_line = lines[0].split()
