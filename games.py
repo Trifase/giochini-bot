@@ -1163,7 +1163,7 @@ class Picsey(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
-        _can_handle_this = "Picsey" in lines[0]
+        _can_handle_this = "Picsey" in lines[0] and '🟦' in  raw_text
         return _can_handle_this
 
     def parse(self):
