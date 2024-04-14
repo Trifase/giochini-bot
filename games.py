@@ -1835,7 +1835,7 @@ def test(print_debug):
     ]
     # giochini = [Wordle, Parole, Bandle, Chrono]
     for gioco in giochini:
-        for i in range(len(gioco.examples)):
+        for i, _ in enumerate(gioco.examples):
             update = generate_sample_update(gioco.examples[i])
             giochino = gioco(update)
             print(f"[{i}] ==== {giochino._name} ====")

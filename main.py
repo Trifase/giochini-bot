@@ -42,7 +42,6 @@ from config import (
     Punteggio,
     Punti,
 )
-from games import ALL_CLASSES as giochini
 from games import ALL_GAMES as GAMES
 from games import GameFilter
 from utils import (
