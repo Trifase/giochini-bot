@@ -350,7 +350,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "",
         "📌 /mystats - Mostra le tue statistiche",
         "📌 /favs - Mostra e setta i giochi preferiti",
-        "📌 /top_games - Mostra i giochi più giocati",
+        "📌 /topgames - Mostra i giochi più giocati",
         "📌 /lista - Mostra la lista di tutti i giochi supportati",
         "",
         "📌 /help - Mostra questo messaggio",
@@ -489,6 +489,19 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         result["tries"] = "9999999"  # Tries have to be populated nonetheless
         play_is_lost = True
 
+    # Testing debug
+    if update.effective_chat.id == ID_TESTING:
+        import pprint
+        if result is None:
+            result == ''
+        rawresult = pprint.pformat(result, width=300).replace("<", "less").replace(">", "more")
+        rawtext = pprint.pformat(update.message.text, width=300).replace("<", "less").replace(">", "more")
+        # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
+        await update.message.reply_html(
+            f'<code>{rawtext},\n</code>\n\n<code>{rawresult},\n</code><pre><code class="language-python">{update.message.text.replace("<", "less").replace(">", "more")}</code></pre>'
+        )
+        return
+
     if result:  # should always be the case
         query = Punteggio.select().where(
             Punteggio.day == str_as_int(result["day"]),
@@ -502,16 +515,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.set_reaction(reaction="🤨")
             return
 
-        # Testing debug
-        if update.effective_chat.id == ID_TESTING:
-            import pprint
-            rawresult = pprint.pformat(result, width=300).replace("<", "less").replace(">", "more")
-            rawtext = pprint.pformat(update.message.text, width=300).replace("<", "less").replace(">", "more")
-            # await update.message.reply_html(f'<code>{bytes(update.effective_message.text, "utf-8")}</code>') / Bytes debug
-            await update.message.reply_html(
-                f'<code>{rawtext},\n</code>\n\n<code>{rawresult},\n</code><pre><code class="language-python">{update.message.text.replace("<", "less").replace(">", "more")}</code></pre>'
-            )
-            return
+
 
         streak = streak_at_day(user_id=int(result["user_id"]), game=result["name"], day=str_as_int(result["day"]))
         # streak is how many consecutive plays there are before this one. So we add 1 to it when saving the score.
@@ -997,7 +1001,7 @@ def main():
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
 
     app.add_handler(CommandHandler("webapp", launch_web_ui))
-    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    # app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
 
     # app.add_handler(CallbackQueryHandler(handle_web_app_data, pattern=r"^webapp_launch"))
 

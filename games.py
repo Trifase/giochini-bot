@@ -1630,6 +1630,46 @@ class TravleITA(Giochino):
 
 
 @dataclass
+class Unzoomed(Giochino):
+    _name = "Unzoomed"
+    _category = "Geografia e Mappe"
+    _date = datetime.date(2024, 4, 16)
+    _day = "89"
+    _emoji = "🔎"
+    _url = "https://unzoomed.com"
+
+    examples = [
+        'Unzoomed #89 1/6 🟢⚪️⚪️⚪️⚪️⚪️\n https://unzoomed.com',
+        'Unzoomed #89 4/6 🔴🔴🟡🟢⚪️⚪️\n https://unzoomed.com',
+        'Unzoomed #89 5/6 🔴🔴🔴🔴🟢⚪️\n https://unzoomed.com',
+        'Unzoomed #87 6/6 🔴🔴🔴🔴🟡🟡\n https://unzoomed.com',
+    ]
+
+    expected = [
+        {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '5', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '87', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '9999999', 'user_id': 456481297, 'user_name': 'Trifase'},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Unzoomed #" in raw_text and "https://unzoomed.com" in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[1][1:]
+        self.tries = first_line[2].split("/")[0]
+        if '🟢' not in text:
+            self.tries = 'X'
+
+
+
+@dataclass
 class Waffle(Giochino):
     _name = "Waffle"
     _category = "Giochi di parole"
@@ -1731,16 +1771,45 @@ class Wordle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
         lines = text.splitlines()
         first_line = lines[0].split()
         # Wordle ti odio, chi cazzo scrive 1000 come "1.000" o "1,000"
         self.day = first_line[1].replace(".", "").replace(",", "")
         self.tries = first_line[-1].split("/")[0]
         self.stars = None
-        self.timestamp = timestamp if timestamp else int(time.time())
-        self.user_name = self.update.message.from_user.full_name
-        self.user_id = self.update.message.from_user.id
+
+@dataclass
+class WordPeaks(Giochino):
+    _name = "WordPeaks"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 4, 16)
+    _day = "782"
+    _emoji = "🔤"
+    _url = "https://wordpeaks.com"
+
+    examples = [
+        'Word Peaks #782 1/6\n\n  🟩🟩🟩🟩🟩\nhttps://wordpeaks.com',
+        'Word Peaks #782 3/6\n\n  🔼🔼🔼🟩🔼\n  🔼🟩🔼🔽🔼\n  🟩🟩🟩🟩🟩\nhttps://wordpeaks.com',
+        'Word Peaks #782 X/6\n\n  🔼🔽🔼🔽🔼\n  🔼🔽🔼🔼🔽\n  🟩🟩🔼🔽🔼\n  🔼🔼🔼🟩🔼\n  🔼🔽🔼🔽🔼\n  🔼🔼🔼🔽🔼\nhttps://wordpeaks.com',
+    ]
+    expected = [
+        {'day': '782', 'name': 'WordPeaks', 'stars': None, 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '782', 'name': 'WordPeaks', 'stars': None, 'timestamp': 10, 'tries': '3', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '782', 'name': 'WordPeaks', 'stars': None, 'timestamp': 10, 'tries': 'X', 'user_id': 456481297, 'user_name': 'Trifase'},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = any(x in raw_text for x in "🟩🔼🔽") and "https://wordpeaks.com" in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[2][1:]
+        self.tries = first_line[3].split("/")[0]
 
 
 @dataclass

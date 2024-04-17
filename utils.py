@@ -3,6 +3,8 @@ from collections import defaultdict
 
 import httpx
 import peewee
+import timedelta
+
 from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -304,8 +306,15 @@ def personal_stats(user_id: int) -> str:
     # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
     single_play_minutes = 2
     total_time = total_plays * single_play_minutes
-    duration = datetime.datetime.utcfromtimestamp(datetime.timedelta(minutes=total_time).total_seconds())
-    total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{duration.strftime('%H ore e %M minuti')}</b> della tua vita.\n"
+    td = timedelta.Timedelta(minutes=total_time)
+    time_string = ''
+    if td.total.days > 0:
+        time_string += f"{td.total.days} giorni, "
+    if td.total.hours > 0:
+        time_string += f"{td.total.hours % 24} ore e "
+    time_string += f"{td.total.minutes % 60} minuti"
+
+    total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n"
 
     # giocate perse totali
     total_loses = (
