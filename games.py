@@ -77,6 +77,7 @@ def is_connection_block_completed(block: str) -> bool:
 def is_connection_completed(connection: list[str]) -> bool:
     completed_blocks = 0
     for block in connection:
+        block = block.strip()
         if is_connection_block_completed(block):
             completed_blocks += 1
     if completed_blocks == 4:
@@ -284,7 +285,7 @@ class Apparle(Giochino):
         {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -300,7 +301,7 @@ class Apparle(Giochino):
         points = lines[0].split()[-1].split("/")[0]
         self.day = lines[0].split()[1][1:]
         self.tries = points
-        if "❌" in lines:
+        if "❌" in text:
             self.tries = "X"
         self.stars = None
 
@@ -536,11 +537,13 @@ class Connections(Giochino):
         "Connections \nPuzzle #299\n🟩🟩🟩🟩\n🟨🟨🟨🟨\n🟦🟦🟦🟦\n🟪🟪🟪🟪",
         "Connections \nPuzzle #300\n🟩🟪🟩🟩\n🟩🟪🟩🟩\n🟩🟪🟩🟩\n🟩🟩🟩🟩\n🟦🟦🟦🟦\n🟪🟪🟪🟪\n🟨🟨🟨🟨",
         "Connections \nPuzzle #302\n🟨🟨🟨🟨\n🟪🟩🟪🟪\n🟪🟪🟪🟦\n🟪🟦🟪🟪\n🟪🟪🟩🟪",
+        'Connections\nPuzzle #324 \n🟨🟨🟨🟨 \n🟦🟦🟩🟦 \n🟦🟦🟪🟦 \n🟦🟦🟦🟦 \n🟩🟩🟩🟪 \n🟩🟩🟩🟩 \n🟪🟪🟪🟪',
     ]
     expected = [
         {"day": "299", "name": "Connections", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "300", "name": "Connections", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "302", "name": "Connections", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '324', 'name': 'Connections', 'timestamp': 10, 'tries': 4, 'user_id': 456481297, 'user_name': 'Trifase'},
     ]
 
     @staticmethod
@@ -1530,21 +1533,16 @@ class Travle(Giochino):
     _emoji = "🧭"
     _url = "https://travle.earth"
 
+    has_extra: True
+
     examples = [
-        # "#travle #481 (5/10)\n✅✅✅✅✅\nhttps://travle.earth",
-        # "#travle #481 (8/10)\n✅✅✅✅🟧🟧🟧✅\nhttps://travle.earth",
-        # "#travle #468 (8/13) (3 suggerimenti)\n✅✅✅✅✅✅🟧✅\nhttps://travle.earth",
-        # "#travle #481 (?/10) (4 lontano)\n⬛️🟥🟥🟥✅🟧🟥⬛️⬛️⬛️\nhttps://travle.earth",
         "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",
-        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth" "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",
+        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth",
+        "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",
     ]
     expected = [
-        # {"day": "481", "name": "Travle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
-        # {"day": "481", "name": "Travle", "timestamp": 10, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
-        # {"day": "468", "name": "Travle", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        # {"day": "481", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "stars": 1, "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
@@ -1564,14 +1562,18 @@ class Travle(Giochino):
             self.tries = "X"
         else:
             self.tries = first_line[2][1:]
-        # if tries == "?":
-        #     self.tries = "X"
-        # else:
-        #     hints = 0
-        #     if len(first_line) > 3:
-        #         hints = first_line[3][1:]
-        #     self.tries = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+
+        # (Perfetto), (Perfect), (Perfekt)
         self.stars = None
+        if '(P' in lines[0] and ')' in lines[0]:
+            self.stars = 1
+
+        # Hints
+        hints = 0
+        if len(first_line) > 3 and not self.stars and '(' in lines[0] and ')' in lines[0] and self.tries != "X":
+            hints = first_line[3][1:]
+            self.tries = int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+
 
 
 @dataclass
@@ -1583,23 +1585,16 @@ class TravleITA(Giochino):
     _emoji = "👢"
     _url = "https://travle.earth/ita"
 
+    has_extra = True
+
     examples = [
-        # "#travle_ita #294 (4/9)\n✅✅✅✅\nhttps://travle.earth/ita",
-        # "#travle_ita #289 (13/14) (1 hint)\n✅🟧✅✅🟧✅🟧🟧🟧✅✅✅✅\nhttps://travle.earth/ita",
-        # "#travle_ita #215 (13/13) (3 Hinweise)\n🟧🟥✅✅🟧✅✅🟧🟥🟧✅✅✅\nhttps://travle.earth/ita",
-        # "#travle_ita #213 (8/9) (3 suggerimenti)\n🟧✅🟧🟧✅🟥✅✅\nhttps://travle.earth/ita",
-        # "#travle_ita #256 (?/9) (1 lontano)\n✅✅🟧🟧🟧✅🟧🟧🟧\nhttps://travle.earth/ita",
         "#travle_ita #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth/ita",
-        "#travle_ita #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth/ita" "#travle_ita #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth/ita",
+        "#travle_ita #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth/ita",
+        "#travle_ita #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth/ita",
     ]
     expected = [
-        # {"day": "294", "name": "TravleITA", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
-        # {"day": "289", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        # {"day": "215", "name": "TravleITA", "timestamp": 10, "tries": 19, "user_id": 456481297, "user_name": "Trifase"},
-        # {"day": "213", "name": "TravleITA", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        # {"day": "256", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "TravleITA", "stars": 1, "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "TravleITA", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
@@ -1619,14 +1614,17 @@ class TravleITA(Giochino):
             self.tries = "X"
         else:
             self.tries = first_line[2][1:]
-        # if tries == "?":
-        #     self.tries = "X"
-        # else:
-        #     hints = 0
-        #     if len(first_line) > 3:
-        #         hints = first_line[3][1:]
-        #     self.tries = int(int(tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+
+        # (Perfetto), (Perfect), (Perfekt)
         self.stars = None
+        if '(P' in lines[0] and ')' in lines[0]:
+            self.stars = 1
+
+        # Hints
+        hints = 0
+        if len(first_line) > 3 and not self.stars and '(' in lines[0] and ')' in lines[0] and self.tries != "X":
+            hints = first_line[3][1:]
+            self.tries = int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
 
 
 @dataclass
@@ -1649,7 +1647,7 @@ class Unzoomed(Giochino):
         {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
         {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
         {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '5', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '87', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '9999999', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '87', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': 'X', 'user_id': 456481297, 'user_name': 'Trifase'},
     ]
 
     @staticmethod
@@ -1896,13 +1894,18 @@ ALL_GAMES = get_games()
 ALL_CLASSES = get_giochini()
 
 
-def test(print_debug):
-    giochini = [
-        cls_obj
-        for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
-        if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino and cls_obj.examples
-    ]
+def test(print_debug, giochino=None):
+    if giochino:
+        giochini = [giochino]
+    else:
+        giochini = [
+            cls_obj
+            for _, cls_obj in inspect.getmembers(sys.modules[__name__], inspect.isclass)
+            if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino and cls_obj.examples
+        ]
+
     # giochini = [Wordle, Parole, Bandle, Chrono]
+
     for gioco in giochini:
         for i, _ in enumerate(gioco.examples):
             update = generate_sample_update(gioco.examples[i])
@@ -1916,5 +1919,7 @@ def test(print_debug):
             print("test_passed ✅")
             print()
 
-
-# test(False)
+# Tests! you can pass None as second parameter to test all games
+if __name__ == '__main__':
+    giochino_da_testare = Connections
+    test(True, giochino_da_testare)

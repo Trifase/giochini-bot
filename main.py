@@ -489,6 +489,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         result["tries"] = "9999999"  # Tries have to be populated nonetheless
         play_is_lost = True
 
+    # We convert stars None to stars 0 - if the game has stars
+    if giochino.has_extra and result.get("stars", None) is None:
+        result["stars"] = 0
+
     # Testing debug
     if update.effective_chat.id == ID_TESTING:
         import pprint

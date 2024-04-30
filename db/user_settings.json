@@ -39,7 +39,6 @@
         "favs": [
             "Angle",
             "Connections",
-            "Contexto",
             "Flagle",
             "Globle",
             "Murdle",
@@ -52,7 +51,15 @@
             "Waffle",
             "WhereTaken",
             "Wordle",
-            "Worldle"
+            "Worldle",
+            "TravleITA",
+            "Chrono",
+            "Chronophoto",
+            "Contexto",
+            "Spellcheck",
+            "TempoIndovinr",
+            "Unzoomed",
+            "TimeGuessr"
         ],
         "favs_extra_button": true
     },
