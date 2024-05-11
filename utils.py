@@ -60,25 +60,51 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
     # It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
     # BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
 
-    # alternate-with-lost: same as alternate, but we count lost plays.
+    # alternate-with-lost: same as alternate, but we count lost plays whe we calculate the score. We still don't assign points to lost plays.
+
+    # no-timestamp: same as alternate-with-lost, but it doesn't consider the timestamp of the play. Made for people who sleep a lot.
+
     # GAMES = get_games()
     for game in GAMES.keys():
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, from_day)
 
-        query = (
-            Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-            .where(
-                Punteggio.day == day,
-                Punteggio.game == game,
-                Punteggio.chat_id == ID_GIOCHINI,
-                Punteggio.lost == False,
-            )
-            .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-            .limit(3)
-        )
+
 
         # Score Processing
         if model == "standard":
+            query = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+                .where(
+                    Punteggio.day == day,
+                    Punteggio.game == game,
+                    Punteggio.chat_id == ID_GIOCHINI,
+                    Punteggio.lost == False,
+                )
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+                .limit(3)
+            )
+            for i, _ in enumerate(query):
+                try:
+                    name = f"{query[i].user_id}_|_{query[i].user_name}"
+                    points[name] += 3 - i
+                except IndexError:
+                    pass
+
+        if model == "skip-empty":
+            limit = 3
+            query = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+                .where(
+                    Punteggio.day == day,
+                    Punteggio.game == game,
+                    Punteggio.chat_id == ID_GIOCHINI,
+                    Punteggio.lost == False,
+                )
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+                .limit(3)
+            )
+            if len(query) < limit:
+                continue
             for i, _ in enumerate(query):
                 try:
                     name = f"{query[i].user_id}_|_{query[i].user_name}"
@@ -89,7 +115,7 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
         if model == "alternate":
             # This include lost plays, that we filter out when we assign points.
             query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
                 .where(
                     Punteggio.day == day,
                     Punteggio.game == game,
@@ -101,36 +127,42 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
             )
             for i, _ in enumerate(query_alternate):
                 try:
-                    if not query[i].lost:
-                        name = f"{query[i].user_id}_|_{query[i].user_name}"
-                        points[name] += len(query) - i
+                    if not query_alternate[i].lost:
+                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+                        points[name] += len(query_alternate) - i
                 except IndexError:
                     pass
 
         if model == "alternate-with-lost":
             # This include lost plays
             query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
                 .limit(3)
             )
             for i, _ in enumerate(query_alternate):
+                # print(f"{game} {i} {query_alternate[i]} {query_alternate[i].lost}")
                 try:
-                    if not query[i].lost:
-                        name = f"{query[i].user_id}_|_{query[i].user_name}"
+                    if not query_alternate[i].lost:
+                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
                         points[name] += len(query_alternate) - i
                 except IndexError:
                     pass
 
-        if model == "skip-empty":
-            limit = 3
-            if len(query) < limit:
-                continue
-            for i, _ in enumerate(query):
+        if model == "no-timestamp":
+            # This include lost plays, doesn't consider timestamps
+            query_alternate = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
+                .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+                .order_by(Punteggio.tries, Punteggio.extra.desc())
+                .limit(3)
+            )
+            for i, _ in enumerate(query_alternate):
                 try:
-                    name = f"{query[i].user_id}_|_{query[i].user_name}"
-                    points[name] += 3 - i
+                    if not query_alternate[i].lost:
+                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+                        points[name] += len(query_alternate) - i
                 except IndexError:
                     pass
 

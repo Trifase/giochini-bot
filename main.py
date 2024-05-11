@@ -463,6 +463,21 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     return
 
 
+async def link_single_game(update: Update, context: ContextTypes.DEFAULT_TYPE, correct_game) -> None:
+    game = correct_game
+    GAME = GAMES.get(game, None)
+
+    if not GAME:
+        return
+
+    day = get_day_from_date(GAME["date"], GAME["day"], game, datetime.date.today())
+    message = f'<a href="{GAME["url"]}">{GAME["emoji"]} {game} #{day}</a>'
+    mymsg = await update.message.reply_html(message)
+    command_msg = update.message
+    context.job_queue.run_once(delete_post, 5, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}")
+    return
+
+
 async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # context.giochino will be a list of a single class that can handle the game, built by the GameFilter
@@ -819,7 +834,9 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
         model = "skip-empty"
     elif "-alternate" in context.args:
         model = "alternate"
-    elif "-altern-with-lost" in context.args:
+    elif "-no-timestamp" in context.args:
+        model = "no-timestamp"
+    elif "-alternate-with-lost" in context.args:
         model = "alternate-with-lost"
 
     cambiamenti = daily_ranking(model)
@@ -835,7 +852,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
     # This will delete the original command after some time (iirc default 10 secs)
-    await delete_original_command(update, context)
+    await delete_original_command(update, context, 60)
 
 
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -960,6 +977,15 @@ async def spell_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return
 
+async def unknown_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    correct_game_names = [x for x in GAMES.keys()]
+    game_names = [x.lower() for x in GAMES.keys()]
+    game = update.message.text.lower().replace('/', '')
+    if game in game_names:
+        correct_game = correct_game_names[game_names.index(game)]
+        return await link_single_game(update, context, correct_game)
+    return
+
 
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
@@ -1014,6 +1040,8 @@ def main():
     app.add_handler(CommandHandler("top_medaglie", top_medaglie), 1)
     app.add_handler(CommandHandler("medaglie", medaglie_mensile), 1)
     app.add_handler(CommandHandler("favs", setting_fav), 3)
+
+    app.add_handler(MessageHandler(filters.COMMAND, unknown_command_handler), 1000)
 
     app.add_handler(CommandHandler("topgames", top_games), 1)
     app.add_handler(CallbackQueryHandler(classifica_buttons, pattern=r"^cls_"))

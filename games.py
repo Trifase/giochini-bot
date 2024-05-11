@@ -2,6 +2,7 @@ import datetime
 import inspect
 import sys
 import time
+import locale
 
 from dataclassy import dataclass
 from telegram import Bot, Update
@@ -41,7 +42,9 @@ def time_from_emoji(input_string: str) -> str:
 
 def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
     if isinstance(date, str) and game == "Globle":
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
         date = datetime.datetime.strptime(date, "🌎 %b %d, %Y 🌍").date()
+        locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
     if isinstance(date, str) and game == "HighFive":
         date_str = date.split("/")[-1]
