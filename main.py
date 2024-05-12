@@ -282,7 +282,7 @@ async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
-    logging.info(f"È accaduto un errore! {tb_list[2]}\n{tb_list[1]}")
+    logging.info(f"È accaduto un errore!\n============\n{tb_list[-2]}{tb_list[-1]}============")
 
     await context.bot.send_message(
         chat_id=ID_BOTCENTRAL,
