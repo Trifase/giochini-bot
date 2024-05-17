@@ -548,7 +548,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             game=result["name"],
             day=str_as_int(result["day"]),
             tries=int(result["tries"]),
-            extra=str(result.get("stars", None)),
+            extra=result.get("stars", None),
             streak=streak + 1,
             lost=play_is_lost,
         )
@@ -595,7 +595,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
-        await daily_reminder(context)
+        await daily_reminder(context, pin=False)
 
 
 async def manual_backup(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -611,8 +611,10 @@ async def manual_riassunto(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # message = 'Ecco a cosa hai già giocato oggi:\n'
-    played_today = set()
-    not_played_today = set()
+    # played_today = set()
+    # not_played_today = set()
+    played_today = []
+    not_played_today = []
     not_played_favs = []
     not_played_regs = []
     favorites = []
@@ -628,9 +630,9 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == update.message.from_user.id)
 
         if query:
-            played_today.add(game)
+            played_today.append(game)
         else:
-            not_played_today.add(game)
+            not_played_today.append(game)
 
     # divido i non giocati tra favs e regulars
     for game in not_played_today:
@@ -684,15 +686,15 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if user_id != target_uid:
         return
 
-    played_today = set()
-    not_played_today = set()
+    played_today = []
+    not_played_today = []
     for game in GAMES.keys():
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
         query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
         if query:
-            played_today.add(game)
+            played_today.append(game)
         else:
-            not_played_today.add(game)
+            not_played_today.append(game)
 
     if not played_today:
         message = "Non hai giocato a nulla oggi.\n\n"
@@ -855,8 +857,9 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     await delete_original_command(update, context, 60)
 
 
-async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
+async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
     categorie = set([GAMES[x]["category"] for x in GAMES.keys()])
+    categorie = sorted(list(categorie)) # alphabetical order
     message = "Buongiorno, ecco a cosa si gioca oggi!\n\n"
     for categoria in categorie:
         message += f"<b>{categoria}</b>\n"
@@ -869,7 +872,8 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     #     day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
     #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode="HTML")
-    await mypost.pin(disable_notification=True)
+    if pin:
+        await mypost.pin(disable_notification=True)
 
 
 async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:

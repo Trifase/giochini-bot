@@ -612,6 +612,42 @@ class Contexto(Giochino):
 
 
 @dataclass
+class Countryle(Giochino):
+    _name = "Countryle"
+    _category = "Geografia e Mappe"
+    _date = datetime.date(2024, 5, 17)
+    _day = "818"
+    _emoji = "🌐"
+    _url = "https://countryle.com"
+
+    can_lose: False
+
+    examples = [
+        '#Countryle 818\nGuessed in 1 tries.\n\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com',
+        '#Countryle 818\nGuessed in 4 tries.\n\n🟢⚪️⚪️⚪️⚪️\n🟢🟢⚪️⚪️⚪️\n🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com',
+    ]
+    expected = [
+        {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "#Countryle" in lines[0]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[1]
+        self.tries = lines[1].split()[2]
+        self.stars = None
+
+
+@dataclass
 class DominoFit(Giochino):
     _name = "DominoFit"
     _category = "Logica"
@@ -1423,6 +1459,43 @@ class Stepdle(Giochino):
 
 
 @dataclass
+class Strands(Giochino):
+    _name = "Strands"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 5, 17)
+    _day = "75"
+    _emoji = "💡"
+    _url = "https://www.nytimes.com/games/strands"
+
+    can_lose: False
+
+    examples = [
+        "Strands #74\n“Tasty!”\n🔵🔵🔵🔵\n🔵🔵🟡🔵\n🔵",
+        "Strands #75\n“Looking for a mate”\n💡🔵💡🔵\n💡🔵🔵🔵\n🟡🔵🔵"
+    ]
+    expected = [
+        {"day": "74", "name": "Strands", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "75", "name": "Strands", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "Strands #" in lines[0]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[1][1:]
+        count = 0
+        count += text.count('💡')
+        self.tries = str(count)
+
+
+@dataclass
 class TempoIndovinr(Giochino):
     _name = "TempoIndovinr"
     _category = "Immagini, giochi e film"
@@ -1866,6 +1939,7 @@ def get_giochini():
         if cls_obj.__module__ == sys.modules[__name__].__name__ and cls_obj.__base__ == Giochino and not cls_obj.hidden_game
         # TODO: some sort of frequency-of-use ordering?
     ]
+    # print(klasses)
     # Order matters - this have to be the last
     klasses.append(UnsupportedGame)
     klasses.append(UnknownGame)
@@ -1888,6 +1962,7 @@ def get_games() -> dict:
             "date": giochino._date,
             "day": giochino._day,
         }
+    # print(games)
     return games
 
 
@@ -1924,5 +1999,5 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Connections
+    giochino_da_testare = Strands
     test(True, giochino_da_testare)

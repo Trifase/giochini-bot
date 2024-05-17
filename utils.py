@@ -718,3 +718,12 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
 # print(streak)
 # from games import Wordle
 # print(Wordle.__module__)
+
+def sanitize_extra():
+    c = 0
+    for punt in Punteggio.select().where(Punteggio.extra == "None"):
+        c += 1
+        punt.extra = None
+        punt.save()
+
+sanitize_extra()
