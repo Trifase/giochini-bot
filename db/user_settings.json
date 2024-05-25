@@ -59,7 +59,8 @@
             "Spellcheck",
             "TempoIndovinr",
             "Unzoomed",
-            "TimeGuessr"
+            "TimeGuessr",
+            "Strands"
         ],
         "favs_extra_button": true
     },
@@ -99,11 +100,11 @@
             "TempoIndovinr",
             "Travle",
             "Tradle",
-            "WhereTaken",
             "Worldle",
             "TravleITA",
             "Connections",
-            "Unzoomed"
+            "Unzoomed",
+            "Geogrid"
         ],
         "favs_extra_button": true
     },
@@ -141,14 +142,15 @@
             "NerdleCross",
             "Bandle",
             "Globle",
-            "Nerdle",
             "DominoFit",
             "FoodGuessr",
-            "Spellcheck",
             "Spotle",
             "Chrono",
             "Parole",
-            "Polygonle"
+            "Polygonle",
+            "Metazooa",
+            "Countryle",
+            "Geogrid"
         ],
         "favs_extra_button": true
     },

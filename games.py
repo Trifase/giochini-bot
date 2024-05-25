@@ -748,7 +748,7 @@ class FoodGuessr(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
-        _can_handle_this = "FoodGuessr" in lines[0] and "Play: https://foodguessr.com" in lines[-1]
+        _can_handle_this = "FoodGuessr" in lines[0] and "Play at https://foodguessr.com" in lines[-1]
         return _can_handle_this
 
     def parse(self):
@@ -797,6 +797,43 @@ class Framed(Giochino):
         else:
             self.tries = str(punteggio.index("🟩"))
 
+@dataclass
+class Geogrid(Giochino):
+    _name = "Geogrid"
+    _category = "Geografia e Mappe"
+    _date = datetime.date(2024, 5, 21)
+    _day = "45"
+    _emoji = "🌎"
+    _url = "https://geogridgame.com"
+
+    can_lose: False
+
+    examples = [
+        '✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame',
+        '❌ ✅ ✅\n✅ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 629.3\nRank: 8,858 / 11,488\nhttps://geogridgame.com\n@geogridgame',
+        '❌ ❌ ❌\n❌ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 900\nRank: 9,082 / 11,501\nhttps://geogridgame.com\n@geogridgame',
+    ]
+    expected = [
+        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "112.3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "629.3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "https://geogridgame.com" in raw_text and '@geogridgame' in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        self.day = lines[5].split()[1][1:]
+        self.tries = str(int(float(lines[6].split()[1])))
+        if self.tries == '900':
+            self.tries = 'X'
+        self.stars = None
 
 @dataclass
 class Globle(Giochino):
@@ -1344,8 +1381,8 @@ class Spellcheck(Giochino):
 class Spotle(Giochino):
     _name = "Spotle"
     _category = "Immagini, giochi e film"
-    _date = datetime.date(2024, 3, 22)
-    _day = "695"
+    _date = datetime.date(2024, 5, 22)
+    _day = "755"
     _emoji = "🎧"
     _url = "https://spotle.io/"
 
@@ -1527,6 +1564,46 @@ class TempoIndovinr(Giochino):
         lines = text.splitlines()
         self.day = lines[0].split()[-1]
         self.tries = 1000 - int(lines[1].split()[2].split("/")[0])
+        self.stars = None
+
+
+@dataclass
+class Thirdle(Giochino):
+    _name = "Thirdle"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 5, 22)
+    _day = "777"
+    _emoji = "#️⃣"
+    _url = "https://thirdle.org/"
+
+    can_lose: False
+
+    examples = ["#thirdle #thirdle775\n\n🏆 1 / 6 | 🔥 1\n\n🟩🟩 🟩🟩 🟩🟩",
+                '#thirdle #thirdle776\n\n🏆 4 / 6 | 🔥 2\n\n🟧⬛️ 🟧⬛️ 🟧⬛️\n🟩🟩 🟩⬛️ 🟧⬛️\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩🟩 🟩🟩',
+                '#thirdle #thirdle777\n\n🏆 X / 6 \n\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩'
+    ]
+    expected = [
+        {"day": "775", "name": "Thirdle", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "776", "name": "Thirdle", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "777", "name": "Thirdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "#thirdle" in raw_text and '🏆' in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        self.day = lines[0].split()[-1].replace('#thirdle','')
+        punti = lines[2].split()[1]
+        if punti == 'X':
+            self.tries = punti
+        else:
+            self.tries = int(punti)
         self.stars = None
 
 
@@ -1999,5 +2076,5 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Strands
+    giochino_da_testare = Thirdle
     test(True, giochino_da_testare)
