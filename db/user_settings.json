@@ -150,7 +150,8 @@
             "Polygonle",
             "Metazooa",
             "Countryle",
-            "Geogrid"
+            "Geogrid",
+            "Numble"
         ],
         "favs_extra_button": true
     },
@@ -166,13 +167,15 @@
             "Picsey",
             "Squareword",
             "Wordle",
-            "DominoFit",
             "Bandle",
             "Chrono",
             "Polygonle",
             "Spellcheck",
             "Stepdle",
-            "Spotle"
+            "Spotle",
+            "Strands",
+            "Geogrid",
+            "Worldle"
         ],
         "favs_extra_button": false
     },

@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import re
 import sys
 import time
 import locale
@@ -1185,6 +1186,54 @@ class NerdleCross(Giochino):
             self.tries = "X"
         self.stars = None
 
+@dataclass
+class Numble(Giochino):
+    _name = "Numble"
+    _category = "Logica"
+    _date = datetime.date(2024, 5, 27)
+    _day = "834"
+    _emoji = "➗"
+    _url = "https://numble.wtf"
+
+    examples = [
+        'Numble 832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf',
+        'Numble 832\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 900\n50.538s\nhttps://numble.wtf',
+        'Numble 834\nSOLVED: ✅\nNumbers used: 3/6\nFinal answer: 48\n1m 28.660s\nhttps://numble.wtf'
+    ]
+    expected = [
+        {"day": "832", "name": "Numble", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "832", "name": "Numble", "timestamp": 10, "tries": "50.538", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "834", "name": "Numble", "timestamp": 10, "tries": "88.66", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Numble " in raw_text and "SOLVED" in raw_text and 'https://numble.wtf' in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[-1]
+        solved = '✅' in lines[1]
+        if not solved:
+            self.tries = 'X'
+        else:
+            self.tries = str(self.duration(lines[4]))
+            extra_line = lines[2].split(": ")
+            extra_max = extra_line[-1].split("/")[-1]
+            extra = extra_line[-1].split("/")[0]
+            self.stars = str(int(extra_max) - int(extra))
+
+
+    def duration(self, string):
+        mult = {"s": 1, "m": 60, "h": 60*60, "d": 60*60*24}
+        parts = re.findall(r"(\d+(?:\.\d+)?)([smhd])", string)
+        total_seconds = sum(float(x) * mult[m] for x, m in parts)
+        return int(total_seconds)
+
 
 @dataclass
 class Parole(Giochino):
@@ -1381,8 +1430,8 @@ class Spellcheck(Giochino):
 class Spotle(Giochino):
     _name = "Spotle"
     _category = "Immagini, giochi e film"
-    _date = datetime.date(2024, 5, 22)
-    _day = "755"
+    _date = datetime.date(2024, 6, 6)
+    _day = "771"
     _emoji = "🎧"
     _url = "https://spotle.io/"
 
@@ -2076,5 +2125,5 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Thirdle
+    giochino_da_testare = Numble
     test(True, giochino_da_testare)

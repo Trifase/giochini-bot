@@ -705,25 +705,89 @@ async def react_to_message(update, context, chat_id, message_id, reaction, is_bi
 
     async with httpx.AsyncClient() as client:
         await client.post(api_url, json=dati)
-        # risposta_json = risposta.json()
 
-
-# Testing
-
-# giochini = get_giochini()
-# print(giochini)
-# update_streak()
-# streak =streak_at_day(user_id=31866384, game='Cloudle', day='736')
-# print(group_stats(-1001681280224))
-# print(streak)
-# from games import Wordle
-# print(Wordle.__module__)
 
 def sanitize_extra():
+    """
+    This is used for manual cleaning of something in the db. Manual called sometimes.
+    """
     c = 0
     for punt in Punteggio.select().where(Punteggio.extra == "None"):
         c += 1
         punt.extra = None
         punt.save()
 
-sanitize_extra()
+def print_heatmap():
+    """
+    To be completed.
+    This charts some graphs about the playtimes. It's a work in progress.
+    """
+
+    import matplotlib.pyplot as plt
+    import datetime
+
+    # Query the timestamps from the database
+    timestamps = [record.timestamp for record in Punteggio.select(Punteggio.timestamp)]
+
+    # Convert Unix timestamps to datetime objects
+    datetimes = [datetime.datetime.fromtimestamp(ts) for ts in timestamps]
+
+    # Extract hours and days of the week
+    hours = [dt.hour for dt in datetimes]
+    days_of_week = [dt.weekday() for dt in datetimes]  # Monday is 0 and Sunday is 6
+
+    # Create a matrix to count occurrences using nested lists
+    heatmap_data = [[0 for _ in range(24)] for _ in range(7)]
+
+    for day, hour in zip(days_of_week, hours):
+        heatmap_data[day][hour] += 1
+
+    # Rearrange heatmap data to start at 4 AM and end at 3 AM
+    heatmap_data_reordered = [day[4:] + day[:4] for day in heatmap_data]
+    hours_reordered = list(range(4, 24)) + list(range(0, 4))
+
+    # Plot the heatmap and the averages
+    fig, axs = plt.subplots(3, 1, figsize=(12, 18))
+
+    # Plot the heatmap
+    cax = axs[0].matshow(heatmap_data_reordered, cmap='viridis')
+    axs[0].set_xticks(range(24))
+    axs[0].set_yticks(range(7))
+    axs[0].set_xticklabels([f'{i}:00' for i in hours_reordered])
+    axs[0].set_yticklabels(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+    axs[0].set_xlabel('Hour of the Day')
+    axs[0].set_ylabel('Day of the Week')
+    axs[0].set_title('Heatmap of Timestamps')
+    axs[0].tick_params(axis='x', rotation=45)
+
+    plt.colorbar(cax, ax=axs[0])
+
+
+    # Create and plot average counts per day of the week
+    avg_counts_per_day = [sum(day) / 24 for day in heatmap_data]
+
+    axs[1].bar(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], avg_counts_per_day)
+    axs[1].set_xlabel('Day of the Week')
+    axs[1].set_ylabel('Average Count')
+    axs[1].set_title('Average Count per Day of the Week')
+
+    # Create and plot average counts per hour of the day
+    avg_counts_per_hour = [sum(hour[i] for hour in heatmap_data) / 7 for i in range(24)]
+    avg_counts_per_hour_reordered = avg_counts_per_hour[4:] + avg_counts_per_hour[:4]
+
+    axs[2].plot(range(24), avg_counts_per_hour_reordered)
+    axs[2].set_xlabel('Hour of the Day')
+    axs[2].set_ylabel('Average Count')
+    axs[2].set_title('Average Count per Hour of the Day')
+    axs[2].set_xticks(range(24))
+    axs[2].set_xticklabels([f'{i}:00' for i in hours_reordered])
+    axs[2].tick_params(axis='x', rotation=45)
+
+    # Save the plot as an image file
+    plt.tight_layout()
+    plt.savefig('00_combined_plot.png')
+
+
+print_heatmap()
+
+# sanitize_extra()
