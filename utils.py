@@ -721,6 +721,7 @@ def print_heatmap():
     """
     To be completed.
     This charts some graphs about the playtimes. It's a work in progress.
+    It's also generate by ChatGPT 4o, so, whatever.
     """
 
     import matplotlib.pyplot as plt
@@ -746,44 +747,44 @@ def print_heatmap():
     heatmap_data_reordered = [day[4:] + day[:4] for day in heatmap_data]
     hours_reordered = list(range(4, 24)) + list(range(0, 4))
 
-    # Plot the heatmap and the averages
-    fig, axs = plt.subplots(3, 1, figsize=(12, 18))
-
-    # Plot the heatmap
-    cax = axs[0].matshow(heatmap_data_reordered, cmap='viridis')
-    axs[0].set_xticks(range(24))
-    axs[0].set_yticks(range(7))
-    axs[0].set_xticklabels([f'{i}:00' for i in hours_reordered])
-    axs[0].set_yticklabels(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-    axs[0].set_xlabel('Hour of the Day')
-    axs[0].set_ylabel('Day of the Week')
-    axs[0].set_title('Heatmap of Timestamps')
-    axs[0].tick_params(axis='x', rotation=45)
-
-    plt.colorbar(cax, ax=axs[0])
-
-
-    # Create and plot average counts per day of the week
+    # Calculate average counts per day and hour
     avg_counts_per_day = [sum(day) / 24 for day in heatmap_data]
-
-    axs[1].bar(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], avg_counts_per_day)
-    axs[1].set_xlabel('Day of the Week')
-    axs[1].set_ylabel('Average Count')
-    axs[1].set_title('Average Count per Day of the Week')
-
-    # Create and plot average counts per hour of the day
     avg_counts_per_hour = [sum(hour[i] for hour in heatmap_data) / 7 for i in range(24)]
     avg_counts_per_hour_reordered = avg_counts_per_hour[4:] + avg_counts_per_hour[:4]
 
-    axs[2].plot(range(24), avg_counts_per_hour_reordered)
-    axs[2].set_xlabel('Hour of the Day')
-    axs[2].set_ylabel('Average Count')
-    axs[2].set_title('Average Count per Hour of the Day')
-    axs[2].set_xticks(range(24))
-    axs[2].set_xticklabels([f'{i}:00' for i in hours_reordered])
-    axs[2].tick_params(axis='x', rotation=45)
+    fig = plt.figure(figsize=(18, 12))
 
-    # Save the plot as an image file
+    # Plot the heatmap
+    ax1 = fig.add_subplot(2, 1, 1)
+    cax = ax1.matshow(heatmap_data_reordered, cmap='viridis')
+    ax1.set_xticks(range(24))
+    ax1.set_yticks(range(7))
+    ax1.set_xticklabels([f'{i}:00' for i in hours_reordered])
+    ax1.set_yticklabels(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+    ax1.set_xlabel('Hour of the Day')
+    ax1.set_ylabel('Day of the Week')
+    ax1.set_title('Heatmap of Timestamps')
+    ax1.tick_params(axis='x', rotation=45)
+
+    # Create a new subplot to split the space equally between the two average count plots
+    ax2 = fig.add_subplot(2, 2, 3)
+    ax3 = fig.add_subplot(2, 2, 4)
+
+    # Create and plot average counts per day of the week
+    ax2.bar(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], avg_counts_per_day, color='blue')
+    ax2.set_xlabel('Day of the Week')
+    ax2.set_ylabel('Average Count')
+    ax2.set_title('Average Count per Day of the Week')
+
+    # Create and plot average counts per hour of the day
+    ax3.plot(range(24), avg_counts_per_hour_reordered, color='blue')
+    ax3.set_xlabel('Hour of the Day')
+    ax3.set_ylabel('Average Count')
+    ax3.set_title('Average Count per Hour of the Day')
+    ax3.set_xticks(range(24))
+    ax3.set_xticklabels([f'{i}:00' for i in hours_reordered])
+    ax3.tick_params(axis='x', rotation=45)
+
     plt.tight_layout()
     plt.savefig('00_combined_plot.png')
 

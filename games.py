@@ -732,18 +732,12 @@ class FoodGuessr(Giochino):
     _url = "https://foodguessr.com"
 
     can_lose: False
-
+    today_str = datetime.date.today().strftime("%d %b %Y")
     examples = [
-        "FoodGuessr\n  Round 1 🌑🌑🌑🌑\n  Round 2 🌖🌑🌑🌑\n  Round 3 🌑🌑🌑🌑\nTotal score: 645 / 15.000\nPlay: https://foodguessr.com",
-        "FoodGuessr\n  Round 1 🌘🌑🌑🌑\n  Round 2 🌕🌕🌕🌘\n  Round 3 🌖🌑🌑🌑\nTotal score: 5.242 / 15.000\nPlay: https://foodguessr.com",
-        "FoodGuessr\n  Round 1 🌕🌕🌕🌕\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌕🌑\nTotal score: 13.500 / 15.000\nPlay: https://foodguessr.com",
+       'FoodGuessr - 06 Jun 2024 GMT\n  Round 1 🌕🌕🌕🌖\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌗🌑\nTotal score: 12,500 / 15,000\n\nCan you beat my score? New game daily!\nPlay at https://foodguessr.com',
     ]
-    # FoodGuessr doesn't have any day/date, so we assume it's today.
-    day = get_day_from_date(_date, _day, "FoodGuessr", datetime.date.today())
     expected = [
-        {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 14355, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 9758, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": day, "name": "FoodGuessr", "timestamp": 10, "tries": 1500, "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '294', 'name': 'FoodGuessr', 'stars': None, 'timestamp': 10, 'tries': 2500, 'user_id': 456481297, 'user_name': 'Trifase'}
     ]
 
     @staticmethod
@@ -815,8 +809,8 @@ class Geogrid(Giochino):
         '❌ ❌ ❌\n❌ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 900\nRank: 9,082 / 11,501\nhttps://geogridgame.com\n@geogridgame',
     ]
     expected = [
-        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "112.3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "629.3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "112", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "629", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
@@ -1029,7 +1023,7 @@ class Moviedle(Giochino):
     _date = datetime.date(2023, 6, 23)
     _day = "200"
     _emoji = "🎥"
-    _url = "https://moviedle.app"
+    _url = " https://likewisetv.com/arcade/moviedle"
 
     examples = [
         "#Moviedle #2024-03-08 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n\n https://likewisetv.com/arcade/moviedle",
@@ -1202,8 +1196,8 @@ class Numble(Giochino):
     ]
     expected = [
         {"day": "832", "name": "Numble", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "832", "name": "Numble", "timestamp": 10, "tries": "50.538", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "834", "name": "Numble", "timestamp": 10, "tries": "88.66", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "832", "name": "Numble", "timestamp": 10, "tries": "50", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "834", "name": "Numble", "timestamp": 10, "tries": "88", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1945,6 +1939,37 @@ class WhereTaken(Giochino):
         self.tries = first_line[4].split("/")[0]
         self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
 
+@dataclass
+class WordGrid(Giochino):
+    _name = "WordGrid"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 6, 11)
+    _day = "11"
+    _emoji = "🦄"
+    _url = "https://wordgrid.clevergoat.com/"
+
+
+    examples = [
+        "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.0\nwordgrid.clevergoat.com 🐐",
+    ]
+    expected = [
+        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "Word Grid #" in lines[0] and "Rarity" in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[2][1:]
+        self.tries = str(int(float(lines[4].split()[-1])))
+
 
 @dataclass
 class Wordle(Giochino):
@@ -2126,4 +2151,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
     giochino_da_testare = Numble
+    giochino_da_testare = None
     test(True, giochino_da_testare)
