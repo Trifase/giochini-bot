@@ -240,6 +240,10 @@ def process_tries(game: str, tries: int | str) -> int | str:
     # For NerdleCross, scores are points, the more the better. Max points is 6 so we save them as differences from max.
     if game == "NerdleCross":
         tries = 6 - tries
+
+    # For WordGrid, the point is a float with one decimal. I store multiplying by 10 as ints, so i just need to divide by then an round it to one decimal.
+    if game == "WordGrid":
+        tries = round(tries / 10, 1)
     return tries
 
 

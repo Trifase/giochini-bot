@@ -393,10 +393,17 @@ async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     message = "Classifica ALL TIME:\n"
 
+    # query = (
+    #     Punti.select(Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
+    #     .order_by(peewee.fn.SUM(Punti.punti).desc())
+    #     .group_by(Punti.user_name)
+    #     .limit(20)
+    # )
+
     query = (
-        Punti.select(Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
+        Punti.select(Punti.user_id, Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
         .order_by(peewee.fn.SUM(Punti.punti).desc())
-        .group_by(Punti.user_name)
+        .group_by(Punti.user_id)
         .limit(20)
     )
 
@@ -530,7 +537,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
         if query:
-            await update.message.reply_text(f"Hai già giocato a {giochino._name} oggi.")
+            await update.message.reply_text(f"C'è già un risultato a nome tuo per {giochino._name} #{result['day']}.")
             await update.message.set_reaction(reaction="🤨")
             return
 
@@ -592,6 +599,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     else:  # should never be the case
         print('wtf?')
 
+async def debug_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    import pprint
+    rawtext = pprint.pformat(update.message.reply_to_message.text, width=300).replace("<", "less").replace(">", "more")
+    await update.message.reply_html(f'<code>{rawtext}</code>')
 
 async def manual_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
@@ -1059,6 +1070,9 @@ def main():
     app.add_handler(MessageHandler(filters.ALL, spell_message), -150)
     app.add_handler(CommandHandler("enable_debug", enable_debug), 211)
     app.add_handler(CommandHandler("disable_debug", disable_debug), 212)
+    app.add_handler(CommandHandler("debug", debug_text), 213)
+
+    
 
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 

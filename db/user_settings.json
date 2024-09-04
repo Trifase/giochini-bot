@@ -151,7 +151,9 @@
             "Metazooa",
             "Countryle",
             "Geogrid",
-            "Numble"
+            "Numble",
+            "WordGrid",
+            "Strands"
         ],
         "favs_extra_button": true
     },
@@ -174,10 +176,9 @@
             "Stepdle",
             "Spotle",
             "Strands",
-            "Geogrid",
-            "Worldle"
+            "WordGrid"
         ],
-        "favs_extra_button": false
+        "favs_extra_button": true
     },
     "35440256": {
         "favs": [
@@ -227,6 +228,40 @@
             "Globle",
             "GuessTheGame",
             "Moviedle"
+        ],
+        "favs_extra_button": false
+    },
+    "328909934": {
+        "favs": [
+            "FoodGuessr",
+            "Framed",
+            "Geogrid",
+            "GuessTheGame",
+            "TempoIndovinr",
+            "TimeGuessr",
+            "Moviedle",
+            "Travle",
+            "TravleITA",
+            "Unzoomed",
+            "WhereTaken",
+            "Tradle",
+            "Connections",
+            "Contexto",
+            "Parole",
+            "Polygonle",
+            "Squareword",
+            "Stepdle",
+            "WordGrid",
+            "WordPeaks",
+            "Angle",
+            "Chronophoto"
+        ],
+        "favs_extra_button": false
+    },
+    "198379603": {
+        "favs": [
+            "WhereTaken",
+            "GuessTheGame"
         ],
         "favs_extra_button": false
     }

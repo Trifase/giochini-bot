@@ -4,8 +4,10 @@ import re
 import sys
 import time
 import locale
+from tkinter import TRUE
 
 from dataclassy import dataclass
+from pydantic import Extra
 from telegram import Bot, Update
 from telegram.ext.filters import MessageFilter
 
@@ -52,6 +54,12 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
 
     if isinstance(date, str) and game == "Moviedle":
+        date = datetime.datetime.strptime(date, "#%Y-%m-%d").date()
+
+    if isinstance(date, str) and game == "NFLXdle":
+        date = datetime.datetime.strptime(date, "#%Y-%m-%d").date()
+
+    if isinstance(date, str) and game == "Posterdle":
         date = datetime.datetime.strptime(date, "#%Y-%m-%d").date()
 
     if isinstance(date, str) and game == "Murdle":
@@ -732,12 +740,11 @@ class FoodGuessr(Giochino):
     _url = "https://foodguessr.com"
 
     can_lose: False
-    today_str = datetime.date.today().strftime("%d %b %Y")
     examples = [
-       'FoodGuessr - 06 Jun 2024 GMT\n  Round 1 🌕🌕🌕🌖\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌗🌑\nTotal score: 12,500 / 15,000\n\nCan you beat my score? New game daily!\nPlay at https://foodguessr.com',
+       'FoodGuessr - 09 Mar 2024 GMT\n  Round 1 🌕🌕🌕🌖\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌗🌑\nTotal score: 12,500 / 15,000\n\nCan you beat my score? New game daily!\nPlay at https://foodguessr.com',
     ]
     expected = [
-        {'day': '294', 'name': 'FoodGuessr', 'stars': None, 'timestamp': 10, 'tries': 2500, 'user_id': 456481297, 'user_name': 'Trifase'}
+        {'day': '200', 'name': 'FoodGuessr', 'stars': None, 'timestamp': 10, 'tries': 2500, 'user_id': 456481297, 'user_name': 'Trifase'}
     ]
 
     @staticmethod
@@ -750,7 +757,10 @@ class FoodGuessr(Giochino):
         text = self.raw_text
 
         lines = text.splitlines()
-        self.day = get_day_from_date(self._date, self._day, "FoodGuessr", datetime.date.today())
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        actual_day = datetime.datetime.strptime(lines[0][13:].replace(' GMT', ''), '%d %b %Y').date()
+        locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
+        self.day = get_day_from_date(self._date, self._day, "FoodGuessr", actual_day)
         points = lines[4].split()[2].replace(",", "").replace(".", "")
         self.tries = 15_000 - int(points)
         self.stars = None
@@ -791,6 +801,39 @@ class Framed(Giochino):
             self.tries = "X"
         else:
             self.tries = str(punteggio.index("🟩"))
+
+
+@dataclass
+class Flipple(Giochino):
+    _name = "Flipple"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 9, 4)
+    _day = "96"
+    _emoji = "🔃"
+    _url = "flipple.clevergoat.com"
+
+    can_lose: False
+
+    examples = [
+        'Flipple #96 ⬇️\n🟩⬜️⬜️⬜️🟩\n🟩⬜️🟩⬜️🟩\n🟩⬜️🟩🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐'
+    ]
+    expected = [
+        {"day": "96", "name": "Flipple", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "Flipple #" in lines[0] and 'flipple.clevergoat.com' in lines[-1]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[1][1:]
+        self.tries = str(len(lines) - 2)
 
 @dataclass
 class Geogrid(Giochino):
@@ -1023,7 +1066,7 @@ class Moviedle(Giochino):
     _date = datetime.date(2023, 6, 23)
     _day = "200"
     _emoji = "🎥"
-    _url = " https://likewisetv.com/arcade/moviedle"
+    _url = "https://likewisetv.com/arcade/moviedle"
 
     examples = [
         "#Moviedle #2024-03-08 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n\n https://likewisetv.com/arcade/moviedle",
@@ -1180,6 +1223,50 @@ class NerdleCross(Giochino):
             self.tries = "X"
         self.stars = None
 
+
+@dataclass
+class NFLXdle(Giochino):
+    _name = "NFLXdle"
+    _category = "Immagini, giochi e film"
+    _date = datetime.date(2024, 9, 4)
+    _day = "100"
+    _emoji = "📺"
+    _url = " https://likewise.com/games/nflxdle"
+
+    has_extra = True
+
+    examples = [
+        '#NFLXdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 📺 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04', #vinta
+        '#NFLXdle #2024-09-04 \n\n ⌛️ 6️⃣ seconds \n 📺 🟥 🟥 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04', #vinta
+        '#NFLXdle #2024-09-04 \n\n ⌛️ 2️⃣1️⃣ seconds \n 📺 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04', #persa (tempo)
+        '#NFLXdle #2024-09-03 \n\n ⌛️ 6️⃣ seconds \n 📺 🟥 🟥 🟥 🟥 🟥 🟥  \n https://likewise.com/games/nflxdle/2024-09-03' #persa (tentativi)
+    ]
+    expected = [
+        {"day": "100", "name": "NFLXdle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": "5"},
+        {"day": "100", "name": "NFLXdle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase", "stars": "3"},
+        {"day": "100", "name": "NFLXdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "99", "name": "NFLXdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "#NFLXdle #" in lines[0] and "https://likewise.com/games/nflxdle" in lines[-1]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = get_day_from_date(self._date, self._day, "NFLXdle", first_line[-1])
+        if "🟩" not in lines[3]:
+            self.tries = "X"
+        else:
+            self.stars = str(lines[3].count("⬜️"))
+            self.tries = time_from_emoji(lines[2])
+
+
 @dataclass
 class Numble(Giochino):
     _name = "Numble"
@@ -1190,9 +1277,9 @@ class Numble(Giochino):
     _url = "https://numble.wtf"
 
     examples = [
-        'Numble 832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf',
-        'Numble 832\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 900\n50.538s\nhttps://numble.wtf',
-        'Numble 834\nSOLVED: ✅\nNumbers used: 3/6\nFinal answer: 48\n1m 28.660s\nhttps://numble.wtf'
+        'Numble #832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf',
+        'Numble #832\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 900\n50.538s\nhttps://numble.wtf',
+        'Numble #834\nSOLVED: ✅\nNumbers used: 3/6\nFinal answer: 48\n1m 28.660s\nhttps://numble.wtf'
     ]
     expected = [
         {"day": "832", "name": "Numble", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
@@ -1210,7 +1297,7 @@ class Numble(Giochino):
 
         lines = text.splitlines()
         first_line = lines[0].split()
-        self.day = first_line[-1]
+        self.day = first_line[-1][1:]
         solved = '✅' in lines[1]
         if not solved:
             self.tries = 'X'
@@ -1345,6 +1432,49 @@ class Polygonle(Giochino):
 
 
 @dataclass
+class Posterdle(Giochino):
+    _name = "Posterdle"
+    _category = "Immagini, giochi e film"
+    _date = datetime.date(2024, 9, 4)
+    _day = "100"
+    _emoji = "🍿"
+    _url = "https://likewise.com/games/posterdle"
+
+    has_extra = True
+
+    examples = [
+        '#Posterdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 🍿 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04', #vinta
+        '#Posterdle #2024-09-04 \n\n ⌛️ 6️⃣ seconds \n 🍿 🟥 🟥 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04', #vinta
+        '#Posterdle #2024-09-04 \n\n ⌛️ 2️⃣1️⃣ seconds \n 🍿 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04', #persa (tempo)
+        '#Posterdle #2024-09-03 \n\n ⌛️ 6️⃣ seconds \n 🍿 🟥 🟥 🟥 🟥 🟥 🟥  \n https://likewise.com/games/posterdle/2024-09-03' #persa (tentativi)
+    ]
+    expected = [
+        {"day": "100", "name": "Posterdle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": "5"},
+        {"day": "100", "name": "Posterdle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase", "stars": "3"},
+        {"day": "100", "name": "Posterdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "99", "name": "Posterdle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "#Posterdle #" in lines[0] and "https://likewise.com/games/posterdle" in lines[-1]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = get_day_from_date(self._date, self._day, "Posterdle", first_line[-1])
+        if "🟩" not in lines[3]:
+            self.tries = "X"
+        else:
+            self.stars = str(lines[3].count("⬜️"))
+            self.tries = time_from_emoji(lines[2])
+
+
+@dataclass
 class Rotaboxes(Giochino):
     _name = "Rotaboxes"
     _category = "Logica"
@@ -1424,8 +1554,8 @@ class Spellcheck(Giochino):
 class Spotle(Giochino):
     _name = "Spotle"
     _category = "Immagini, giochi e film"
-    _date = datetime.date(2024, 6, 6)
-    _day = "771"
+    _date = datetime.date(2024, 7, 8)
+    _day = "802"
     _emoji = "🎧"
     _url = "https://spotle.io/"
 
@@ -1459,6 +1589,41 @@ class Spotle(Giochino):
             self.tries = "X"
         else:
             self.tries = str(punteggio_bonificato.index("🟩") + 1)
+
+@dataclass
+class Spots(Giochino):
+    _name = "Spots"
+    _category = "Logica"
+    _date = datetime.date(2024, 9, 4)
+    _day = "54"
+    _emoji = "🟡"
+    _url = "https://spots.wtf"
+
+    examples = [
+        'Spots Code #54\nGuesses: 10\n🟨⬛️⬛️⬛️\n🟩🟩⬛️⬛️\n🟩⬛️⬛️⬛️\n🟨🟨⬛️⬛️\n🟨⬛️⬛️⬛️\n🟨🟨⬛️⬛️\n🟨⬛️⬛️⬛️\n🟨⬛️⬛️⬛️\n⬛️⬛️⬛️⬛️\n🟨⬛️⬛️⬛️\nhttps://spots.wtf',
+        'Spots Code #54\nGuesses: 4\n🟩🟩🟩🟩\n🟩🟩🟩⬛️\n🟩🟩⬛️⬛️\n🟩⬛️⬛️⬛️\nhttps://spots.wtf',
+    ]
+    expected = [
+        {"day": "54", "name": "Spots", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "54", "name": "Spots", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "Spots Code #" in lines[0] and "https://spots.wtf" in lines[-1]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[2][1:]
+        if "🟩🟩🟩🟩" in lines[2]:
+            self.tries = lines[1].split(": ")[-1]
+        else:
+            self.tries = "X"
 
 
 @dataclass
@@ -1952,8 +2117,9 @@ class WordGrid(Giochino):
     examples = [
         "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.0\nwordgrid.clevergoat.com 🐐",
     ]
+    # Remember: tries are multiplied by 10
     expected = [
-        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "60", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1968,7 +2134,8 @@ class WordGrid(Giochino):
         lines = text.splitlines()
         first_line = lines[0].split()
         self.day = first_line[2][1:]
-        self.tries = str(int(float(lines[4].split()[-1])))
+        # The point is always a flat with a decimal. We will multiply by 10 to get a whole int, and then will divide by then when displaying it in the classifica.
+        self.tries = str(int(float(lines[4].split()[-1]) * 10))
 
 
 @dataclass
@@ -2150,6 +2317,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Numble
-    giochino_da_testare = None
+    giochino_da_testare = Posterdle
+    # giochino_da_testare = None
     test(True, giochino_da_testare)
