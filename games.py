@@ -1231,7 +1231,7 @@ class NFLXdle(Giochino):
     _date = datetime.date(2024, 9, 4)
     _day = "100"
     _emoji = "📺"
-    _url = " https://likewise.com/games/nflxdle"
+    _url = "https://likewise.com/games/nflxdle"
 
     has_extra = True
 
@@ -1347,6 +1347,41 @@ class Parole(Giochino):
         first_line = lines[0].split()
         self.day = first_line[1]
         self.tries = first_line[2].split("/")[0]
+
+
+@dataclass
+class Pedantle(Giochino):
+    _name = "Pedantle"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 9, 5)
+    _day = "840"
+    _emoji = "🌥️"
+    _url = "https://cemantle.certitudes.org/pedantle"
+
+    can_lose: False
+
+    examples = [
+        'I found #pedantle #833 in 133 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://cemantle.certitudes.org/pedantle',
+        'I found #pedantle #840 in 99 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://cemantle.certitudes.org/pedantle',
+    ]
+    expected = [
+        {"day": "833", "name": "Pedantle", "timestamp": 10, "tries": "133", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "840", "name": "Pedantle", "timestamp": 10, "tries": "99", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "I found #pedantle " in lines[0] and 'https://cemantle.certitudes.org/pedantle' in lines[-1]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[3][1:]
+        self.tries = first_line[5]
 
 
 @dataclass
@@ -2104,6 +2139,40 @@ class WhereTaken(Giochino):
         self.tries = first_line[4].split("/")[0]
         self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
 
+
+@dataclass
+class WhenTaken(Giochino):
+    _name = "WhenTaken"
+    _category = "Geografia e Mappe"
+    _date = datetime.date(2024, 9, 5)
+    _day = "191"
+    _emoji = "📍"
+    _url = "https://whentaken.com"
+    
+
+    examples = [
+        '#WhenTaken #191 (05.09.2024)\n\nI scored 505/1000 🎉\n\n1️⃣ 📍 3499 km - 🗓 22 yrs - ⚡️ 82 / 200\n2️⃣ 📍 441 km - 🗓 7 yrs - ⚡️ 178 / 200\n3️⃣ 📍 16972 km - 🗓 11 yrs - ⚡️ 82 / 200\n4️⃣ 📍 1181 km - 🗓 4 yrs - ⚡️ 162 / 200\n5️⃣ 📍 9698 km - 🗓 62 yrs - ⚡️ 1 / 200\n\nhttps://whentaken.com'
+    ]
+    expected = [
+        {"day": "191", "name": "WhenTaken", "timestamp": 10, "tries": "495", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "#WhenTaken #" in lines[0] and 'https://whentaken.com' in lines[-1]
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[1][1:]
+        tries = lines[2].split()[-2].split("/")[0]
+        self.tries = str(1000 - int(tries))
+
+
 @dataclass
 class WordGrid(Giochino):
     _name = "WordGrid"
@@ -2317,6 +2386,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Posterdle
+    giochino_da_testare = WhenTaken
     # giochino_da_testare = None
     test(True, giochino_da_testare)

@@ -792,7 +792,8 @@ def print_heatmap():
     plt.tight_layout()
     plt.savefig('00_combined_plot.png')
 
-
-print_heatmap()
+# Heatmap!
+if __name__ == '__main__':
+    print_heatmap()
 
 # sanitize_extra()
