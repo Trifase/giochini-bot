@@ -561,7 +561,7 @@ class Connections(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
-        _can_handle_this = "Connections" in lines[0]
+        _can_handle_this = "Connections" in lines[0] and "Puzzle #" in lines[1]
         return _can_handle_this
 
     def parse(self):

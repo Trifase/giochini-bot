@@ -145,15 +145,15 @@
             "DominoFit",
             "FoodGuessr",
             "Spotle",
-            "Chrono",
             "Parole",
             "Polygonle",
             "Metazooa",
             "Countryle",
-            "Geogrid",
             "Numble",
-            "WordGrid",
-            "Strands"
+            "Strands",
+            "NFLXdle",
+            "Posterdle",
+            "Spots"
         ],
         "favs_extra_button": true
     },

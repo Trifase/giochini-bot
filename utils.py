@@ -229,6 +229,10 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == "TempoIndovinr":
         tries = 1_000 - tries
 
+    # For WhenTaken, scores are points, the more the better. Max points is 1_000 so we save them as differences from max.
+    if game == "WhenTaken":
+        tries = 1_000 - tries
+
     # For Picsey, scores are points, the more the better. Max points is 100 so we save them as differences from max.
     if game == "Picsey":
         tries = 100 - tries
