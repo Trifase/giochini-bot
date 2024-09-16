@@ -216,6 +216,7 @@ class UnsupportedGame(Giochino):
                 "🔊" in raw_text and "#Heardle" in raw_text,  # Headle
                 "I solved" in raw_text and "New York Times Mini Crossword" in raw_text,  # NY Mini Crossword
                 "Strands #" in raw_text and "🔵" in raw_text,  # Strands
+                "Apparle #" in raw_text and "https://apparle.com" in raw_text, # Apparle
             ]
         )
         return _can_handle_this
@@ -278,44 +279,47 @@ class Angle(Giochino):
         self.stars = None
 
 
-@dataclass
-class Apparle(Giochino):
-    _name = "Apparle"
-    _category = "Immagini, giochi e film"
-    _date = datetime.date(2024, 4, 14)
-    _day = "45"
-    _emoji = "💵"
-    _url = "https://www.apparle.com"
+# @dataclass
+# class Apparle(Giochino):
+#     _name = "Apparle"
+#     _category = "Immagini, giochi e film"
+#     _date = datetime.date(2024, 4, 14)
+#     _day = "45"
+#     _emoji = "💵"
+#     _url = "https://www.apparle.com"
 
-    examples = [
-        "Apparle #28 1/6\n🏆 -1.2%\n\nhttps://apparle.com",
-        "Apparle #28 3/6\n⬇️ +50%\n⬆️ -13.7%\n💵 -1.2%\n\nhttps://apparle.com",
-        "Apparle #45 6/6\n⬆️ -32.2%\n⬆️ -66.1%\n⬆️ -83.1%\n⬆️ -66.1%\n⬆️ -57.6%\n💵 0%\n\nhttps://apparle.com",
-        "Apparle #45 6/6\n⬆️ -84.7%\n⬆️ -16.1%\n⬇️ +102.5%\n⬇️ +68.6%\n⬇️ +145.8%\n❌ +154.2%\n\nhttps://apparle.com",
-    ]
-    expected = [
-        {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-    ]
+#     message = "sconosciuto"
+#     hidden_game = True
 
-    @staticmethod
-    def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "Apparle #" in lines[0] and "https://apparle.com" in lines[-1]
-        return _can_handle_this
+#     examples = [
+#         "Apparle #28 1/6\n🏆 -1.2%\n\nhttps://apparle.com",
+#         "Apparle #28 3/6\n⬇️ +50%\n⬆️ -13.7%\n💵 -1.2%\n\nhttps://apparle.com",
+#         "Apparle #45 6/6\n⬆️ -32.2%\n⬆️ -66.1%\n⬆️ -83.1%\n⬆️ -66.1%\n⬆️ -57.6%\n💵 0%\n\nhttps://apparle.com",
+#         "Apparle #45 6/6\n⬆️ -84.7%\n⬆️ -16.1%\n⬇️ +102.5%\n⬇️ +68.6%\n⬇️ +145.8%\n❌ +154.2%\n\nhttps://apparle.com",
+#     ]
+#     expected = [
+#         {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+#         {"day": "28", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+#         {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+#         {"day": "45", "name": "Apparle", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+#     ]
 
-    def parse(self):
-        text = self.raw_text
+#     @staticmethod
+#     def can_handle_this(raw_text):
+#         lines = raw_text.splitlines()
+#         _can_handle_this = "Apparle #" in lines[0] and "https://apparle.com" in lines[-1]
+#         return _can_handle_this
 
-        lines = text.splitlines()
-        points = lines[0].split()[-1].split("/")[0]
-        self.day = lines[0].split()[1][1:]
-        self.tries = points
-        if "❌" in text:
-            self.tries = "X"
-        self.stars = None
+#     def parse(self):
+#         text = self.raw_text
+
+#         lines = text.splitlines()
+#         points = lines[0].split()[-1].split("/")[0]
+#         self.day = lines[0].split()[1][1:]
+#         self.tries = points
+#         if "❌" in text:
+#             self.tries = "X"
+#         self.stars = None
 
 
 @dataclass
