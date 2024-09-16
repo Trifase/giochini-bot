@@ -1032,7 +1032,7 @@ def main():
 
     j = app.job_queue
     j.run_daily(daily_reminder, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
-    j.run_daily(riassunto_serale, datetime.time(hour=1, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(riassunto_serale, datetime.time(hour=0, minute=1, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
 
     app.add_handler(CommandHandler("classificona", classificona), 1)

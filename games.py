@@ -1701,8 +1701,8 @@ class Squareword(Giochino):
 class Stepdle(Giochino):
     _name = "Stepdle"
     _category = "Giochi di parole"
-    _date = datetime.date(2024, 3, 5)
-    _day = "537"
+    _date = datetime.date(2024, 9, 16)
+    _day = "27"
     _emoji = "🗼"
     _url = "https://www.stepdle.com"
 
@@ -2377,6 +2377,7 @@ def test(print_debug, giochino=None):
             giochino = gioco(update)
             print(f"[{i}] ==== {giochino._name} ====")
             if print_debug:
+                # print(f'{giochino.examples[i],}')
                 print(f"info = {giochino.info}")
                 print(f"expected = {giochino.expected[i]}")
                 print(f"punteggio = {giochino.punteggio}")
@@ -2387,5 +2388,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
     giochino_da_testare = WhenTaken
-    # giochino_da_testare = None
+    giochino_da_testare = None
     test(True, giochino_da_testare)
