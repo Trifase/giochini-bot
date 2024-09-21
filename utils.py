@@ -301,47 +301,76 @@ def update_streak():
         punt.save()
 
 
-def personal_stats(user_id: int) -> str:
-    intro = "Ecco le tue statistiche personali:\n\n"
-
-    # longest streak best game streak
-    long_streak_query = (
-        Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
-        .where(Punteggio.user_id == user_id)
-        .group_by(Punteggio.game)
-        .order_by(Punteggio.streak.desc())
-        .limit(1)
-    )
-    long_streak = long_streak_query[0].streak
-    long_streak_game = long_streak_query[0].game
-    long_streak_string = f"Il tuo streak più lungo è di <b>{long_streak}</b> partite a <b>{long_streak_game}.</b>\n"
-
-    # gioco più giocato
-    most_played_query = (
-        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_id == user_id)
-        .group_by(Punteggio.game)
-        .order_by(peewee.fn.COUNT(Punteggio.game).desc())
-        .limit(1)
-    )
-    most_played = most_played_query[0].game
-    most_played_count = most_played_query[0].c
-    most_played_string = f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
-
-    # gioco meno giocato
-    least_played_query = (
-        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_id == user_id)
-        .group_by(Punteggio.game)
-        .order_by(peewee.fn.COUNT(Punteggio.game).asc())
-        .limit(1)
-    )
-    least_played = least_played_query[0].game
-    least_played_count = least_played_query[0].c
-    least_played_string = f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
+def personal_stats(user_id: int, correct_game=None) -> str:
+    if correct_game is not None:
+        intro = f"Ecco le tue statistiche personali per {correct_game}:\n\n"
+    else:
+        intro = "Ecco le tue statistiche personali:\n\n"
 
     # giocate totali
-    total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id).scalar()
+    if correct_game is not None:
+        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id, Punteggio.game == correct_game).scalar()
+    else:
+        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id).scalar()
+
+    if not total_plays:
+        return "Non hai mai giocato!"
+
+    # longest streak best game streak
+    if correct_game is not None:
+        long_streak_query = (
+            Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
+            .where(Punteggio.user_id == user_id, Punteggio.game == correct_game)
+            .group_by(Punteggio.game)
+            .order_by(Punteggio.streak.desc())
+            .limit(1)
+        )
+        long_streak = long_streak_query[0].streak
+        long_streak_string = f"Il tuo streak più lungo è di <b>{long_streak}</b> partite.\n"
+    else:
+        long_streak_query = (
+            Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
+            .where(Punteggio.user_id == user_id)
+            .group_by(Punteggio.game)
+            .order_by(Punteggio.streak.desc())
+            .limit(1)
+        )
+        long_streak = long_streak_query[0].streak
+        long_streak_game = long_streak_query[0].game
+        long_streak_string = f"Il tuo streak più lungo è di <b>{long_streak}</b> partite a <b>{long_streak_game}.</b>\n"
+
+    # gioco più giocato
+    if correct_game is not None:
+        most_played_string = ""
+    else:
+        most_played_query = (
+            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(Punteggio.user_id == user_id)
+            .group_by(Punteggio.game)
+            .order_by(peewee.fn.COUNT(Punteggio.game).desc())
+            .limit(1)
+        )
+        most_played = most_played_query[0].game
+        most_played_count = most_played_query[0].c
+        most_played_string = f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
+
+
+    # gioco meno giocato
+    if correct_game is not None:
+        least_played_string = ""
+    else:
+        least_played_query = (
+            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(Punteggio.user_id == user_id)
+            .group_by(Punteggio.game)
+            .order_by(peewee.fn.COUNT(Punteggio.game).asc())
+            .limit(1)
+        )
+        least_played = least_played_query[0].game
+        least_played_count = least_played_query[0].c
+        least_played_string = f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
+
+
 
     # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
     single_play_minutes = 2
@@ -357,16 +386,29 @@ def personal_stats(user_id: int) -> str:
     total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n"
 
     # giocate perse totali
-    total_loses = (
-        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(
-            Punteggio.user_id == user_id,
-            Punteggio.lost == True,
+    if correct_game is not None:
+        total_loses = (
+            Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(
+                Punteggio.user_id == user_id,
+                Punteggio.lost == True,
+                Punteggio.game == correct_game,
+            )
+            .scalar()
         )
-        .scalar()
-    )
-    if total_loses:
-        total_loses_string = f"In totale, hai perso <b>{total_loses}</b> partite.\n"
+        if total_loses:
+            total_loses_string = f"In totale, hai perso <b>{total_loses}</b> partite.\n"
+    else:
+        total_loses = (
+            Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(
+                Punteggio.user_id == user_id,
+                Punteggio.lost == True,
+            )
+            .scalar()
+        )
+        if total_loses:
+            total_loses_string = f"In totale, hai perso <b>{total_loses}</b> partite.\n"
 
     result = intro + long_streak_string + most_played_string + least_played_string + total_plays_string
     if total_loses:

@@ -751,13 +751,26 @@ async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    try:
-        message = personal_stats(update.effective_user.id)
-    except Exception as e:
-        message = f"Ho qualche problema, scusa ({e})"
+    if context.args:
+        correct_game_names = [x for x in GAMES.keys()]
+        game_names = [x.lower() for x in GAMES.keys()]
+        game = context.args[0].lower()
+        if game in game_names:
+            correct_game = correct_game_names[game_names.index(game)]
+            try:
+                message = personal_stats(update.effective_user.id, correct_game)
+            except Exception as e:
+                message = f"Ho qualche problema, scusa ({e})"
+        else:
+            message = personal_stats(update.effective_user.id)
+    else:
+        try:
+            message = personal_stats(update.effective_user.id)
+        except Exception as e:
+            message = f"Ho qualche problema, scusa ({e})"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    if update.effective_user.id == ADMIN_ID and "-group" in context.args:
+    if update.effective_user.id == ADMIN_ID and context.args and "-group" in context.args:
         group_message = group_stats(update.effective_chat.id)
         await update.message.reply_text(group_message, parse_mode="HTML", disable_web_page_preview=True)
 
