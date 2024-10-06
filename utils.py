@@ -245,9 +245,13 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == "NerdleCross":
         tries = 6 - tries
 
-    # For WordGrid, the point is a float with one decimal. I store multiplying by 10 as ints, so i just need to divide by then an round it to one decimal.
+    # For WordGrid, the point is a float with one decimal. I store multiplying by 10 as ints, so i just need to divide by ten and round it to one decimal.
     if game == "WordGrid":
         tries = round(tries / 10, 1)
+
+    # For Reversle, the point is a float with 2 decimals. I store multiplying by 10 as ints, so i just need to divide by 100 an round it to 2 decimals.
+    if game == "Reversle":
+        tries = f"{round(tries / 100, 2)}s"
     return tries
 
 

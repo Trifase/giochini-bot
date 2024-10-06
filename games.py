@@ -96,6 +96,12 @@ def is_connection_completed(connection: list[str]) -> bool:
         return True
     return False
 
+def sanitize(text: str) -> str:
+    #replace unicode \xa0 with space
+    text_after = text.replace("\xa0", " ")
+    # print(f"{text.encode('utf-8')}\n↓\n{text_after.encode('utf-8')}")
+    return text_after
+
 
 class GameFilter(MessageFilter):
     def __init__(self):
@@ -153,7 +159,7 @@ class Giochino:
 
     def __init__(self, update):
         self.update = update
-        self.raw_text = self.update.message.text
+        self.raw_text = sanitize(self.update.message.text)
 
         timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
         self.user_name = self.update.message.from_user.full_name
@@ -386,7 +392,7 @@ class Chrono(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
-        _can_handle_this = "CHRONO  #" in lines[0] and "https://chrono.ques" in lines[-1]
+        _can_handle_this = "CHRONO" in lines[0] and "#" in lines[0] and "🔥" in raw_text and "https://chrono.ques" in lines[-1]
         return _can_handle_this
 
     def parse(self):
@@ -1514,6 +1520,39 @@ class Posterdle(Giochino):
 
 
 @dataclass
+class Reversle(Giochino):
+    _name = "Reversle"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 10, 6)
+    _day = "966"
+    _emoji = "⤴️"
+    _url = "https://reversle.net/"
+
+    can_lose: False
+
+    examples = [
+        "Reversle #966 65.47s\n\n⬜️🟨⬜️⬜️🟨 12.69s\n⬜️⬜️🟨🟨⬜️ 25.97s\n⬜️🟨🟨🟨⬜️ 9.50s\n⬜️⬜️🟩⬜️🟩 17.31s\n🟩🟩🟩🟩🟩\n\nreversle.net",
+    ]
+    expected = [
+        {"day": "966", "name": "Reversle", "timestamp": 10, "tries": 6547, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Reversle #" in raw_text and "\nreversle.net" in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        self.day = lines[0].split()[1][1:]
+        punti = lines[0].split()[-1]
+        punti = punti.replace("s", "").replace(".", "").replace(",", "")
+        punti = int(punti)
+        self.tries = punti
+
+@dataclass
 class Rotaboxes(Giochino):
     _name = "Rotaboxes"
     _category = "Logica"
@@ -2391,6 +2430,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = WhenTaken
-    giochino_da_testare = None
+    giochino_da_testare = Reversle
+    # giochino_da_testare = None
     test(True, giochino_da_testare)
