@@ -237,9 +237,11 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == "Picsey":
         tries = 100 - tries
 
-    # So, murdle points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
-    if game == "Murdle":
+    # So, murdle/Queens points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
+    if game == "Murdle" or game == "Queens":
         tries = str(tries)[:-2] + ":" + str(tries)[-2:]
+        if tries.startswith(':'):
+            tries = '0' + tries
 
     # For NerdleCross, scores are points, the more the better. Max points is 6 so we save them as differences from max.
     if game == "NerdleCross":

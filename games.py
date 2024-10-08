@@ -4,10 +4,8 @@ import re
 import sys
 import time
 import locale
-from tkinter import TRUE
 
 from dataclassy import dataclass
-from pydantic import Extra
 from telegram import Bot, Update
 from telegram.ext.filters import MessageFilter
 
@@ -1520,6 +1518,48 @@ class Posterdle(Giochino):
 
 
 @dataclass
+class Queens(Giochino):
+    _name = "Queens"
+    _category = "Logica"
+    _date = datetime.date(2024, 10, 8)
+    _day = "161"
+    _emoji = "👑"
+    _url = "https://lnkd.in/queens"
+
+    can_lose: False
+
+    examples = [
+        'Queens n. 159 | 1:36 \nAi primi posti 👑: 🟦 🟨 🟪\nlnkd.in/queens.',
+        'Queens #161 | 2:56\nAi primi posti 👑: 🟥 🟧 ⬜️\nlnkd.in/queens.',
+        'Queens #161 | 0:58 and flawless\nFirst 👑s: 🟫 🟥 🟧 \nlnkd.in/queens.',
+        'Queens #161\n0:58 👑\nlnkd.in/queens.',
+    ]
+    expected = [
+        {"day": "159", "name": "Queens", "timestamp": 10, "tries": '136', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "161", "name": "Queens", "timestamp": 10, "tries": '256', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "161", "name": "Queens", "timestamp": 10, "tries": '058', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "161", "name": "Queens", "timestamp": 10, "tries": '058', "user_id": 456481297, "user_name": "Trifase"},
+
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Queens" in raw_text and "👑" in raw_text and "\nlnkd.in/queens." in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        if "|" in lines[0]:
+            day_line = lines[0].split('|')
+            self.day = day_line[0].split()[-1].replace('#', '')
+            self.tries = "".join([x for x in day_line[1].split()[0] if x in "0123456789"])
+        else:
+            self.day = lines[0].split()[-1].replace('#', '')
+            self.tries = "".join([x for x in lines[1].split()[0] if x in "0123456789"])
+
+@dataclass
 class Reversle(Giochino):
     _name = "Reversle"
     _category = "Giochi di parole"
@@ -2430,6 +2470,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Reversle
+    giochino_da_testare = Queens
     # giochino_da_testare = None
     test(True, giochino_da_testare)
