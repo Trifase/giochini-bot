@@ -691,7 +691,7 @@ class Crossclimb(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        _can_handle_this = "Crossclimb " in raw_text and "⬇️" in raw_text and "\nlnkd.in/crossclimb." in raw_text
+        _can_handle_this = "Crossclimb " in raw_text and "\nlnkd.in/crossclimb." in raw_text
         return _can_handle_this
 
     def parse(self):
@@ -1897,6 +1897,45 @@ class Strands(Giochino):
 
 
 @dataclass
+class Tango(Giochino):
+    _name = "Tango"
+    _category = "Logica"
+    _date = datetime.date(2024, 10, 10)
+    _day = "3"
+    _emoji = "🌗"
+    _url = "https://lnkd.in/tango"
+
+    can_lose: False
+
+    examples = [
+        'Tango #3 | 1:24 and flawless\nFirst 5 placements:\n🟨 🟨 🟨 🟨 🟨 🟨 \n2️⃣ 🟨 🟨 🟨 🟨 1️⃣ \n3️⃣ 4️⃣ 🟨 🟨 🟨 🟨 \n🟨 5️⃣ 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \nlnkd.in/tango.',
+        'Tango #3\n2:44 🌗\nlnkd.in/tango.',
+        'Tango #3 | 0:55 e impeccabilePrimi 5 posizionamenti:\n🟨🟨🟨🟨🟨🟨\n1️⃣🟨🟨🟨🟨🟨\n2️⃣3️⃣🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨5️⃣4️⃣🟨🟨\nlnkd.in/tango.'
+    ]
+    expected = [
+        {"day": "3", "name": "Tango", "timestamp": 10, "tries": '124', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "3", "name": "Tango", "timestamp": 10, "tries": '244', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "3", "name": "Tango", "timestamp": 10, "tries": '055', "user_id": 456481297, "user_name": "Trifase"},
+
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Tango " in raw_text and "\nlnkd.in/tango." in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        if "|" in text:
+            self.day = lines[0].split(' | ')[0].split()[-1].replace('#', '')
+            self.tries = "".join([x for x in lines[0].split('|')[-1].split()[0] if x in "0123456789"])
+        else:
+            self.day = lines[0].split()[-1].replace('#', '')
+            self.tries = "".join([x for x in lines[1] if x in "0123456789"])
+
+@dataclass
 class TempoIndovinr(Giochino):
     _name = "TempoIndovinr"
     _category = "Immagini, giochi e film"
@@ -2514,6 +2553,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Crossclimb
+    giochino_da_testare = Tango
     # giochino_da_testare = None
     test(True, giochino_da_testare)
