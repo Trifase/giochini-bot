@@ -11,7 +11,8 @@
             "Polygonle",
             "Rotaboxes",
             "Spellcheck",
-            "Waffle"
+            "Waffle",
+            "Queens"
         ],
         "favs_extra_button": true
     },
@@ -155,7 +156,8 @@
             "Posterdle",
             "Spots",
             "Pedantle",
-            "Flipple"
+            "Flipple",
+            "Queens"
         ],
         "favs_extra_button": true
     },

@@ -665,6 +665,44 @@ class Countryle(Giochino):
 
 
 @dataclass
+class Crossclimb(Giochino):
+    _name = "Crossclimb"
+    _category = "Giochi di parole"
+    _date = datetime.date(2024, 10, 10)
+    _day = "163"
+    _emoji = "🪜"
+    _url = "https://lnkd.in/crossclimb"
+
+    can_lose: False
+
+    examples = [
+        'Crossclimb #159 | 1:27\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
+        'Crossclimb #160 | 0:45 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
+        'Crossclimb #162 | 1:42 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
+        'Crossclimb #163 | 1:34\nFill order: 1️⃣ 2️⃣ 3️⃣ 5️⃣ 4️⃣ ⬇️ ⬆️ 🪜\nlnkd.in/crossclimb.'
+    ]
+    expected = [
+        {"day": "159", "name": "Crossclimb", "timestamp": 10, "tries": '127', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "160", "name": "Crossclimb", "timestamp": 10, "tries": '045', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "162", "name": "Crossclimb", "timestamp": 10, "tries": '142', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "163", "name": "Crossclimb", "timestamp": 10, "tries": '134', "user_id": 456481297, "user_name": "Trifase"},
+
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Crossclimb " in raw_text and "⬇️" in raw_text and "\nlnkd.in/crossclimb." in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        self.day = lines[0].split('|')[0].split()[-1].replace('#', '')
+        self.tries = "".join([x for x in lines[0].split('|')[-1] if x in "0123456789"])
+
+
+@dataclass
 class DominoFit(Giochino):
     _name = "DominoFit"
     _category = "Logica"
@@ -2443,6 +2481,8 @@ ALL_CLASSES = get_giochini()
 
 
 def test(print_debug, giochino=None):
+    giochini_n = 0
+    casi = 0
     if giochino:
         giochini = [giochino]
     else:
@@ -2455,6 +2495,7 @@ def test(print_debug, giochino=None):
     # giochini = [Wordle, Parole, Bandle, Chrono]
 
     for gioco in giochini:
+        giochini_n += 1
         for i, _ in enumerate(gioco.examples):
             update = generate_sample_update(gioco.examples[i])
             giochino = gioco(update)
@@ -2465,11 +2506,14 @@ def test(print_debug, giochino=None):
                 print(f"expected = {giochino.expected[i]}")
                 print(f"punteggio = {giochino.punteggio}")
             assert all(x in giochino.punteggio.items() for x in giochino.expected[i].items())
+            casi += 1
             print("test_passed ✅")
             print()
+    print(f"Test passed for {giochini_n} games and {casi} cases")
+
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Queens
+    giochino_da_testare = Crossclimb
     # giochino_da_testare = None
     test(True, giochino_da_testare)
