@@ -691,7 +691,7 @@ class Crossclimb(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        _can_handle_this = "Crossclimb " in raw_text and "\nlnkd.in/crossclimb." in raw_text
+        _can_handle_this = "crossclimb " in raw_text.lower() and "\nlnkd.in/crossclimb." in raw_text
         return _can_handle_this
 
     def parse(self):
