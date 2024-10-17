@@ -1471,6 +1471,71 @@ class Picsey(Giochino):
 
 
 @dataclass
+class Pinpoint(Giochino):
+    _name = "Pinpoint"
+    _category = "Logica"
+    _date = datetime.date(2024, 10, 17)
+    _day = "170"
+    _emoji = "📌"
+    _url = "https://lnkd.in/pinpoint"
+
+    can_lose: True
+
+    examples = [
+        'Pinpoint n. 159 | 3 risposte giuste\n1️⃣ | 0% di corrispondenza \n2️⃣ | 3% di corrispondenza \n3️⃣ | 100% di corrispondenza  📌\nlnkd.in/pinpoint.',
+        'Pinpoint #167 | 2 tentativi\n1️⃣ | Corrispondenza: 18%\n2️⃣ | Corrispondenza: 100% 📌\nlnkd.in/pinpoint.',
+        'Pinpoint #169\n📌 ⬜ ⬜ ⬜ ⬜ (1/5)\nlnkd.in/pinpoint.',
+        'Pinpoint #169\n🤔 📌 ⬜ ⬜ ⬜ (2/5)\nlnkd.in/pinpoint.',
+        'Pinpoint #169\n🤔 🤔 🤔 🤔 📌 (5/5)\nlnkd.in/pinpoint.',
+        'Pinpoint #169\n🤔 🤔 🤔 🤔 🤔 (X/5)\nlnkd.in/pinpoint.',
+        'Pinpoint #170 | 3 guesses\n1️⃣  | 64% match\n2️⃣  | 78% match\n3️⃣  | 100% match 📌\nlnkd.in/pinpoint.',
+
+    ]
+    expected = [
+        {"day": "159", "name": "Pinpoint", "timestamp": 10, "tries": '3', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "167", "name": "Pinpoint", "timestamp": 10, "tries": '2', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": '1', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": '2', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": '5', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": 'X', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "170", "name": "Pinpoint", "timestamp": 10, "tries": '3', "user_id": 456481297, "user_name": "Trifase"},
+
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "Pinpoint" in raw_text and "\nlnkd.in/pinpoint." in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        if "n." in lines[0]:
+            day_line = lines[0].split('|')
+            self.day = day_line[0].split()[-1].replace('#', '').strip()
+            if '📌' not in text or "X" in text:
+                self.tries = 'X'
+            else:
+                self.tries = lines[0].split('|')[-1].split()[0].strip()
+
+        elif "(" in text and ")" in text:
+            day_line = lines[0].split()
+            self.day = day_line[1].replace('#', '')
+            if '📌' not in text or "X" in text:
+                self.tries = 'X'
+            else:
+                self.tries = lines[1].split()[-1].split('/')[0].replace('(', '')
+        elif "guesses" in text or "tentativi" in text:
+            day_line = lines[0].split()
+            self.day = day_line[1].replace('#', '')
+            if '📌' not in text or "X" in text:
+                self.tries = 'X'
+            else:
+                self.tries = lines[0].split('|')[-1].split()[0].strip()
+
+
+@dataclass
 class Polygonle(Giochino):
     _name = "Polygonle"
     _category = "Giochi di parole"
@@ -2553,6 +2618,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Tango
+    giochino_da_testare = Pinpoint
     # giochino_da_testare = None
     test(True, giochino_da_testare)
