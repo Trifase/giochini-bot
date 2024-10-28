@@ -1489,6 +1489,7 @@ class Pinpoint(Giochino):
         'Pinpoint #169\n🤔 🤔 🤔 🤔 📌 (5/5)\nlnkd.in/pinpoint.',
         'Pinpoint #169\n🤔 🤔 🤔 🤔 🤔 (X/5)\nlnkd.in/pinpoint.',
         'Pinpoint #170 | 3 guesses\n1️⃣  | 64% match\n2️⃣  | 78% match\n3️⃣  | 100% match 📌\nlnkd.in/pinpoint.',
+        'Pinpoint #181 | 1 guess\n1️⃣  | 100% match 📌\nlnkd.in/pinpoint.',
 
     ]
     expected = [
@@ -1499,6 +1500,7 @@ class Pinpoint(Giochino):
         {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": '5', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": 'X', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "170", "name": "Pinpoint", "timestamp": 10, "tries": '3', "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '181', 'name': 'Pinpoint', 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
 
     ]
 
@@ -1512,6 +1514,7 @@ class Pinpoint(Giochino):
 
         lines = text.splitlines()
         if "n." in lines[0]:
+            print(1)
             day_line = lines[0].split('|')
             self.day = day_line[0].split()[-1].replace('#', '').strip()
             if '📌' not in text or "X" in text:
@@ -1520,19 +1523,28 @@ class Pinpoint(Giochino):
                 self.tries = lines[0].split('|')[-1].split()[0].strip()
 
         elif "(" in text and ")" in text:
+            print(2)
             day_line = lines[0].split()
             self.day = day_line[1].replace('#', '')
             if '📌' not in text or "X" in text:
                 self.tries = 'X'
             else:
                 self.tries = lines[1].split()[-1].split('/')[0].replace('(', '')
-        elif "guesses" in text or "tentativi" in text:
+
+        elif "guesses" in text or "guess" in text or "tentativi" in text:
+            print(3)
             day_line = lines[0].split()
             self.day = day_line[1].replace('#', '')
             if '📌' not in text or "X" in text:
                 self.tries = 'X'
             else:
                 self.tries = lines[0].split('|')[-1].split()[0].strip()
+
+        else:
+            print(4)
+            day_line = lines[0].split()
+            self.day = day_line[1].replace('#', '')
+            self.tries = 'X'
 
 
 @dataclass

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>It's giochini!</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+    <style>
+        /* Previous styles remain the same until the toggle switch styles */
+
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color: #ecf0f1;
+            --card-background: #ffffff;
+        }
+
+        body {
+            background-color: var(--background-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px 0;
+        }
+
+        .page-title {
+            color: var(--primary-color);
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .filters-container {
+            background: var(--card-background);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-select, .form-control {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus, .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-card {
+            background: var(--card-background);
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-card .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 15px;
+        }
+
+        .game-card .card-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 12px 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .badge {
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-radius: 20px;
+        }
+
+        .loading-spinner {
+            color: var(--secondary-color);
+            width: 4rem;
+            height: 4rem;
+        }
+
+        .alert {
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .empty-state {
+            padding: 2rem;
+            text-align: center;
+            color: #6c757d;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--secondary-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .toggle-label {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            user-select: none;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-card {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 2.5rem;
+            }
+            
+            .filters-container {
+                padding: 15px;
+            }
+            
+            .btn-primary {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .toggle-container {
+                justify-content: center;
+                margin-top: 10px;
+            }
+        }
+
+        /* Add styles for medals */
+        .medal {
+            font-size: 1.2rem;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+        }
+      }
+    </script>
+    <div id="app">
+        <div class="container">
+            <div class="text-center">
+                <h1 class="page-title">Giochini!</h1>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="filters-container">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <select class="form-select" v-model="selectedGame">
+                            <option value="">All Games</option>
+                            <option v-for="game in uniqueGames" :value="game">
+                                {{ game }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="date" class="form-control" v-model="selectedDate" :max="today" />
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100" @click="fetchData" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                            <span v-else>Load Data</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Toggle Switch for hiding empty games -->
+                <div v-if="!selectedGame" class="toggle-container mt-3">
+                    <label class="toggle-switch">
+                        <input type="checkbox" v-model="hideEmptyGames">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Hide games with no data</span>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isLoading" class="text-center my-5">
+                <div class="spinner-border loading-spinner" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div v-if="error" class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+
+            <!-- Data Display -->
+            <div v-if="!isLoading && !error" class="row g-4">
+                <div v-for="game in displayedGames" class="col-md-4">
+                    <div class="game-card card">
+                        <div class="card-header">
+                            <h3>{{ game.emoji }} {{ game.game }}</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush" v-if="game.posizioni.length">
+                                <li v-for="(item, index) in game.posizioni" 
+                                    class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <span class="medal">{{ getRankEmoji(index) }}</span>
+                                        {{ item.user_name }}
+                                    </span>
+                                    <span class="badge bg-primary">{{ processTries(game.game, item.tries) }}</span>
+                                </li>
+                            </ul>
+                            <div v-else class="empty-state">
+                                <p>No data available for this game</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <script type="module">
+        import { createApp } from "vue";
+        
+        createApp({
+            data() {
+                return {
+                    data: [],
+                    selectedGame: "",
+                    selectedDate: new Date().toISOString().split('T')[0],
+                    isLoading: true,
+                    error: null,
+                    today: new Date().toISOString().split('T')[0],
+                    hideEmptyGames: false
+                };
+            },
+            computed: {
+                uniqueGames() {
+                    return [...new Set(this.data.map(game => game.game))];
+                },
+                filteredGames() {
+                    let filtered = this.data;
+                    if (this.selectedGame) {
+                        filtered = filtered.filter(game => game.game === this.selectedGame);
+                    }
+                    return filtered;
+                },
+                displayedGames() {
+                    if (this.hideEmptyGames && !this.selectedGame) {
+                        return this.filteredGames.filter(game => game.posizioni.length > 0);
+                    }
+                    return this.filteredGames;
+                }
+            },
+            methods: {
+                processTries(game, tries) {
+                    // Convert tries to number if it's a string (except for time-based games)
+                    if (typeof tries === 'string' && 
+                        !['Murdle', 'Queens', 'Tango', 'Crossclimb'].includes(game)) {
+                        tries = Number(tries);
+                    }
+
+                    // Process based on game type
+                    if (game === "HighFive") {
+                        return Math.abs(tries);
+                    }
+                    if (game === "TimeGuesser") {
+                        return 50000 - tries;
+                    }
+                    if (game === "Chronophoto") {
+                        return 5000 - tries;
+                    }
+                    if (game === "FoodGuessr") {
+                        return 15000 - tries;
+                    }
+                    if (game === "Spellcheck") {
+                        return 15 - tries;
+                    }
+                    if (game === "TempoIndovinr") {
+                        return 1000 - tries;
+                    }
+                    if (game === "WhenTaken") {
+                        return 1000 - tries;
+                    }
+                    if (game === "Picsey") {
+                        return 100 - tries;
+                    }
+                    if (game === "NerdleCross") {
+                        return 6 - tries;
+                    }
+                    if (game === "WordGrid") {
+                        return (tries / 10).toFixed(1);
+                    }
+                    if (game === "Reversle") {
+                        return `${(tries / 100).toFixed(2)}s`;
+                    }
+                    if (["Murdle", "Queens", "Tango", "Crossclimb"].includes(game)) {
+                        let timeStr = tries.toString();
+                        // Ensure the string is at least 3 characters long
+                        while (timeStr.length < 3) {
+                            timeStr = '0' + timeStr;
+                        }
+                        let minutes = timeStr.slice(0, -2);
+                        let seconds = timeStr.slice(-2);
+                        if (minutes === '') minutes = '0';
+                        return `${minutes}:${seconds}`;
+                    }
+                    return tries;
+                },
+
+                getRankEmoji(index) {
+                    switch(index) {
+                        case 0: return "🥇";
+                        case 1: return "🥈";
+                        case 2: return "🥉";
+                        default: return `${index + 1}.`;
+                    }
+                },
+
+                async fetchData() {
+                    this.isLoading = true;
+                    this.error = null;
+                    try {
+                        let url = `//trifase.online:8000/classifica/?day=${this.selectedDate}`;
+                        if (this.selectedGame) {
+                            url += `&game=${this.selectedGame}`;
+                        }
+                        const response = await fetch(url);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        this.data = await response.json();
+                    } catch (error) {
+                        this.error = "Failed to load data. Please try again later.";
+                        console.error('Error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            },
+            mounted() {
+                this.fetchData();
+            }
+        }).mount("#app");
+    </script>
+</body>
+</html>
