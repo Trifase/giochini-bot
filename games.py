@@ -1490,6 +1490,7 @@ class Pinpoint(Giochino):
         'Pinpoint #169\n🤔 🤔 🤔 🤔 🤔 (X/5)\nlnkd.in/pinpoint.',
         'Pinpoint #170 | 3 guesses\n1️⃣  | 64% match\n2️⃣  | 78% match\n3️⃣  | 100% match 📌\nlnkd.in/pinpoint.',
         'Pinpoint #181 | 1 guess\n1️⃣  | 100% match 📌\nlnkd.in/pinpoint.',
+        'Pinpoint #195 | 1 tentativo\n1️⃣ | Corrispondenza: 100% 📌\nlnkd.in/pinpoint.',
 
     ]
     expected = [
@@ -1501,6 +1502,7 @@ class Pinpoint(Giochino):
         {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": 'X', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "170", "name": "Pinpoint", "timestamp": 10, "tries": '3', "user_id": 456481297, "user_name": "Trifase"},
         {'day': '181', 'name': 'Pinpoint', 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '195', 'name': 'Pinpoint', 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
 
     ]
 
@@ -1531,7 +1533,7 @@ class Pinpoint(Giochino):
             else:
                 self.tries = lines[1].split()[-1].split('/')[0].replace('(', '')
 
-        elif "guesses" in text or "guess" in text or "tentativi" in text:
+        elif "guesses" in text or "guess" in text or "tentativi" in text or "tentativo":
             print(3)
             day_line = lines[0].split()
             self.day = day_line[1].replace('#', '')

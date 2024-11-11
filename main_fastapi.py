@@ -1,11 +1,15 @@
+import dateparser_scripts
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import date
+from datetime import datetime
 from config import ID_GIOCHINI as CHAT_ID
 from games import ALL_GAMES as GAMES
 from config import Punteggio
 import peewee
 import timedelta
+
+from utils import daily_ranking
 
 
 app = FastAPI()
@@ -170,3 +174,20 @@ async def stats(player: str | None = 'all'):
     return_obj['total_loses'] = total_loses
 
     return return_obj
+
+
+@app.get("/dailyranking/")
+async def dailyranking(day: str | None = None):
+    model = "alternate-with-lost"
+    if not day:
+        dates = date.today()
+    else:
+        dates = datetime.strptime(day, '%Y-%m-%d').date()
+    cambiamenti = daily_ranking(model, dates)
+    rankings = []
+    pos = 1
+    for user, points in cambiamenti:
+        _, user_name = user.split("_|_")
+        rankings.append({'name': user_name, 'points': points, 'pos': pos})
+        pos += 1
+    return {'date': dates.strftime("%Y-%m-%d"), 'rankings': rankings}
