@@ -582,6 +582,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         classifica += "\nLongest streak: current"
                 mymsg = await update.message.reply_html(classifica)
                 await mymsg.reply_to_message.set_reaction(reaction="✍")
+                if giochino.win_message:
+                    await mymsg.reply_to_message.reply_html(giochino.win_message)
                 context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
             else:
                 mymsg = await update.message.reply_html("Ah, non l'ha ancora fatto nessuno, fico.")

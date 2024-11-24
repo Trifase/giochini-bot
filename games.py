@@ -139,6 +139,7 @@ class Giochino:
     has_extra: bool = False  # if the game has additional points, currently set but unused
     can_lose: bool = True  # if the game can be lost (e.g has a copypaste string for lost plays), set but unused
     lost_message: str = "Hai perso :("  # per-game lose message
+    win_message: str = None  # per-game win message
     hidden_game: bool = False  # set this to true to hide game from list/dicts/info
     # Parsed result
     day: str = None
@@ -588,6 +589,7 @@ class Connections(Giochino):
         # Reverse rainbow
         if self.tries == 1 and [squares[0] for squares in points] == ["🟪", "🟦", "🟩", "🟨"]:
             self.stars = 1
+            self.win_message = "🌟 Nice! 🌈"
 
 
 @dataclass
