@@ -552,18 +552,21 @@ class Connections(Giochino):
     _url = "https://www.nytimes.com/games/connections"
 
     lost_message = "Hai perso, ma sii forte. 💪🏼"
+    has_extra = True
 
     examples = [
         "Connections \nPuzzle #299\n🟩🟩🟩🟩\n🟨🟨🟨🟨\n🟦🟦🟦🟦\n🟪🟪🟪🟪",
         "Connections \nPuzzle #300\n🟩🟪🟩🟩\n🟩🟪🟩🟩\n🟩🟪🟩🟩\n🟩🟩🟩🟩\n🟦🟦🟦🟦\n🟪🟪🟪🟪\n🟨🟨🟨🟨",
         "Connections \nPuzzle #302\n🟨🟨🟨🟨\n🟪🟩🟪🟪\n🟪🟪🟪🟦\n🟪🟦🟪🟪\n🟪🟪🟩🟪",
         'Connections\nPuzzle #324 \n🟨🟨🟨🟨 \n🟦🟦🟩🟦 \n🟦🟦🟪🟦 \n🟦🟦🟦🟦 \n🟩🟩🟩🟪 \n🟩🟩🟩🟩 \n🟪🟪🟪🟪',
+        'Connections\nPuzzle #528\n🟪🟪🟪🟪\n🟦🟦🟦🟦\n🟩🟩🟩🟩\n🟨🟨🟨🟨',
     ]
     expected = [
         {"day": "299", "name": "Connections", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "300", "name": "Connections", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "302", "name": "Connections", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {'day': '324', 'name': 'Connections', 'timestamp': 10, 'tries': 4, 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '528', 'name': 'Connections', 'timestamp': 10, 'tries': 1, 'user_id': 456481297, 'user_name': 'Trifase', 'stars': 1},
     ]
 
     @staticmethod
@@ -582,6 +585,9 @@ class Connections(Giochino):
             self.tries = len(points) - 3
         else:
             self.tries = "X"
+        # Reverse rainbow
+        if self.tries == 1 and [squares[0] for squares in points] == ["🟪", "🟦", "🟩", "🟨"]:
+            self.stars = 1
 
 
 @dataclass
@@ -632,8 +638,8 @@ class Contexto(Giochino):
 class Countryle(Giochino):
     _name = "Countryle"
     _category = "Geografia e Mappe"
-    _date = datetime.date(2024, 10, 17)
-    _day = "972"
+    _date = datetime.date(2024, 11, 23)
+    _day = "1010"
     _emoji = "🌐"
     _url = "https://countryle.com"
 
@@ -2632,6 +2638,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Pinpoint
+    giochino_da_testare = Connections
     # giochino_da_testare = None
     test(True, giochino_da_testare)
