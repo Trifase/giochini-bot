@@ -1,13 +1,11 @@
-import dateparser_scripts
+from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import date
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from config import ID_GIOCHINI as CHAT_ID
 from games import ALL_GAMES as GAMES
 from config import Punteggio
 import peewee
-import timedelta
 
 from utils import daily_ranking
 
@@ -191,3 +189,62 @@ async def dailyranking(day: str | None = None):
         rankings.append({'name': user_name, 'points': points, 'pos': pos})
         pos += 1
     return {'date': dates.strftime("%Y-%m-%d"), 'rankings': rankings}
+
+
+
+@app.get("/game-stats/")
+async def get_game_stats(
+    player: Optional[str] = None,
+    game: Optional[str] = None
+):
+    """
+    Retrieve game play statistics for the last 365 days.
+    
+    Parameters:
+    - player (optional): Specific user to filter stats
+    - game (optional): Specific game to filter stats
+    
+    Returns a list of daily game play counts with optional filtering
+    """
+    # Calculate the date 365 days ago from today
+    one_year_ago = datetime.now() - timedelta(days=365)
+    
+    # Start building the base query
+    query = (Punteggio
+        .select(
+            Punteggio.day, Punteggio.date,
+            peewee.fn.COUNT(peewee.fn.DISTINCT(Punteggio.timestamp)).alias('game_count')
+        )
+        .where(Punteggio.date >= one_year_ago)
+    )
+    
+    # Apply optional filters
+    if player:
+        query = query.where(Punteggio.user_name == player)
+    
+    if game:
+        query = query.where(Punteggio.game == game)
+    
+    # Group by day and order by day
+    query = (query
+        .group_by(Punteggio.date)
+        .order_by(Punteggio.date)
+    )
+    
+    # Execute the query and convert to list of dictionaries
+    stats = [
+        {
+            "day": row.date, 
+            "game_count": row.game_count
+        } 
+        for row in query
+    ]
+    
+    return {
+        "total_stats": stats,
+        "total_games": sum(stat['game_count'] for stat in stats),
+        "date_range": {
+            "start": one_year_ago.isoformat(),
+            "end": datetime.now().date().isoformat()
+        }
+    }
