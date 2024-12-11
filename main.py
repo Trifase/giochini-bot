@@ -897,6 +897,7 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
     # for game in GAMES.keys():
     #     day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
     #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
+    message += '<a href="https://trifase.online/giochini">★ Classifiche online! ★</a>'
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode="HTML")
     if pin:
         await mypost.pin(disable_notification=True)

@@ -841,7 +841,7 @@ class Framed(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
-        _can_handle_this = "Framed" in lines[0]
+        _can_handle_this = "Framed" in lines[0] and "https://framed.wtf" in raw_text and 'one-frame' not in raw_text
         return _can_handle_this
 
     def parse(self):
@@ -856,6 +856,41 @@ class Framed(Giochino):
         else:
             self.tries = str(punteggio.index("🟩"))
 
+@dataclass
+class FramedOneFrame(Giochino):
+    _name = "Framed One Frame"
+    _category = "Immagini, giochi e film"
+    _date = datetime.date(2024, 12, 11)
+    _day = "9"
+    _emoji = "🎞"
+    _url = "https://framed.wtf/one-frame"
+
+    examples = [
+        "Framed - One Frame Challenge #9\n🎥 🟥 🟥 🟥 🟥 🟥 🟥\n\nhttps://framed.wtf/one-frame",
+        "Framed - One Frame Challenge #9\n🎥 🟥 🟥 🟥 🟩 ⬛ ⬛\n\nhttps://framed.wtf/one-frame",
+    ]
+    expected = [
+        {"day": "9", "name": "Framed One Frame", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "9", "name": "Framed One Frame", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        lines = raw_text.splitlines()
+        _can_handle_this = "Framed" in lines[0] and "https://framed.wtf/one-frame" in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        first_line = lines[0].split()
+        self.day = first_line[-1][1:]
+        punteggio = lines[1].replace(" ", "")
+        if "🟩" not in punteggio:
+            self.tries = "X"
+        else:
+            self.tries = str(punteggio.index("🟩"))
 
 @dataclass
 class Flipple(Giochino):
@@ -2640,6 +2675,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Connections
+    giochino_da_testare = FramedOneFrame
     # giochino_da_testare = None
     test(True, giochino_da_testare)
