@@ -136,16 +136,33 @@ async def stats(player: str | None = 'all'):
     least_played_string = f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
 
     # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
+    # single_play_minutes = 2
+    # total_time = total_plays * single_play_minutes
+    # td = timedelta.Timedelta(minutes=total_time)
+    # time_string = ''
+    # if td.total.days > 0:
+    #     time_string += f"{td.total.days} giorni, "
+    # if td.total.hours > 0:
+    #     time_string += f"{td.total.hours % 24} ore e "
+    # time_string += f"{td.total.minutes % 60} minuti"
+    # total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n"
+
+    # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
     single_play_minutes = 2
     total_time = total_plays * single_play_minutes
-    td = timedelta.Timedelta(minutes=total_time)
+    # Create a timedelta object correctly
+    td = timedelta(minutes=total_time)
+
     time_string = ''
-    if td.total.days > 0:
-        time_string += f"{td.total.days} giorni, "
-    if td.total.hours > 0:
-        time_string += f"{td.total.hours % 24} ore e "
-    time_string += f"{td.total.minutes % 60} minuti"
-    total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n"
+    if td.days > 0:
+        time_string += f"{td.days} giorni, "
+    if td.seconds // 3600 > 0:
+        time_string += f"{(td.seconds // 3600) % 24} ore e "
+    time_string += f"{(td.seconds // 60) % 60} minuti"
+
+    total_plays_string = (f"In totale hai fatto <b>{total_plays}</b> partite.\n"
+                        f"A 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n")
+
 
     total_loses = (
         Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
