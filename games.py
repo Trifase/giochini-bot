@@ -687,13 +687,17 @@ class Crossclimb(Giochino):
         'Crossclimb #159 | 1:27\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
         'Crossclimb #160 | 0:45 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
         'Crossclimb #162 | 1:42 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
-        'Crossclimb #163 | 1:34\nFill order: 1️⃣ 2️⃣ 3️⃣ 5️⃣ 4️⃣ ⬇️ ⬆️ 🪜\nlnkd.in/crossclimb.'
+        'Crossclimb #163 | 1:34\nFill order: 1️⃣ 2️⃣ 3️⃣ 5️⃣ 4️⃣ ⬇️ ⬆️ 🪜\nlnkd.in/crossclimb.',
+        'Crossclimb #225\n0:38 🪜\nlnkd.in/crossclimb.',
+        'Crossclimb #223\n1:02 🪜\nlnkd.in/crossclimb.',
     ]
     expected = [
         {"day": "159", "name": "Crossclimb", "timestamp": 10, "tries": '127', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "160", "name": "Crossclimb", "timestamp": 10, "tries": '045', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "162", "name": "Crossclimb", "timestamp": 10, "tries": '142', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "163", "name": "Crossclimb", "timestamp": 10, "tries": '134', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "225", "name": "Crossclimb", "timestamp": 10, "tries": '038', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "223", "name": "Crossclimb", "timestamp": 10, "tries": '102', "user_id": 456481297, "user_name": "Trifase"},
 
     ]
 
@@ -706,8 +710,12 @@ class Crossclimb(Giochino):
         text = self.raw_text
 
         lines = text.splitlines()
-        self.day = lines[0].split('|')[0].split()[-1].replace('#', '')
-        self.tries = "".join([x for x in lines[0].split('|')[-1] if x in "0123456789"])
+        if "|" in text:
+            self.day = lines[0].split('|')[0].split()[-1].replace('#', '')
+            self.tries = "".join([x for x in lines[0].split('|')[-1] if x in "0123456789"])
+        else:
+            self.day = lines[0].split()[-1].replace('#', '')
+            self.tries = "".join([x for x in lines[1] if x in "0123456789"])
 
 
 @dataclass
