@@ -274,8 +274,9 @@ async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     keyboard = make_menu_setting_favs(favs=favs, user_id=user_id, favs_extra_button=settings[user_id]["favs_extra_button"])
 
     reply_keyboard = InlineKeyboardMarkup(keyboard)
-
+    # delete the user message
     await update.effective_message.reply_text("Scegli i tuoi giochi preferiti", reply_markup=reply_keyboard)
+    await update.effective_message.delete()
     return
 
 
