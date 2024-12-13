@@ -134,7 +134,7 @@ class Giochino:
     raw_text: str = None
     # Tests and expected results
     examples: list[str] = None
-    expected: list[dict] = None
+    expected: list[dict|None] = None
     # Misc information about the game/class
     has_extra: bool = False  # if the game has additional points, currently set but unused
     can_lose: bool = True  # if the game can be lost (e.g has a copypaste string for lost plays), set but unused
@@ -912,16 +912,24 @@ class Flipple(Giochino):
     can_lose: False
 
     examples = [
-        'Flipple #96 ⬇️\n🟩⬜️⬜️⬜️🟩\n🟩⬜️🟩⬜️🟩\n🟩⬜️🟩🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐'
+        'Flipple #96 ⬇️\n🟩⬜️⬜️⬜️🟩\n🟩⬜️🟩⬜️🟩\n🟩⬜️🟩🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
+        'Flipple #194 ⬇️\n🟩🟩⬜⬜🟩\n🟩🟩⬜🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
+        'Flipple #196 ⬇️\n⬜⬜⬜🟩\n🟩⬜⬜🟩\n🟩⬜🟩🟩\n🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
+        'Flipple 4 #196 ⬇️\n⬜⬜⬜🟩\n🟩⬜⬜🟩\n🟩⬜🟩🟩\n🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
+        
     ]
     expected = [
         {"day": "96", "name": "Flipple", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '194', 'name': 'Flipple', 'timestamp': 10, 'tries': '3', 'user_id': 456481297, 'user_name': 'Trifase'},
+        None,
+        None
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
-        _can_handle_this = "Flipple #" in lines[0] and 'flipple.clevergoat.com' in lines[-1]
+        print('length', len(lines[1]))
+        _can_handle_this = "Flipple #" in lines[0] and 'flipple.clevergoat.com' in lines[-1] and len(lines[1]) != 4
         return _can_handle_this
 
     def parse(self):
@@ -2674,7 +2682,7 @@ def test(print_debug, giochino=None):
                 print(f"info = {giochino.info}")
                 print(f"expected = {giochino.expected[i]}")
                 print(f"punteggio = {giochino.punteggio}")
-            assert all(x in giochino.punteggio.items() for x in giochino.expected[i].items())
+            assert (giochino.expected[i] is None and giochino.punteggio is None) or all(x in giochino.punteggio.items() for x in giochino.expected[i].items())
             casi += 1
             print("test_passed ✅")
             print()
@@ -2683,6 +2691,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = FramedOneFrame
+    giochino_da_testare = Flipple
     # giochino_da_testare = None
     test(True, giochino_da_testare)
