@@ -929,7 +929,7 @@ class Flipple(Giochino):
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
         print('length', len(lines[1]))
-        _can_handle_this = "Flipple #" in lines[0] and 'flipple.clevergoat.com' in lines[-1] and len(lines[1]) != 4
+        _can_handle_this = "Flipple #" in lines[0] and 'flipple.clevergoat.com' in lines[-1] and len(lines[1]) > 4
         return _can_handle_this
 
     def parse(self):
