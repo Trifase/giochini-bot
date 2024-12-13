@@ -341,8 +341,9 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "",
         "📌 /c o /classifica - Mostra la classifica di tutti i giochi",
         "📌 /c <i>[gioco]</i> - Mostra la classifica di un gioco, ad esempio: <code>/c wordle</code>",
+        "📌 /nomegioco - Incolla il link per accedere alla partita odierna, dura solo 5 secondi, ad esempio: <code>/connections</code>",
         "",
-        "📌 /mytoday - Mostra i giochi a cui non hai ancora giocato oggi",
+        "📌 /myday - Mostra i giochi a cui non hai ancora giocato oggi",
         "📌 /dailyranking - Mostra i punti del giorno corrente",
         "📌 /medaglie - Mostra il medagliere mensile",
         "",
@@ -352,7 +353,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "📌 /mystats - Mostra le tue statistiche",
         "📌 /favs - Mostra e setta i giochi preferiti",
         "📌 /topgames - Mostra i giochi più giocati",
-        "📌 /lista - Mostra la lista di tutti i giochi supportati",
+        "📌 /list - Mostra la lista di tutti i giochi supportati",
         "",
         "📌 /help - Mostra questo messaggio",
     ]
@@ -1032,6 +1033,22 @@ async def post_init(app: Application) -> None:
     with open("db/user_settings.json") as settings_db:
         settings = json.load(settings_db)
         app.bot_data["settings"] = settings
+
+    my_commands = [
+        ('myday', 'Quali giochi devi ancora giocare oggi?'),
+        ('mystats', 'Le tue statistiche'),
+        ('favs', 'Mostra e setta i giochi preferiti'),
+        ('dailyranking', 'Mostra i punteggi del giorno corrente'),
+        ('classifica', 'Mostra la classifica'),
+        ('medaglie', 'Mostra il medagliere mensile'),
+        ('top', 'Mostra la classifica all time'),
+        ('top_medaglie', 'Mostra il medagliere all time'),
+        ('topgames', 'Mostra i giochi più giocati'),
+        ('list', 'Mostra la lista dei giochi'),
+        ('help', 'Messaggio di help')
+        ]
+    await app.bot.set_my_commands(my_commands)
+
     logger.info("Pronti!")
 
 
@@ -1053,16 +1070,12 @@ def main():
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
 
     app.add_handler(CommandHandler("classificona", classificona), 1)
-    app.add_handler(CommandHandler("giochiamo", manual_daily_reminder), 1)
     app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "stats", "statistiche"], mystats), 1)
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
-    app.add_handler(CommandHandler("backup", manual_backup), 1)
-    app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
 
-    app.add_handler(CommandHandler("webapp", launch_web_ui))
     # app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
 
     # app.add_handler(CallbackQueryHandler(handle_web_app_data, pattern=r"^webapp_launch"))
@@ -1071,7 +1084,7 @@ def main():
     app.add_handler(CommandHandler("top", top_players), 1)
     app.add_handler(CommandHandler("top_medaglie", top_medaglie), 1)
     app.add_handler(CommandHandler("medaglie", medaglie_mensile), 1)
-    app.add_handler(CommandHandler("favs", setting_fav), 3)
+    app.add_handler(CommandHandler(["favs", "fav"], setting_fav), 3)
 
     app.add_handler(MessageHandler(filters.COMMAND, unknown_command_handler), 1000)
 
@@ -1088,9 +1101,12 @@ def main():
     app.add_handler(CommandHandler("enable_debug", enable_debug), 211)
     app.add_handler(CommandHandler("disable_debug", disable_debug), 212)
     app.add_handler(CommandHandler("debug", debug_text), 213)
+    app.add_handler(CommandHandler("backup", manual_backup), 1)
+    app.add_handler(CommandHandler("webapp", launch_web_ui))
+    app.add_handler(CommandHandler("giochiamo", manual_daily_reminder), 1)
+    app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
 
     
-
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))
 
     # Error handler
