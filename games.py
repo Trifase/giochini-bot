@@ -1877,12 +1877,16 @@ class Spotle(Giochino):
         punteggio = lines[2].replace(" ", "")
         punteggio_bonificato = ""
         for char in punteggio:
-            if char in ["⬛", "🟥", "🟩", "⬜"]:
+            if char in ["⬛", "🟥", "🟩", "⬜", "🎁"]:
                 punteggio_bonificato += char
-        if "🟩" not in punteggio or "❌" in punteggio:
+        
+        if ("🟩" not in punteggio and "🎁" not in punteggio) or "❌" in punteggio:
             self.tries = "X"
         else:
-            self.tries = str(punteggio_bonificato.index("🟩") + 1)
+            if "🎁" in punteggio:
+                self.tries = str(punteggio_bonificato.index("🎁") + 1)
+            else:
+                self.tries = str(punteggio_bonificato.index("🟩") + 1)
 
 @dataclass
 class Spots(Giochino):
