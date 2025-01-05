@@ -765,15 +765,23 @@ class Flagle(Giochino):
     _emoji = "🏁"
     _url = "https://www.flagle.io"
 
+    has_extra = True
+
     examples = [
         "#Flagle #777 (08.04.2024) 1/6\n🟩🟩🟩\n🟩🟩🟩\nhttps://www.flagle.io",
         "#Flagle #773 (04.04.2024) 5/6\n🟥🟩🟥\n🟩🟥🟥\nhttps://www.flagle.io",
         "#Flagle #773 (04.04.2024) X/6\n🟥🟥🟥\n🟥🟥🟥\nhttps://www.flagle.io",
+        '#Flagle #1049 (05.01.2025) 4/6\n🟩🟩🟥\n🟥🟥🟩\n🗺🛡⛳️🧭👫\nhttps://www.flagle.io',
+        '#Flagle #1043 (30.12.2024) 4/6\n🟩🟥🟥\n🟩🟥🟩\n🗺🛡🧭\nhttps://www.flagle.io',
+        '#Flagle #1049 (05.01.2025) 4/6\n🟩🟩🟥\n🟥🟥🟩\n🗺🛡⛳️🧭👫🪙\nhttps://www.flagle.io',
     ]
     expected = [
         {"day": "777", "name": "Flagle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '1049', 'name': 'Flagle', 'stars': 5, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '1043', 'name': 'Flagle', 'stars': 3, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '1049', 'name': 'Flagle', 'stars': 6, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
     ]
 
     @staticmethod
@@ -789,7 +797,16 @@ class Flagle(Giochino):
         first_line = lines[0].split()
         self.day = first_line[1][1:]
         self.tries = first_line[3].split("/")[0]
-        self.stars = None
+
+        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))  # 🧭
+        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))  # 👫
+        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))  # 🪙
+        mappa = text.count(b"\xf0\x9f\x97\xba".decode("utf-8"))  # 🗺️
+        scudo = text.count(b"\xf0\x9f\x9b\xa1".decode("utf-8"))  # 🛡️
+        golf = text.count(b"\xe2\x9b\xb3".decode("utf-8"))  # ⛳️
+
+        self.stars = bussola + population + coin + mappa + scudo + golf
+
 
 
 @dataclass
@@ -2695,6 +2712,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Flipple
+    giochino_da_testare = Flagle
     # giochino_da_testare = None
     test(True, giochino_da_testare)
