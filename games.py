@@ -732,10 +732,14 @@ class DominoFit(Giochino):
     examples = [
         "DOMINO FIT #42 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️✅\n⌚️0️⃣4️⃣5️⃣",
         "DOMINO FIT #47 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️🧙\u200d♂️\n⌚0️⃣2️⃣3️⃣",
+        'DOMINO FIT #329 6x6 \n🏅🧙\u200d♂️⬜⬜\n⌚0️⃣1️⃣3️⃣',
+        'DOMINO FIT #329 6x6 \n🏅✅✅⬜️\n⌚️0️⃣2️⃣2️⃣',
     ]
     expected = [
         {"day": "42", "name": "DominoFit", "timestamp": 10, "tries": 45, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "47", "name": "DominoFit", "timestamp": 10, "tries": 23, "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '329', 'name': 'DominoFit', 'timestamp': 10, 'tries': 213, 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '329', 'name': 'DominoFit', 'timestamp': 10, 'tries': 122, 'user_id': 456481297, 'user_name': 'Trifase'},
     ]
 
     @staticmethod
@@ -753,6 +757,10 @@ class DominoFit(Giochino):
         points = lines[-1]
         str_points = time_from_emoji(points.strip())
         self.tries = int(str_points.strip())
+        white_squares = text.count(b"\xe2\xac\x9c".decode("utf-8"))  # ⬜
+        if white_squares:
+            self.tries += 100 * white_squares
+            self.win_message = f"Ok, però guarda che hai saltato dei livelli e avrai {white_squares} {'minuto' if white_squares == 1 else 'minuti'} di penalità!"
         self.stars = None
 
 
@@ -2712,6 +2720,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Flagle
+    giochino_da_testare = DominoFit
     # giochino_da_testare = None
     test(True, giochino_da_testare)
