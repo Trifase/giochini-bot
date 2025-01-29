@@ -1486,13 +1486,13 @@ class Pedantle(Giochino):
     _date = datetime.date(2024, 9, 5)
     _day = "840"
     _emoji = "🌥️"
-    _url = "https://cemantle.certitudes.org/pedantle"
+    _url = "https://pedantle.certitudes.org"
 
     can_lose: False
 
     examples = [
-        'I found #pedantle #833 in 133 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://cemantle.certitudes.org/pedantle',
-        'I found #pedantle #840 in 99 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://cemantle.certitudes.org/pedantle',
+        'I found #pedantle #833 in 133 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://pedantle.certitudes.org/',
+        'I found #pedantle #840 in 99 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://pedantle.certitudes.org/',
     ]
     expected = [
         {"day": "833", "name": "Pedantle", "timestamp": 10, "tries": "133", "user_id": 456481297, "user_name": "Trifase"},
@@ -1502,7 +1502,7 @@ class Pedantle(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         lines = raw_text.splitlines()
-        _can_handle_this = "I found #pedantle " in lines[0] and 'https://cemantle.certitudes.org/pedantle' in lines[-1]
+        _can_handle_this = "I found #pedantle " in lines[0] and 'https://pedantle.certitudes.org' in lines[-1]
         return _can_handle_this
 
     def parse(self):
@@ -2720,6 +2720,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = DominoFit
+    giochino_da_testare = Pedantle
     # giochino_da_testare = None
     test(True, giochino_da_testare)
