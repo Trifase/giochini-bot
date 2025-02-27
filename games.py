@@ -746,17 +746,15 @@ class Decipher(Giochino):
         'Decipher #254\ndeciphered in ⏱️ 39s\n⭐️⭐️\nhttps://decipher.wtf',
     ]
     expected = [
-        {"day": "2", "name": "Decipher", "timestamp": 10, "tries": 10904, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "84", "name": "Decipher", "timestamp": 10, "tries": 195, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "Decipher", "timestamp": 10, "tries": 10914, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "84", "name": "Decipher", "timestamp": 10, "tries": 225, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "248", "name": "Decipher", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "254", "name": "Decipher", "timestamp": 10, "tries": 39, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "254", "name": "Decipher", "timestamp": 10, "tries": 69, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        print(raw_text)
         _can_handle_this = 'Decipher #' in raw_text and "\nhttps://decipher.wtf" in raw_text
-        print(_can_handle_this)
         return _can_handle_this
 
     def parse(self):
@@ -769,6 +767,9 @@ class Decipher(Giochino):
         else:
             string_time = lines[1].split(' ⏱️ ')[-1]
             self.tries = time_to_seconds(string_time)
+            stars = text.count("⭐")
+            # 10 seconds penality for each star lost
+            self.tries += (5 - stars) * 10
 
 
 @dataclass
