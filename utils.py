@@ -203,6 +203,19 @@ def make_buttons(game: str, message_id: int, day: int) -> InlineKeyboardMarkup:
     return buttons
 
 
+def seconds_to_time(seconds: int) -> str:
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    string = ''
+    if hours > 0:
+        string += f"{hours}h "
+    if minutes > 0:
+        string += f"{minutes}m "
+    string += f"{seconds}s"
+    return string
+
+
+
 def process_tries(game: str, tries: int | str) -> int | str:
     # This is a little exception for HighFive scores, which are negative because in the game the more the better.
     # We want to show them as positive.
@@ -256,6 +269,9 @@ def process_tries(game: str, tries: int | str) -> int | str:
     # For Reversle, the point is a float with 2 decimals. I store multiplying by 10 as ints, so i just need to divide by 100 an round it to 2 decimals.
     if game == "Reversle":
         tries = f"{round(tries / 100, 2)}s"
+
+    if game == 'Decipher':
+        tries = seconds_to_time(tries)
     return tries
 
 
@@ -720,13 +736,14 @@ def medaglie_count(monthly=True) -> None:
     # Select user_name, medal, count(medal) from medaglie group by user_name, medal
     query = (
         Medaglia.select(
+            Medaglia.user_id,
             Medaglia.user_name,
             peewee.fn.SUM(Medaglia.gold).alias("gold"),
             peewee.fn.SUM(Medaglia.silver).alias("silver"),
             peewee.fn.SUM(Medaglia.bronze).alias("bronze"),
         )
         .where(Medaglia.date >= first_of_the_month)
-        .group_by(Medaglia.user_name)
+        .group_by(Medaglia.user_id)
         .order_by(
             peewee.fn.SUM(Medaglia.gold).alias("gold").desc(),
             peewee.fn.SUM(Medaglia.silver).alias("silver").desc(),

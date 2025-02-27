@@ -100,6 +100,17 @@ def sanitize(text: str) -> str:
     # print(f"{text.encode('utf-8')}\n↓\n{text_after.encode('utf-8')}")
     return text_after
 
+def time_to_seconds(time_str: str) -> int:
+    time_lst: list[str] = time_str.split(" ")
+    seconds = 0
+    for t in time_lst:
+        if t.endswith("s"):
+            seconds += int(t[:-1])
+        elif t.endswith("m"):
+            seconds += int(t[:-1]) * 60
+        elif t.endswith("h"):
+            seconds += int(t[:-1]) * 60 * 60
+    return seconds
 
 class GameFilter(MessageFilter):
     def __init__(self):
@@ -716,6 +727,48 @@ class Crossclimb(Giochino):
         else:
             self.day = lines[0].split()[-1].replace('#', '')
             self.tries = "".join([x for x in lines[1] if x in "0123456789"])
+
+@dataclass
+class Decipher(Giochino):
+    _name = "Decipher"
+    _category = "Giochi di parole"
+    _date = datetime.date(2025, 2, 27)
+    _day = "254"
+    _emoji = "🔎"
+    _url = "https://decipher.wtf"
+
+    can_lose: True
+
+    examples = [
+        'Decipher #2\ndeciphered in ⏱️ 3h 1m 44s\n⭐⭐⭐⭐\nhttps://decipher.wtf',
+        'Decipher #84\ndeciphered in ⏱ 3m 15s\n⭐️⭐️\nhttps://decipher.wtf',
+        'Decipher #248\n💥 Failed\nhttps://decipher.wtf',
+        'Decipher #254\ndeciphered in ⏱️ 39s\n⭐️⭐️\nhttps://decipher.wtf',
+    ]
+    expected = [
+        {"day": "2", "name": "Decipher", "timestamp": 10, "tries": 10904, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "84", "name": "Decipher", "timestamp": 10, "tries": 195, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "248", "name": "Decipher", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "254", "name": "Decipher", "timestamp": 10, "tries": 39, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        print(raw_text)
+        _can_handle_this = 'Decipher #' in raw_text and "\nhttps://decipher.wtf" in raw_text
+        print(_can_handle_this)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        self.day = lines[0].split()[1].replace('#', '')
+        if "Failed" in text or "💥" in text:
+            self.tries = "X"
+        else:
+            string_time = lines[1].split(' ⏱️ ')[-1]
+            self.tries = time_to_seconds(string_time)
 
 
 @dataclass
@@ -2720,6 +2773,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Pedantle
+    giochino_da_testare = Decipher
     # giochino_da_testare = None
     test(True, giochino_da_testare)
