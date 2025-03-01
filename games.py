@@ -2329,16 +2329,16 @@ class Travle(Giochino):
     ]
     expected = [
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "484", "name": "Travle", "stars": 1, "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
 
-        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "484", "name": "Travle", "stars": 2, "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase", "stars": 2},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
 
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
@@ -2373,9 +2373,6 @@ class Travle(Giochino):
 
         self.stars = perfetto + bonus_round
 
-        print(f'perfetto: {perfetto}')
-        print(f'bonus_round: {bonus_round}')
-        print(f'( count: {text.count("(")} )')
         # Hints
         hints = 0
         if text.count('(') > 0 and self.tries != "X" and not perfetto and not bonus_round:
@@ -2810,6 +2807,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Travle
-    # giochino_da_testare = None
+    giochino_da_testare = None
+    # giochino_da_testare = Travle
     test(True, giochino_da_testare)
