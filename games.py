@@ -2313,13 +2313,33 @@ class Travle(Giochino):
     has_extra: True
 
     examples = [
-        "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",
-        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth",
-        "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",
+        "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",  # vinto
+        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth",  # vinto, perfetto
+        "#travle #484 +3 (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 1
+        "#travle #484 +3 (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 2 (3)
+        "#travle #484 +3 (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 3 (6)
+
+        "#travle #484 +3 (🎌)\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",  # vinto, bonus
+        "#travle #484 +0 (🎌) (Perfect)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, perfetto
+        "#travle #484 +3 (🎌) (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 1
+        "#travle #484 +3 (🎌) (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 2 (3)
+        "#travle #484 +3 (🎌) (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 3 (6)
+
+        "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",  # perso
     ]
     expected = [
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "Travle", "stars": 1, "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
+
+        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "stars": 2, "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "484", "name": "Travle", "stars": 1,  "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
+
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
@@ -2340,17 +2360,33 @@ class Travle(Giochino):
         else:
             self.tries = first_line[2][1:]
 
-        # (Perfetto), (Perfect), (Perfekt)
-        self.stars = None
-        if '(P' in lines[0] and ')' in lines[0]:
-            self.stars = 1
 
+        perfetto = 0
+        bonus_round = 0
+
+        perfects = ['Perfetto', 'Perfect', 'Perfekt']
+        if any(f"({perfect})" in text for perfect in perfects):
+            perfetto = 1
+
+        if "🎌" in text:
+            bonus_round = 1
+
+        self.stars = perfetto + bonus_round
+
+        print(f'perfetto: {perfetto}')
+        print(f'bonus_round: {bonus_round}')
+        print(f'( count: {text.count("(")} )')
         # Hints
         hints = 0
-        if len(first_line) > 3 and not self.stars and '(' in lines[0] and ')' in lines[0] and self.tries != "X":
+        if text.count('(') > 0 and self.tries != "X" and not perfetto and not bonus_round:
             hints = first_line[3][1:]
-            self.tries = int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
+            print(f'hints1: {hints}')
+            self.tries = str(int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2)))  # +1, +2, +3 (triangulars)
 
+        elif text.count('(') > 1 and self.tries != "X" and not perfetto and bonus_round:
+            hints = first_line[4][1:]
+            print(f'hints2: {hints}')
+            self.tries = str(int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2)))  # +1, +2, +3 (triangulars)
 
 
 @dataclass
@@ -2759,7 +2795,7 @@ def test(print_debug, giochino=None):
         for i, _ in enumerate(gioco.examples):
             update = generate_sample_update(gioco.examples[i])
             giochino = gioco(update)
-            print(f"[{i}] ==== {giochino._name} ====")
+            print(f"[{i+1}] ==== {giochino._name} ====")
             if print_debug:
                 # print(f'{giochino.examples[i],}')
                 print(f"info = {giochino.info}")
@@ -2774,6 +2810,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = Decipher
+    giochino_da_testare = Travle
     # giochino_da_testare = None
     test(True, giochino_da_testare)
