@@ -1250,19 +1250,22 @@ class Moviedle(Giochino):
     _date = datetime.date(2023, 6, 23)
     _day = "200"
     _emoji = "🎥"
-    _url = "https://likewisetv.com/arcade/moviedle"
+    _url = "https://likewise.com/games/moviedle"
 
     examples = [
-        "#Moviedle #2024-03-08 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n\n https://likewisetv.com/arcade/moviedle",
-        "#Moviedle #2024-01-29 \n\n 🎥 🟥 🟥 ⬛️ ⬛️ ⬛️ ⬛️  \n\n https://likewisetv.com/arcade/moviedle",
-        "#Moviedle #2024-03-07 \n\n 🎥 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n\n https://likewisetv.com/arcade/moviedle",
-        "#Moviedle #2024-01-21 \n\n 🎥 ⬛️ ⬛️ 🟩 ⬜️ ⬜️ ⬜️  \n\n https://likewisetv.com/arcade/moviedle",
+        "#Moviedle #2024-03-08 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2024-03-08",
+        "#Moviedle #2024-01-29 \n\n 🎥 🟥 🟥 ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2024-01-29",
+        "#Moviedle #2024-03-07 \n\n 🎥 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/moviedle/2024-03-07",
+        "#Moviedle #2024-01-21 \n\n 🎥 ⬛️ ⬛️ 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/moviedle/2024-01-21",
+        '#Moviedle #2025-03-04 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2025-03-04',
     ]
     expected = [
         {"day": "459", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "420", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "458", "name": "Moviedle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "412", "name": "Moviedle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '820', 'name': 'Moviedle', 'timestamp': 10, 'tries': 'X', 'user_id': 456481297, 'user_name': 'Trifase'},
+
     ]
 
     @staticmethod
@@ -2807,6 +2810,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    giochino_da_testare = None
-    # giochino_da_testare = Travle
+    # giochino_da_testare = None
+    giochino_da_testare = Moviedle
     test(True, giochino_da_testare)
