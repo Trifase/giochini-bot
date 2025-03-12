@@ -65,9 +65,7 @@
     },
     "31866384": {
         "favs": [
-            "Connections",
             "Framed",
-            "Globle",
             "Squareword",
             "TimeGuesser",
             "Waffle",
@@ -76,7 +74,16 @@
             "Stepdle",
             "Colorfle",
             "FoodGuessr",
-            "Queens"
+            "Queens",
+            "Angle",
+            "Bandle",
+            "Framed One Frame",
+            "Parole",
+            "Picsey",
+            "Pinpoint",
+            "Worldle",
+            "Wordle",
+            "Connections"
         ],
         "favs_extra_button": true
     },
@@ -171,7 +178,9 @@
             "Queens",
             "Crossclimb",
             "Pinpoint",
-            "Reversle"
+            "Reversle",
+            "Framed",
+            "Framed One Frame"
         ],
         "favs_extra_button": true
     },

@@ -1165,6 +1165,49 @@ class HighFive(Giochino):
         self.stars = None
 
 
+
+@dataclass
+class Lyricle(Giochino):
+    _name = "Lyricle"
+    _category = "Immagini, giochi e film"
+    _date = datetime.date(2025, 3, 12)
+    _day = "1053"
+    _emoji = "📜"
+    _url = "https://lyricle.app"
+
+    examples = [
+        '#Lyricle #1052\n\n⬛️⬛️⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app',
+        '#Lyricle #1051\n\n🟩⬛⬛⬛⬛⬛\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app',
+        ]
+    expected = [
+        {"day": "1052", "name": "Lyricle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1051", "name": "Lyricle", "timestamp": 10, "tries": '1', "user_id": 456481297, "user_name": "Trifase"},
+
+        ]
+
+    can_lose: True
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        _can_handle_this = "https://lyricle.app" in raw_text and "#Lyricle" in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        lines = text.splitlines()
+        self.day = lines[0].split()[-1].replace('#', '')
+        punteggio = ''
+        for char in lines[2]:
+            if char in ["⬛", "🟥", "🟩", "⬜"]:
+                punteggio += char
+        if "🟩" not in punteggio:
+            self.tries = "X"
+        else:
+            self.tries = str(punteggio.index("🟩") + 1)
+        self.stars = None
+
+
 @dataclass
 class Metaflora(Giochino):
     _name = "Metaflora"
@@ -2811,5 +2854,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
     # giochino_da_testare = None
-    giochino_da_testare = Moviedle
+    giochino_da_testare = Lyricle
     test(True, giochino_da_testare)
