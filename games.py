@@ -1510,9 +1510,13 @@ class Murdle(Giochino):
         text = self.raw_text
 
         lines = text.splitlines()
-        day = lines[1].split()[-1]
-        # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-        self.day = get_day_from_date(self._date, self._day, "Murdle", day)
+        
+        date_match = re.search(r'Murdle for (\d+/\d+/\d+)', text)
+        if date_match:
+            date_str = date_match.group(1)
+            # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+            self.day = get_day_from_date(self._date, self._day, "Murdle", date_str)
+
         points_line = lines[4]
         punteggio = points_line.split()[-1]
         if "❌" in points_line:
@@ -1551,10 +1555,10 @@ class Nerdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1]
-        self.tries = first_line[2].split("/")[0]
+        match = re.search(r'nerdlegame\s+(\d+)\s+(\d+|X)/\d+', text)
+        if match:
+            self.day = match.group(1)
+            self.tries = match.group(2)
         self.stars = None
 
 
@@ -1587,15 +1591,18 @@ class NerdleCross(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[-1][1:]
-        points = lines[-1].split(":")[-1].split("/")[0].strip()
-        # Nerdle Cross uses positive poits, from 0 to 6. We as usual save 6-n and then revert it when printing the results.
-        self.tries = 6 - int(points)
-        if self.tries == 6:
-            self.tries = "X"
-        self.stars = None
+        # Extract day number using regex
+        day_match = re.search(r'cross nerdle #(\d+)', text, re.IGNORECASE)
+        self.day = day_match.group(1) if day_match else None
+
+        points_match = re.search(r'points:\s?(\d+)\/6', text, re.IGNORECASE)
+        if points_match:
+            points = int(points_match.group(1))
+            # Convert score: NerdleCross uses positive points from 0 to 6
+            # We interpret 6 as failure, and otherwise use 6 - points
+            self.tries = 6 - points
+            if self.tries == 6:
+                self.tries = "X"
 
 
 @dataclass
