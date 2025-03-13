@@ -284,15 +284,19 @@ class Angle(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        points = lines[0].split()[-1].split("/")[0]
-        self.day = lines[0].split()[1][1:]
-        if points == "X":
-            self.tries = "X"
-        else:
-            self.tries = points
         self.stars = None
+
+        day_match = re.search(r'#Angle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        score_match = re.search(r'#Angle #\d+ ([X\d]+)/\d+', text)
+
+        if score_match:
+            points = score_match.group(1)
+            self.tries = points  # Will be either a number or "X"
+        else:
+            self.tries = None
+
 
 
 # @dataclass
@@ -364,15 +368,15 @@ class Bandle(Giochino):
 
     def parse(self):
         text = self.raw_text
+        self.tries = 'X'
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        punti = first_line[2].split("/")[0]
-        if punti != "x":
+        self.day = re.search(r'Bandle #(\d+)', text).group(1)
+
+        punti = re.search(r'(\S)\/6', text).group(1)
+        print(punti)
+
+        if punti.lower() != 'x':
             self.tries = punti
-        else:
-            self.tries = "X"
 
 
 @dataclass
@@ -1195,17 +1199,20 @@ class Lyricle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        self.day = lines[0].split()[-1].replace('#', '')
-        punteggio = ''
-        for char in lines[2]:
-            if char in ["⬛", "🟥", "🟩", "⬜"]:
-                punteggio += char
-        if "🟩" not in punteggio:
-            self.tries = "X"
-        else:
-            self.tries = str(punteggio.index("🟩") + 1)
+        day_match = re.search(r'#Lyricle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        self.tries = "X"
         self.stars = None
+
+        emoji_line_match = re.search(r'([⬛🟥🟩⬜]+)', text)
+        if emoji_line_match:
+            emoji_line = emoji_line_match.group(1)
+            green_index = emoji_line.find("🟩")
+            if green_index != -1:
+                # Calculate position by counting squares before green
+                self.tries = str(emoji_line[:green_index].count("⬛") + 
+                            emoji_line[:green_index].count("🟥") + 
+                            emoji_line[:green_index].count("⬜") + 1)
 
 
 @dataclass
@@ -2853,6 +2860,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    # giochino_da_testare = None
-    giochino_da_testare = Lyricle
+    giochino_da_testare = None
+    # giochino_da_testare = Angle
     test(True, giochino_da_testare)
