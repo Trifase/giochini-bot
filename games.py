@@ -411,24 +411,33 @@ class Chrono(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[2][1:]
-        punti = first_line[0]
-        if punti == "😬":
-            self.tries = "X"
-        elif punti == "🥉":
-            self.tries = 3
-        elif punti == "🥈":
-            self.tries = 2
-        elif punti == "🥇":
+        
+        day_match = re.search(r'CHRONO\s+#(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        medal_match = re.search(r'^(🥇|🥈|🥉|😬)', text)
+        medal = medal_match.group(1) if medal_match else None
+        
+        # Set tries based on medal
+        if medal == "🥇":
             self.tries = 1
-        if self.tries in [1, 2, 3] and len(lines) >= 4:
-            for line in lines:
-                if line.startswith("⏱"):
-                    self.stars = 10_000 - float(line.split(":")[-1].strip())
-                    break
+        elif medal == "🥈":
+            self.tries = 2
+        elif medal == "🥉":
+            self.tries = 3
+        elif medal == "😬":
+            self.tries = "X"
+        else:
+            self.tries = None
+    
+        time_match = re.search(r'⏱: (\d+\.\d+)', text)
+        time = float(time_match.group(1)) if time_match else None
+
+        # Calculate stars based on time (10000 - time)
+        if time is not None and self.tries != "X":
+            self.stars = 10_000 - time
+        else:
+            self.stars = None
 
 
 @dataclass
@@ -460,12 +469,26 @@ class Chronophoto(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = get_day_from_date(self._date, self._day, "Chronophoto", first_line[-1])
-        self.tries = 5_000 - int(first_line[5])
-        if self.tries == 0:
-            self.tries = "X"
+        score_match = re.search(r'I got a score of (\d+)', text)
+        score = int(score_match.group(1)) if score_match else None
+
+        date_match = re.search(r'Chronophoto: (\d+/\d+/\d+)', text)
+        date_str = date_match.group(1) if date_match else None
+
+
+        if date_str:
+            self.day = get_day_from_date(self._date, self._day, "Chronophoto", date_str)
+        else:
+            self.day = None
+
+        # Calculate tries (5000 - score)
+        if score is not None:
+            self.tries = 5_000 - score
+            if self.tries == 0:
+                self.tries = "X"
+        else:
+            self.tries = None
+
         self.stars = None
 
 
@@ -510,11 +533,16 @@ class Cloudle(Giochino):
 
     def parse(self):
         text = self.raw_text
+        
+        tries_match = re.search(r': ([X\d]+)/\d+', text)
+        if tries_match:
+            self.tries = tries_match.group(1)
+        else:
+            self.tries = None
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
+        # Cloudle is the only game without a day - we assume that the date is today.
         self.day = get_day_from_date(self._date, self._day, "Cloudle", datetime.date.today())
-        self.tries = first_line[-1].split("/")[0]
+
         self.stars = None
 
 
