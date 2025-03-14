@@ -1454,12 +1454,8 @@ class Moviedle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
         date_str = re.search(r'#Moviedle (#\d{4}-\d{2}-\d{2})', text).group(1)
-        first_line = lines[0].split()
-        point_line = lines[2][3:]
         self.day = get_day_from_date(self._date, self._day, "Moviedle", date_str)
-        punteggio = point_line.replace(" ", "")
 
         # Find emoji pattern and evaluate results
         emoji_line = re.search(r'🎥\s+((?:[🟥🟩⬜️⬛️\s]+))', text)
@@ -1509,17 +1505,15 @@ class Murdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        
         date_match = re.search(r'Murdle for (\d+/\d+/\d+)', text)
         if date_match:
             date_str = date_match.group(1)
             # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
             self.day = get_day_from_date(self._date, self._day, "Murdle", date_str)
 
-        points_line = lines[4]
-        punteggio = points_line.split()[-1]
-        if "❌" in points_line:
+
+        punteggio = re.search(r'(.\ufe0f.:.\ufe0f..\ufe0f.)', text).group(1)
+        if "❌" in text:
             self.tries = "X"
         else:
             self.tries = str(time_from_emoji(punteggio))
@@ -1631,21 +1625,22 @@ class NFLXdle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "#NFLXdle #" in lines[0] and "https://likewise.com/games/nflxdle" in lines[-1]
+        _can_handle_this = "#NFLXdle #" in raw_text and "https://likewise.com/games/nflxdle" in raw_text
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = get_day_from_date(self._date, self._day, "NFLXdle", first_line[-1])
-        if "🟩" not in lines[3]:
+        date_str = re.search(r'#NFLXdle (#\d{4}-\d{2}-\d{2})', text).group(1)
+        self.day = get_day_from_date(self._date, self._day, "NFLXdle", date_str)
+
+
+        if "🟩" not in text:
             self.tries = "X"
         else:
-            self.stars = str(lines[3].count("⬜️"))
-            self.tries = time_from_emoji(lines[2])
+            self.stars = str(text.count("⬜️"))
+            time = re.search(r'((?:\S\ufe0f\S)+)', text).group(1)
+            self.tries = time_from_emoji(time)
 
 
 @dataclass
@@ -1676,18 +1671,20 @@ class Numble(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[-1][1:]
-        solved = '✅' in lines[1]
+        day_match = re.search(r'Numble #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        solved = '✅' in text
         if not solved:
             self.tries = 'X'
         else:
-            self.tries = str(self.duration(lines[4]))
-            extra_line = lines[2].split(": ")
-            extra_max = extra_line[-1].split("/")[-1]
-            extra = extra_line[-1].split("/")[0]
-            self.stars = str(int(extra_max) - int(extra))
+            time_match = re.search(r'(\d+m\s+)?(\d+\.\d+)s', text)
+            self.tries = str(self.duration(time_match.group(0)))
+            numbers_match = re.search(r'Numbers used: (\d+)/(\d+)', text)
+            if numbers_match:
+                used = numbers_match.group(1)
+                maximum = numbers_match.group(2)
+                self.stars = str(int(maximum) - int(used))
 
 
     def duration(self, string):
@@ -1722,12 +1719,9 @@ class Parole(Giochino):
         return _can_handle_this
 
     def parse(self):
-        text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1]
-        self.tries = first_line[2].split("/")[0]
+        matches = re.search(r'le (\d+) (\d)/6')
+        self.day = matches.group(1)
+        self.tries = matches.group(2)
 
 
 @dataclass
@@ -1757,12 +1751,9 @@ class Pedantle(Giochino):
         return _can_handle_this
 
     def parse(self):
-        text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[3][1:]
-        self.tries = first_line[5]
+        matches = re.search(r'#pedantle #(\d+) in (\d+) guesses', self.raw_text)
+        self.day = matches.group(1)
+        self.tries = matches.group(2)
 
 
 @dataclass
@@ -1794,13 +1785,14 @@ class Picsey(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        date = lines[0].split()[-1]
-        self.day = get_day_from_date(self._date, self._day, "Picsey", date)
-        points = lines[2].split("p/")[0]
+        day_match = re.search(r'Picsey (\d+\.\d+\.\d+)', text).group(1)
+        self.day = get_day_from_date(self._date, self._day, "Picsey", day_match)
+        
+        point_match = re.search(r'(\d+)p', text).group(1)
+        points = int(point_match)
         # Picsey uses positive poits, from 0 to 100. We as usual save 100-n and then revert it when printing the results.
-        self.tries = 100 - int(points)
-        if int(points) == 0:
+        self.tries = 100 - points
+        if points == 0:
             self.tries = "X"
         self.stars = None
 
@@ -2917,15 +2909,15 @@ class Worldle(Giochino):
         first_line = lines[0].split()
         self.day = first_line[1][1:]
         self.tries = first_line[3].split("/")[0]
-        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))  # 🧭
-        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))  # ⭐️
-        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))  # 🚩
-        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))  # 🔤
-        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))  # 🗣
-        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))  # 👫
-        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))  # 🪙
-        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))  # 🏙
-        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))  # 📐
+        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))       # 🧭
+        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))             # ⭐️
+        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))          # 🚩
+        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))           # 🔤
+        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))      # 🗣
+        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))    # 👫
+        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))          # 🪙
+        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))     # 🏙
+        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))          # 📐
         self.stars = bussola + stars + flag + abc + language + population + coin + cityscape + area
 
 
@@ -3005,5 +2997,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
     giochino_da_testare = None
-    # giochino_da_testare = Moviedle
+    giochino_da_testare = Picsey
     test(True, giochino_da_testare)
