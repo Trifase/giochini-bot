@@ -44,12 +44,11 @@ def time_from_emoji(input_string: str) -> str:
 def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
     if isinstance(date, str) and game == "Globle":
         locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-        date = datetime.datetime.strptime(date, "🌎 %b %d, %Y 🌍").date()
+        date = datetime.datetime.strptime(date, "%b %d, %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
     if isinstance(date, str) and game == "HighFive":
-        date_str = date.split("/")[-1]
-        date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+        date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
     if isinstance(date, str) and game == "Moviedle":
         date = datetime.datetime.strptime(date, "#%Y-%m-%d").date()
@@ -284,15 +283,19 @@ class Angle(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        points = lines[0].split()[-1].split("/")[0]
-        self.day = lines[0].split()[1][1:]
-        if points == "X":
-            self.tries = "X"
-        else:
-            self.tries = points
         self.stars = None
+
+        day_match = re.search(r'#Angle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        score_match = re.search(r'#Angle #\d+ ([X\d]+)/\d+', text)
+
+        if score_match:
+            points = score_match.group(1)
+            self.tries = points  # Will be either a number or "X"
+        else:
+            self.tries = None
+
 
 
 # @dataclass
@@ -364,15 +367,15 @@ class Bandle(Giochino):
 
     def parse(self):
         text = self.raw_text
+        self.tries = 'X'
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        punti = first_line[2].split("/")[0]
-        if punti != "x":
+        self.day = re.search(r'Bandle #(\d+)', text).group(1)
+
+        punti = re.search(r'(\S)\/6', text).group(1)
+        print(punti)
+
+        if punti.lower() != 'x':
             self.tries = punti
-        else:
-            self.tries = "X"
 
 
 @dataclass
@@ -407,24 +410,33 @@ class Chrono(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[2][1:]
-        punti = first_line[0]
-        if punti == "😬":
-            self.tries = "X"
-        elif punti == "🥉":
-            self.tries = 3
-        elif punti == "🥈":
-            self.tries = 2
-        elif punti == "🥇":
+        
+        day_match = re.search(r'CHRONO\s+#(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        medal_match = re.search(r'^(🥇|🥈|🥉|😬)', text)
+        medal = medal_match.group(1) if medal_match else None
+        
+        # Set tries based on medal
+        if medal == "🥇":
             self.tries = 1
-        if self.tries in [1, 2, 3] and len(lines) >= 4:
-            for line in lines:
-                if line.startswith("⏱"):
-                    self.stars = 10_000 - float(line.split(":")[-1].strip())
-                    break
+        elif medal == "🥈":
+            self.tries = 2
+        elif medal == "🥉":
+            self.tries = 3
+        elif medal == "😬":
+            self.tries = "X"
+        else:
+            self.tries = None
+    
+        time_match = re.search(r'⏱: (\d+\.\d+)', text)
+        time = float(time_match.group(1)) if time_match else None
+
+        # Calculate stars based on time (10000 - time)
+        if time is not None and self.tries != "X":
+            self.stars = 10_000 - time
+        else:
+            self.stars = None
 
 
 @dataclass
@@ -456,12 +468,26 @@ class Chronophoto(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = get_day_from_date(self._date, self._day, "Chronophoto", first_line[-1])
-        self.tries = 5_000 - int(first_line[5])
-        if self.tries == 0:
-            self.tries = "X"
+        score_match = re.search(r'I got a score of (\d+)', text)
+        score = int(score_match.group(1)) if score_match else None
+
+        date_match = re.search(r'Chronophoto: (\d+/\d+/\d+)', text)
+        date_str = date_match.group(1) if date_match else None
+
+
+        if date_str:
+            self.day = get_day_from_date(self._date, self._day, "Chronophoto", date_str)
+        else:
+            self.day = None
+
+        # Calculate tries (5000 - score)
+        if score is not None:
+            self.tries = 5_000 - score
+            if self.tries == 0:
+                self.tries = "X"
+        else:
+            self.tries = None
+
         self.stars = None
 
 
@@ -506,11 +532,16 @@ class Cloudle(Giochino):
 
     def parse(self):
         text = self.raw_text
+        
+        tries_match = re.search(r': ([X\d]+)/\d+', text)
+        if tries_match:
+            self.tries = tries_match.group(1)
+        else:
+            self.tries = None
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
+        # Cloudle is the only game without a day - we assume that the date is today.
         self.day = get_day_from_date(self._date, self._day, "Cloudle", datetime.date.today())
-        self.tries = first_line[-1].split("/")[0]
+
         self.stars = None
 
 
@@ -543,14 +574,12 @@ class Colorfle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1]
-        punti = first_line[2].split("/")[0]
-        if punti == "X":
-            self.tries = "X"
-        else:
-            self.tries = punti
+        day_match = re.search(r'Colorfle (\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        tries_match = re.search(r'(\d+|X)/6', text)
+        self.tries = tries_match.group(1) if tries_match else None
+
         self.stars = None
 
 
@@ -589,16 +618,22 @@ class Connections(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[1].split()[-1][1:]
-        points = lines[2:]
-        if is_connection_completed(points):
-            self.tries = len(points) - 3
+        
+        # Extract day number
+        day_match = re.search(r'Puzzle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Extract all lines with colored squares
+        square_lines = re.findall(r'[🟩🟨🟦🟪]+', text)
+        
+        # Use the existing is_connection_completed function to check completion
+        if is_connection_completed(square_lines):
+            self.tries = len(square_lines) - 3
         else:
             self.tries = "X"
+
         # Reverse rainbow
-        if self.tries == 1 and [squares[0] for squares in points] == ["🟪", "🟦", "🟩", "🟨"]:
+        if self.tries == 1 and [squares[0] for squares in square_lines] == ["🟪", "🟦", "🟩", "🟨"]:
             self.stars = 1
             self.win_message = "🌟 Nice! 🌈"
 
@@ -634,17 +669,22 @@ class Contexto(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[3][1:]
-        if first_line[4] == "but":
+        # Extract day number
+        day_match = re.search(r'contexto\.me #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Check if the user gave up
+        if re.search(r'but I gave up', text):
             self.tries = "X"
-        elif first_line[-1] == "hints.":
-            tips = int(first_line[-2])
-            index = first_line.index("guesses")
-            self.tries = int(first_line[index - 1]) + (tips * 15)
+        # Check if hints were used
+        elif hint_match := re.search(r'got it in (\d+) guesses and (\d+) hints', text):
+            guesses = int(hint_match.group(1))
+            hints = int(hint_match.group(2))
+            self.tries = guesses + (hints * 15)
+        # Regular case - no hints
         else:
-            self.tries = first_line[-2]
+            tries_match = re.search(r'got it in (\d+) guesses', text)
+            self.tries = tries_match.group(1) if tries_match else None
 
 
 @dataclass
@@ -676,12 +716,15 @@ class Countryle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1]
-        self.tries = lines[1].split()[2]
-        self.stars = None
+        # Extract day number using regex
+        day_match = re.search(r'#Countryle (\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
+        # Extract tries count using regex
+        tries_match = re.search(r'Guessed in (\d+) tries', text)
+        self.tries = tries_match.group(1) if tries_match else None
+
+        self.stars = None
 
 @dataclass
 class Crossclimb(Giochino):
@@ -709,7 +752,6 @@ class Crossclimb(Giochino):
         {"day": "163", "name": "Crossclimb", "timestamp": 10, "tries": '134', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "225", "name": "Crossclimb", "timestamp": 10, "tries": '038', "user_id": 456481297, "user_name": "Trifase"},
         {"day": "223", "name": "Crossclimb", "timestamp": 10, "tries": '102', "user_id": 456481297, "user_name": "Trifase"},
-
     ]
 
     @staticmethod
@@ -720,13 +762,20 @@ class Crossclimb(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        if "|" in text:
-            self.day = lines[0].split('|')[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in lines[0].split('|')[-1] if x in "0123456789"])
+        day_match = re.search(r'Crossclimb #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        if '|' in text:
+            time_match = re.search(r'\| (\d+:\d+)', text)
+            if time_match:
+                time_str = time_match.group(1)
+                self.tries = "".join([x for x in time_str if x in "0123456789"])
+
         else:
-            self.day = lines[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in lines[1] if x in "0123456789"])
+            time_match = re.search(r'\n(\d+:\d+)', text)
+            if time_match:
+                time_str = time_match.group(1)
+                self.tries = "".join([x for x in time_str if x in "0123456789"])
 
 @dataclass
 class Decipher(Giochino):
@@ -759,17 +808,25 @@ class Decipher(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[0].split()[1].replace('#', '')
-        if "Failed" in text or "💥" in text:
+        
+        # Extract day number using regex
+        day_match = re.search(r'Decipher #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Check for failed attempt
+        if re.search(r'Failed|💥', text):
             self.tries = "X"
         else:
-            string_time = lines[1].split(' ⏱️ ')[-1]
-            self.tries = time_to_seconds(string_time)
-            stars = text.count("⭐")
-            # 10 seconds penality for each star lost
-            self.tries += (5 - stars) * 10
+            # Extract time using regex
+            time_match = re.search(r'deciphered in ⏱[️]?\s+(.+)', text)
+            if time_match:
+                string_time = time_match.group(1)
+                self.tries = time_to_seconds(string_time)
+                
+                # Count stars and apply penalty
+                stars = text.count("⭐")
+                # 10 seconds penalty for each star lost
+                self.tries += (5 - stars) * 10
 
 
 @dataclass
@@ -804,19 +861,25 @@ class DominoFit(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[-2][1:]
-        points = lines[-1]
-        str_points = time_from_emoji(points.strip())
-        self.tries = int(str_points.strip())
-        white_squares = text.count(b"\xe2\xac\x9c".decode("utf-8"))  # ⬜
-        if white_squares:
-            self.tries += 100 * white_squares
-            self.win_message = f"Ok, però guarda che hai saltato dei livelli e avrai {white_squares} {'minuto' if white_squares == 1 else 'minuti'} di penalità!"
+        
+        # Extract day number using regex
+        day_match = re.search(r'DOMINO FIT #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Extract time using emoji pattern
+        time_pattern = re.search(r'⌚[]]?([0-9️⃣]+)', text)
+        if time_pattern:
+            time_str = time_pattern.group(1)
+            str_points = time_from_emoji(time_str.strip())
+            self.tries = int(str_points.strip())
+            
+            # Count white squares for penalties
+            white_squares = text.count("⬜")
+            if white_squares:
+                self.tries += 100 * white_squares
+                self.win_message = f"Ok, però guarda che hai saltato dei livelli e avrai {white_squares} {'minuto' if white_squares == 1 else 'minuti'} di penalità!"
+        
         self.stars = None
-
 
 @dataclass
 class Flagle(Giochino):
@@ -853,22 +916,26 @@ class Flagle(Giochino):
         return _can_handle_this
 
     def parse(self):
+
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        self.tries = first_line[3].split("/")[0]
+        # Extract day number using regex
+        day_match = re.search(r'#Flagle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
-        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))  # 🧭
-        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))  # 👫
-        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))  # 🪙
-        mappa = text.count(b"\xf0\x9f\x97\xba".decode("utf-8"))  # 🗺️
-        scudo = text.count(b"\xf0\x9f\x9b\xa1".decode("utf-8"))  # 🛡️
-        golf = text.count(b"\xe2\x9b\xb3".decode("utf-8"))  # ⛳️
+        # Extract the tries count using regex
+        tries_match = re.search(r'(\d+|X)/6', text)
+        self.tries = tries_match.group(1) if tries_match else None
+
+        # Count special symbols for stars
+        bussola = text.count('🧭')
+        population = text.count('👫')
+        coin = text.count('🪙')
+        mappa = text.count('🗺')
+        scudo = text.count('🛡')
+        golf = text.count('⛳')
 
         self.stars = bussola + population + coin + mappa + scudo + golf
-
 
 
 @dataclass
@@ -896,16 +963,22 @@ class FoodGuessr(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-        actual_day = datetime.datetime.strptime(lines[0][13:].replace(' GMT', ''), '%d %b %Y').date()
-        locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
-        self.day = get_day_from_date(self._date, self._day, "FoodGuessr", actual_day)
-        points = lines[4].split()[2].replace(",", "").replace(".", "")
-        self.tries = 15_000 - int(points)
+        
+        # Extract date with regex
+        date_match = re.search(r'FoodGuessr - ([\d]+ [A-Za-z]+ [\d]{4})', text)
+        if date_match:
+            locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+            actual_day = datetime.datetime.strptime(date_match.group(1).replace(' GMT', ''), '%d %b %Y').date()
+            locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
+            self.day = get_day_from_date(self._date, self._day, "FoodGuessr", actual_day)
+        
+        # Extract score with regex
+        score_match = re.search(r'Total score: ([\d,\.]+)', text)
+        if score_match:
+            points = score_match.group(1).replace(",", "").replace(".", "")
+            self.tries = 15_000 - int(points)
+        
         self.stars = None
-
 
 @dataclass
 class Framed(Giochino):
@@ -934,14 +1007,20 @@ class Framed(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        punteggio = lines[1].replace(" ", "")
-        if "🟩" not in punteggio:
-            self.tries = "X"
-        else:
-            self.tries = str(punteggio.index("🟩"))
+        # Extract day number using regex
+        day_match = re.search(r'Framed #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        # Find the emoji line containing the results 
+        emoji_line = re.search(r'🎥\s+([🟥🟩⬛\s]+)', text)
+        if emoji_line:
+            # Remove spaces and get the results string
+            punteggio = emoji_line.group(1).replace(" ", "")
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
+                # Find the position of the first green square
+                self.tries = str(punteggio.index("🟩") + 1)
 
 @dataclass
 class FramedOneFrame(Giochino):
@@ -970,14 +1049,20 @@ class FramedOneFrame(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[-1][1:]
-        punteggio = lines[1].replace(" ", "")
-        if "🟩" not in punteggio:
-            self.tries = "X"
-        else:
-            self.tries = str(punteggio.index("🟩"))
+        # Extract day number using regex
+        day_match = re.search(r'Challenge #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        # Find emoji pattern and evaluate results
+        emoji_line = re.search(r'🎥\s+((?:[🟥🟩⬛\s]+))', text)
+        if emoji_line:
+            punteggio = emoji_line.group(1).replace(" ", "")
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
+                # Find position of first green square (1-indexed)
+                green_index = punteggio.find("🟩")
+                self.tries = str(green_index + 1) if green_index >= 0 else "X"
 
 @dataclass
 class Flipple(Giochino):
@@ -1014,10 +1099,20 @@ class Flipple(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        self.tries = str(len(lines) - 2)
+        # Extract day number using regex
+        day_match = re.search(r'Flipple\s+(?:#|4\s+#)?(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        # Count lines containing emoji squares (excluding header/footer lines)
+        emoji_lines = [f for f in re.findall(r'[🟩⬜️]+', text, re.MULTILINE) if f != '️']
+
+        # The number of tries is the count of valid game rows
+        if emoji_lines and len(emoji_lines) > 0:
+            self.tries = str(len(emoji_lines))
+        else:
+            self.tries = None
+
+        self.stars = None
 
 @dataclass
 class Geogrid(Giochino):
@@ -1046,15 +1141,21 @@ class Geogrid(Giochino):
         lines = raw_text.splitlines()
         _can_handle_this = "https://geogridgame.com" in raw_text and '@geogridgame' in raw_text
         return _can_handle_this
-
+        
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[5].split()[1][1:]
-        self.tries = str(int(float(lines[6].split()[1])))
-        if self.tries == '900':
-            self.tries = 'X'
+        
+        # Use regex to extract day number from anywhere in text
+        day_match = re.search(r'Board #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Use regex to extract score
+        score_match = re.search(r'Score: ([0-9.,]+)', text)
+        if score_match:
+            # Convert to integer by removing decimal and thousands separators
+            score = int(float(score_match.group(1)))
+            self.tries = 'X' if score == 900 else str(score)
+        
         self.stars = None
 
 @dataclass
@@ -1085,12 +1186,18 @@ class Globle(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = get_day_from_date(self._date, self._day, "Globle", lines[0])
-        for line in lines:
-            if "=" in line:
-                self.tries = line.split("=")[-1][1:]
+        
+        # Extract date from first line for day calculation
+        date_match = re.search(r'🌎\s+([A-Za-z]+\s+\d+,\s+\d{4})', text)
+        if date_match:
+            date_str = date_match.group(1)
+            self.day = get_day_from_date(self._date, self._day, "Globle", date_str)
+        
+        # Find score using regex pattern for "= N" format
+        tries_match = re.search(r'=\s*(\d+)', text)
+        if tries_match:
+            self.tries = tries_match.group(1)
+            
         self.stars = None
 
 
@@ -1125,15 +1232,19 @@ class GuessTheGame(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        punteggio = lines[2].replace(" ", "")
-        if "🟩" not in punteggio:
-            self.tries = "X"
-        else:
-            self.tries = str(punteggio.index("🟩"))
-        self.stars = None
+        day_match = re.search(r'#GuessTheGame #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        # Find emoji pattern and evaluate results
+        emoji_line = re.search(r'🎮\s+((?:[🟥🟩🟨⬜\s]+))', text)
+        if emoji_line:
+            punteggio = emoji_line.group(1).replace(" ", "")
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
+                # Find position of first green square (1-indexed)
+                green_index = punteggio.find("🟩")
+                self.tries = str(green_index + 1) if green_index >= 0 else "X"
 
 
 @dataclass
@@ -1158,12 +1269,21 @@ class HighFive(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = get_day_from_date(self._date, self._day, "HighFive", lines[-1])
-        self.tries = str(0 - int(lines[0].split()[3]))
+        
+        # Extract day from the URL in the last line
+        url_match = re.search(r'(\d{4}-\d{2}-\d{2})', text)
+        if url_match:
+            date_str = url_match.group(1)
+            self.day = get_day_from_date(self._date, self._day, "HighFive", date_str)
+        
+        # Extract score from first line with regex
+        score_match = re.search(r'I scored (\d+) points', text)
+        if score_match:
+            score = int(score_match.group(1))
+            # Store as negative since that's the format used in the system
+            self.tries = str(0 - score)
+        
         self.stars = None
-
 
 
 @dataclass
@@ -1182,7 +1302,6 @@ class Lyricle(Giochino):
     expected = [
         {"day": "1052", "name": "Lyricle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1051", "name": "Lyricle", "timestamp": 10, "tries": '1', "user_id": 456481297, "user_name": "Trifase"},
-
         ]
 
     can_lose: True
@@ -1195,17 +1314,20 @@ class Lyricle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        self.day = lines[0].split()[-1].replace('#', '')
-        punteggio = ''
-        for char in lines[2]:
-            if char in ["⬛", "🟥", "🟩", "⬜"]:
-                punteggio += char
-        if "🟩" not in punteggio:
-            self.tries = "X"
-        else:
-            self.tries = str(punteggio.index("🟩") + 1)
+        day_match = re.search(r'#Lyricle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        self.tries = "X"
         self.stars = None
+
+        emoji_line_match = re.search(r'([⬛🟥🟩⬜]+)', text)
+        if emoji_line_match:
+            emoji_line = emoji_line_match.group(1)
+            green_index = emoji_line.find("🟩")
+            if green_index != -1:
+                # Calculate position by counting squares before green
+                self.tries = str(emoji_line[:green_index].count("⬛") + 
+                            emoji_line[:green_index].count("🟥") + 
+                            emoji_line[:green_index].count("⬜") + 1)
 
 
 @dataclass
@@ -1236,13 +1358,19 @@ class Metaflora(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[0].split()[2][1:]
-        if "stumped" in lines[1]:
+        
+        # Extract day number using regex
+        day_match = re.search(r'Plant #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Check if the user was stumped or successful
+        if re.search(r'I was stumped', text):
             self.tries = "X"
         else:
-            self.tries = lines[1].split()[-2]
+            # Extract number of guesses
+            tries_match = re.search(r'in (\d+) guesses', text)
+            self.tries = tries_match.group(1) if tries_match else None
+        
         self.stars = None
 
 
@@ -1276,13 +1404,19 @@ class Metazooa(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[0].split()[2][1:]
-        if "stumped" in lines[1]:
+        
+        # Extract day number using regex
+        day_match = re.search(r'Animal #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Check if the user was stumped or successful
+        if re.search(r'I was stumped', text):
             self.tries = "X"
         else:
-            self.tries = lines[1].split()[-2]
+            # Extract number of guesses using regex
+            tries_match = re.search(r'in (\d+) guesses?!', text)
+            self.tries = tries_match.group(1) if tries_match else None
+        
         self.stars = None
 
 
@@ -1320,20 +1454,26 @@ class Moviedle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        point_line = lines[2][3:]
-        self.day = get_day_from_date(self._date, self._day, "Moviedle", first_line[-1])
-        punteggio = point_line.replace(" ", "")
-        punteggio_bonificato = ""
-        # Moviedle uses black-magic squares that inject empty invisible spaces fugging up the count. We remove them with a whitelisted chars list.
-        for char in punteggio:
-            if char in ["⬛", "🟥", "🟩", "⬜"]:
-                punteggio_bonificato += char
-        if "🟩" not in punteggio_bonificato:
-            self.tries = "X"
-        else:
-            self.tries = str(punteggio_bonificato.index("🟩") + 1)
+        date_str = re.search(r'#Moviedle (#\d{4}-\d{2}-\d{2})', text).group(1)
+        self.day = get_day_from_date(self._date, self._day, "Moviedle", date_str)
+
+        # Find emoji pattern and evaluate results
+        emoji_line = re.search(r'🎥\s+((?:[🟥🟩⬜️⬛️\s]+))', text)
+        if emoji_line:
+            punteggio = emoji_line.group(1).replace(" ", "")
+
+            punteggio_bonificato = ""
+            # Moviedle uses black-magic squares that inject empty invisible spaces fugging up the count. We remove them with a whitelisted chars list.
+            for char in punteggio:
+                if char in ["⬛", "🟥", "🟩", "⬜"]:
+                    punteggio_bonificato += char
+
+            if "🟩" not in punteggio_bonificato:
+                self.tries = "X"
+            else:
+                # Find position of first green square (1-indexed)
+                green_index = punteggio_bonificato.find("🟩")
+                self.tries = str(green_index + 1) if green_index >= 0 else "X"
 
 
 @dataclass
@@ -1365,13 +1505,15 @@ class Murdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        day = lines[1].split()[-1]
-        # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
-        self.day = get_day_from_date(self._date, self._day, "Murdle", day)
-        points_line = lines[4]
-        punteggio = points_line.split()[-1]
-        if "❌" in points_line:
+        date_match = re.search(r'Murdle for (\d+/\d+/\d+)', text)
+        if date_match:
+            date_str = date_match.group(1)
+            # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
+            self.day = get_day_from_date(self._date, self._day, "Murdle", date_str)
+
+
+        punteggio = re.search(r'(.\ufe0f.:.\ufe0f..\ufe0f.)', text).group(1)
+        if "❌" in text:
             self.tries = "X"
         else:
             self.tries = str(time_from_emoji(punteggio))
@@ -1407,10 +1549,10 @@ class Nerdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1]
-        self.tries = first_line[2].split("/")[0]
+        match = re.search(r'nerdlegame\s+(\d+)\s+(\d+|X)/\d+', text)
+        if match:
+            self.day = match.group(1)
+            self.tries = match.group(2)
         self.stars = None
 
 
@@ -1443,15 +1585,18 @@ class NerdleCross(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[-1][1:]
-        points = lines[-1].split(":")[-1].split("/")[0].strip()
-        # Nerdle Cross uses positive poits, from 0 to 6. We as usual save 6-n and then revert it when printing the results.
-        self.tries = 6 - int(points)
-        if self.tries == 6:
-            self.tries = "X"
-        self.stars = None
+        # Extract day number using regex
+        day_match = re.search(r'cross nerdle #(\d+)', text, re.IGNORECASE)
+        self.day = day_match.group(1) if day_match else None
+
+        points_match = re.search(r'points:\s?(\d+)\/6', text, re.IGNORECASE)
+        if points_match:
+            points = int(points_match.group(1))
+            # Convert score: NerdleCross uses positive points from 0 to 6
+            # We interpret 6 as failure, and otherwise use 6 - points
+            self.tries = 6 - points
+            if self.tries == 6:
+                self.tries = "X"
 
 
 @dataclass
@@ -1480,21 +1625,22 @@ class NFLXdle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "#NFLXdle #" in lines[0] and "https://likewise.com/games/nflxdle" in lines[-1]
+        _can_handle_this = "#NFLXdle #" in raw_text and "https://likewise.com/games/nflxdle" in raw_text
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = get_day_from_date(self._date, self._day, "NFLXdle", first_line[-1])
-        if "🟩" not in lines[3]:
+        date_str = re.search(r'#NFLXdle (#\d{4}-\d{2}-\d{2})', text).group(1)
+        self.day = get_day_from_date(self._date, self._day, "NFLXdle", date_str)
+
+
+        if "🟩" not in text:
             self.tries = "X"
         else:
-            self.stars = str(lines[3].count("⬜️"))
-            self.tries = time_from_emoji(lines[2])
+            self.stars = str(text.count("⬜️"))
+            time = re.search(r'((?:\S\ufe0f\S)+)', text).group(1)
+            self.tries = time_from_emoji(time)
 
 
 @dataclass
@@ -1525,18 +1671,20 @@ class Numble(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[-1][1:]
-        solved = '✅' in lines[1]
+        day_match = re.search(r'Numble #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        solved = '✅' in text
         if not solved:
             self.tries = 'X'
         else:
-            self.tries = str(self.duration(lines[4]))
-            extra_line = lines[2].split(": ")
-            extra_max = extra_line[-1].split("/")[-1]
-            extra = extra_line[-1].split("/")[0]
-            self.stars = str(int(extra_max) - int(extra))
+            time_match = re.search(r'(\d+m\s+)?(\d+\.\d+)s', text)
+            self.tries = str(self.duration(time_match.group(0)))
+            numbers_match = re.search(r'Numbers used: (\d+)/(\d+)', text)
+            if numbers_match:
+                used = numbers_match.group(1)
+                maximum = numbers_match.group(2)
+                self.stars = str(int(maximum) - int(used))
 
 
     def duration(self, string):
@@ -1571,12 +1719,9 @@ class Parole(Giochino):
         return _can_handle_this
 
     def parse(self):
-        text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1]
-        self.tries = first_line[2].split("/")[0]
+        matches = re.search(r'le (\d+) (\d|X)/6', self.raw_text)
+        self.day = matches.group(1)
+        self.tries = matches.group(2)
 
 
 @dataclass
@@ -1606,12 +1751,9 @@ class Pedantle(Giochino):
         return _can_handle_this
 
     def parse(self):
-        text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[3][1:]
-        self.tries = first_line[5]
+        matches = re.search(r'#pedantle #(\d+) in (\d+) guesses', self.raw_text)
+        self.day = matches.group(1)
+        self.tries = matches.group(2)
 
 
 @dataclass
@@ -1643,13 +1785,14 @@ class Picsey(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        date = lines[0].split()[-1]
-        self.day = get_day_from_date(self._date, self._day, "Picsey", date)
-        points = lines[2].split("p/")[0]
+        day_match = re.search(r'Picsey (\d+\.\d+\.\d+)', text).group(1)
+        self.day = get_day_from_date(self._date, self._day, "Picsey", day_match)
+        
+        point_match = re.search(r'(\d+)p', text).group(1)
+        points = int(point_match)
         # Picsey uses positive poits, from 0 to 100. We as usual save 100-n and then revert it when printing the results.
-        self.tries = 100 - int(points)
-        if int(points) == 0:
+        self.tries = 100 - points
+        if points == 0:
             self.tries = "X"
         self.stars = None
 
@@ -1697,41 +1840,27 @@ class Pinpoint(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        if "n." in lines[0]:
-            print(1)
-            day_line = lines[0].split('|')
-            self.day = day_line[0].split()[-1].replace('#', '').strip()
-            if '📌' not in text or "X" in text:
-                self.tries = 'X'
-            else:
-                self.tries = lines[0].split('|')[-1].split()[0].strip()
-
-        elif "(" in text and ")" in text:
-            print(2)
-            day_line = lines[0].split()
-            self.day = day_line[1].replace('#', '')
-            if '📌' not in text or "X" in text:
-                self.tries = 'X'
-            else:
-                self.tries = lines[1].split()[-1].split('/')[0].replace('(', '')
-
-        elif "guesses" in text or "guess" in text or "tentativi" in text or "tentativo":
-            print(3)
-            day_line = lines[0].split()
-            self.day = day_line[1].replace('#', '')
-            if '📌' not in text or "X" in text:
-                self.tries = 'X'
-            else:
-                self.tries = lines[0].split('|')[-1].split()[0].strip()
-
-        else:
-            print(4)
-            day_line = lines[0].split()
-            self.day = day_line[1].replace('#', '')
+        
+        # Extract day number using regex
+        day_match = re.search(r'Pinpoint (?:n\. |#)(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Check if the user won or lost
+        if 'X/' in text or '📌' not in text:
             self.tries = 'X'
+        else:
+            # Check for different result formats
+            if '📌' in text:
+                if '/5' in text:
+                    position_match = re.search(r'\((\d+)/5\)', text)
+                    self.tries = position_match.group(1) if position_match else None
+                else:
+                    if tries_match := re.search(r'(\d+) (?:guesses?|tentativi|tentativo)', text):
+                        self.tries = tries_match.group(1)
+                    elif tries_match := re.search(r'\| (\d+) ', text):
+                        self.tries = tries_match.group(1)
 
+        self.stars = None
 
 @dataclass
 class Polygonle(Giochino):
@@ -1762,10 +1891,9 @@ class Polygonle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1]
-        punti = first_line[2].split("/")[0]
+        matches = re.search(r'Polygonle (\d+) (.)', text)
+        self.day = matches.group(1)
+        punti = matches.group(2)
 
         if punti == "X" or punti == "😔":
             self.tries = "X"
@@ -1808,14 +1936,18 @@ class Posterdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = get_day_from_date(self._date, self._day, "Posterdle", first_line[-1])
-        if "🟩" not in lines[3]:
+
+        date_str = re.search(r'#Posterdle (#\d{4}-\d{2}-\d{2})', text).group(1)
+        self.day = get_day_from_date(self._date, self._day, "Posterdle", date_str)
+
+
+        if "🟩" not in text:
             self.tries = "X"
         else:
-            self.stars = str(lines[3].count("⬜️"))
-            self.tries = time_from_emoji(lines[2])
+            self.stars = str(text.count("⬜️"))
+            time = re.search(r'((?:\S\ufe0f\S)+)', text).group(1)
+            self.tries = time_from_emoji(time)
+
 
 
 @dataclass
@@ -1851,14 +1983,10 @@ class Queens(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        if "|" in lines[0]:
-            day_line = lines[0].split('|')
-            self.day = day_line[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in day_line[1].split()[0] if x in "0123456789"])
-        else:
-            self.day = lines[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in lines[1].split()[0] if x in "0123456789"])
+        matches_day = re.search(r'Queens (?:n\. |#)(\d+)', text)
+        matches_time = re.search(r'(\d+):(\d+)', text)
+        self.day = matches_day.group(1) if matches_day else None
+        self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
 
 @dataclass
 class Reversle(Giochino):
@@ -1886,12 +2014,10 @@ class Reversle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        self.day = lines[0].split()[1][1:]
-        punti = lines[0].split()[-1]
-        punti = punti.replace("s", "").replace(".", "").replace(",", "")
-        punti = int(punti)
-        self.tries = punti
+        matches = re.search(r'Reversle #(\d+) (\d+\.\d+)s', text)
+        self.day = matches.group(1) if matches else None
+        punti = matches.group(2).replace(".", "").replace(",", "")
+        self.tries = int(punti)
 
 @dataclass
 class Rotaboxes(Giochino):
@@ -1921,14 +2047,10 @@ class Rotaboxes(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[3].split("/")[-1]
-        punti = lines[1]
-        punti = punti.split("clicks: ")[-1]
-        # max_points = int(punti.split("/")[-1])
-        clicks = int(punti.split("/")[0])
-        self.tries = clicks
+        day_match = re.search(r'rotabox.es/(\d+)', text)
+        clicks_match = re.search(r'clicks: (\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        self.tries = int(clicks_match.group(1)) if clicks_match else None
 
 
 @dataclass
@@ -1961,10 +2083,9 @@ class Spellcheck(Giochino):
 
     def parse(self):
         text = self.raw_text
+        day_match = re.search(r'Spellcheck #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
         self.tries = 15 - text.count("🟩")
         self.stars = None
 
@@ -1995,20 +2116,18 @@ class Spotle(Giochino):
 
     def parse(self):
         text = self.raw_text
+        day_match = re.search(r'Spotle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:-1]
-        punteggio = lines[2].replace(" ", "")
         punteggio_bonificato = ""
-        for char in punteggio:
+        for char in text:
             if char in ["⬛", "🟥", "🟩", "⬜", "🎁"]:
                 punteggio_bonificato += char
         
-        if ("🟩" not in punteggio and "🎁" not in punteggio) or "❌" in punteggio:
+        if ("🟩" not in text and "🎁" not in text) or "❌" in text:
             self.tries = "X"
         else:
-            if "🎁" in punteggio:
+            if "🎁" in text:
                 self.tries = str(punteggio_bonificato.index("🎁") + 1)
             else:
                 self.tries = str(punteggio_bonificato.index("🟩") + 1)
@@ -2040,13 +2159,11 @@ class Spots(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[2][1:]
-        if "🟩🟩🟩🟩" in lines[2]:
-            self.tries = lines[1].split(": ")[-1]
-        else:
-            self.tries = "X"
+        day_match = re.search(r'Spots Code #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        guesses_match = re.search(r'Guesses: (\d+)', text)
+        self.tries = guesses_match.group(1) if "🟩🟩🟩🟩" in text else 'X'
 
 
 @dataclass
@@ -2078,10 +2195,9 @@ class Squareword(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][:-1]
-        self.tries = first_line[2]
+        matches = re.search(r'squareword.org (\d+): (\d+) guesses', text)
+        self.day = matches.group(1) if matches else None
+        self.tries = matches.group(2) if matches else None
         self.stars = None
 
 
@@ -2114,14 +2230,13 @@ class Stepdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        count = lines[-1].count("🟩")
-        won = count == 7
+        day_match = re.search(r'Stepdle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        punti_match = re.search(r'(\d+)/20', text)
+        won = any(line.count("🟩") == 7 for line in text.splitlines())
         if won:
-            punti = lines[1].split()[0].split("/")[0]
-            self.tries = punti
+            self.tries = punti_match.group(1) if punti_match else None
         else:
             self.tries = "X"
 
@@ -2155,9 +2270,8 @@ class Strands(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
+        day_match = re.search(r'Strands #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
         count = 0
         count += text.count('💡')
         self.tries = str(count)
@@ -2194,13 +2308,10 @@ class Tango(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        if "|" in text:
-            self.day = lines[0].split(' | ')[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in lines[0].split('|')[-1].split()[0] if x in "0123456789"])
-        else:
-            self.day = lines[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in lines[1] if x in "0123456789"])
+        matches_day = re.search(r'Tango #(\d+)', text)
+        matches_time = re.search(r'(\d+):(\d+)', text)
+        self.day = matches_day.group(1) if matches_day else None
+        self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
 
 @dataclass
 class TempoIndovinr(Giochino):
@@ -2230,10 +2341,10 @@ class TempoIndovinr(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[0].split()[-1]
-        self.tries = 1000 - int(lines[1].split()[2].split("/")[0])
+        day_match = re.search(r'day (\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        point_match = re.search(r'Ho fatto (\d+)/1000 punti', text)
+        self.tries = 1000 - int(point_match.group(1)) if point_match else None 
         self.stars = None
 
 
@@ -2260,21 +2371,20 @@ class Thirdle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
         _can_handle_this = "#thirdle" in raw_text and '🏆' in raw_text
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
+        day_match = re.search(r'#thirdle(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
-        lines = text.splitlines()
-        self.day = lines[0].split()[-1].replace('#thirdle','')
-        punti = lines[2].split()[1]
-        if punti == 'X':
-            self.tries = punti
+        match_points = re.search(r'(\d+|X) / 6', text)
+        if match_points.group(1) == 'X':
+            self.tries = match_points.group(1)
         else:
-            self.tries = int(punti)
-        self.stars = None
+            self.tries = int(match_points.group(1))
+            self.stars = None
 
 
 @dataclass
@@ -2305,11 +2415,11 @@ class TimeGuessr(Giochino):
 
     def parse(self):
         text = self.raw_text
+        match_day = re.search(r'#(\d+)', text)
+        self.day = match_day.group(1) if match_day else None
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        self.tries = 50_000 - int(first_line[2].split("/")[0].replace(",", ""))
+        match_points = re.search(r'(\d+),(\d+)', text)
+        self.tries = 50_000 - int(match_points.group(1) + match_points.group(2)) if match_points else None
         self.stars = None
 
 
@@ -2340,10 +2450,10 @@ class Tradle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        self.tries = first_line[2].split("/")[0]
+        matches = re.search(r'#(\d+) (\d+|X)/6', text)
+
+        self.day = matches.group(1)
+        self.tries = matches.group(2)
         self.stars = None
 
 
@@ -2359,19 +2469,19 @@ class Travle(Giochino):
     has_extra: True
 
     examples = [
-        "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",  # vinto
-        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth",  # vinto, perfetto
-        "#travle #484 +3 (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 1
-        "#travle #484 +3 (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 2 (3)
-        "#travle #484 +3 (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 3 (6)
+        "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",                   # vinto
+        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth",                # vinto, perfetto
+        "#travle #484 +3 (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",         # vinto, malus di 1
+        "#travle #484 +3 (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",         # vinto, malus di 2 (3)
+        "#travle #484 +3 (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",         # vinto, malus di 3 (6)
 
-        "#travle #484 +3 (🎌)\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",  # vinto, bonus
-        "#travle #484 +0 (🎌) (Perfect)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, perfetto
-        "#travle #484 +3 (🎌) (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 1
-        "#travle #484 +3 (🎌) (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 2 (3)
-        "#travle #484 +3 (🎌) (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 3 (6)
+        "#travle #484 +3 (🎌)\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",              # vinto, bonus
+        "#travle #484 +0 (🎌) (Perfect)\n✅✅✅✅\nhttps://travle.earth",           # vinto, bonus, perfetto
+        "#travle #484 +3 (🎌) (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",    # vinto, bonus, malus di 1
+        "#travle #484 +3 (🎌) (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",    # vinto, bonus, malus di 2 (3)
+        "#travle #484 +3 (🎌) (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",    # vinto, bonus, malus di 3 (6)
 
-        "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",  # perso
+        "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",      # perso
     ]
     expected = [
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
@@ -2395,41 +2505,79 @@ class Travle(Giochino):
         _can_handle_this = "#travle " in lines[0] and "travle.earth" in lines[-1]
         return _can_handle_this
 
+        # text = self.raw_text
+
+        # lines = text.splitlines()
+        # first_line = lines[0].split()
+        # self.day = first_line[1][1:]
+        # if "✅" not in lines[1]:
+        #     self.tries = "X"
+        # else:
+        #     self.tries = first_line[2][1:]
+
+
+        # perfetto = 0
+        # bonus_round = 0
+
+        # perfects = ['Perfetto', 'Perfect', 'Perfekt']
+        # if any(f"({perfect})" in text for perfect in perfects):
+        #     perfetto = 1
+
+        # if "🎌" in text:
+        #     bonus_round = 1
+
+        # self.stars = perfetto + bonus_round
+
+        # # Hints
+        # hints = 0
+        # if text.count('(') > 0 and self.tries != "X" and not perfetto and not bonus_round:
+        #     hints = first_line[3][1:]
+        #     print(f'hints1: {hints}')
+        #     self.tries = str(int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2)))  # +1, +2, +3 (triangulars)
+
+        # elif text.count('(') > 1 and self.tries != "X" and not perfetto and bonus_round:
+        #     hints = first_line[4][1:]
+        #     print(f'hints2: {hints}')
+        #     self.tries = str(int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2)))  # +1, +2, +3 (triangulars)
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        if "✅" not in lines[1]:
+        
+        # Extract day number using regex
+        day_match = re.search(r'#travle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Check if game was lost or won
+        if "✅" not in text.splitlines()[1]:
             self.tries = "X"
         else:
-            self.tries = first_line[2][1:]
-
-
-        perfetto = 0
-        bonus_round = 0
-
-        perfects = ['Perfetto', 'Perfect', 'Perfekt']
-        if any(f"({perfect})" in text for perfect in perfects):
-            perfetto = 1
-
+            # Extract tries count
+            tries_match = re.search(r'#travle #\d+ \+(\d+)', text)
+            self.tries = tries_match.group(1) if tries_match else None
+        
+        # Initialize stars calculation
+        self.stars = 0
+        
+        # Check for perfect game
+        if re.search(r'\((Perfect|Perfetto|Perfekt)\)', text):
+            self.stars += 1
+        
+        # Check for bonus flag
         if "🎌" in text:
-            bonus_round = 1
-
-        self.stars = perfetto + bonus_round
-
-        # Hints
-        hints = 0
-        if text.count('(') > 0 and self.tries != "X" and not perfetto and not bonus_round:
-            hints = first_line[3][1:]
-            print(f'hints1: {hints}')
-            self.tries = str(int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2)))  # +1, +2, +3 (triangulars)
-
-        elif text.count('(') > 1 and self.tries != "X" and not perfetto and bonus_round:
-            hints = first_line[4][1:]
-            print(f'hints2: {hints}')
-            self.tries = str(int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2)))  # +1, +2, +3 (triangulars)
+            self.stars += 1
+        
+        # If there are no stars, set to None instead of 0
+        if self.stars == 0:
+            self.stars = None
+            
+        # Process hints if the game was won
+        if self.tries != "X" and self.tries is not None:
+            # Look for hint pattern
+            hint_match = re.search(r'\((\d+) suggerimento\)', text)
+            if hint_match:
+                hint_count = int(hint_match.group(1))
+                # Apply triangular penalty formula: n(n+1)/2
+                penalty = (hint_count * (hint_count + 1)) // 2
+                self.tries = str(int(self.tries) + penalty)
 
 
 @dataclass
@@ -2462,25 +2610,34 @@ class TravleITA(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        if "✅" not in lines[1]:
+        
+        # Extract day number using regex
+        day_match = re.search(r'#travle_ita #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Check if game was lost or won
+        if "✅" not in text.splitlines()[1]:
             self.tries = "X"
         else:
-            self.tries = first_line[2][1:]
-
-        # (Perfetto), (Perfect), (Perfekt)
+            # Extract tries count
+            tries_match = re.search(r'#travle_ita #\d+ \+(\d+)', text)
+            self.tries = tries_match.group(1) if tries_match else None
+        
+        # Check for perfect game - this sets stars
         self.stars = None
-        if '(P' in lines[0] and ')' in lines[0]:
+        if re.search(r'\((Perfect|Perfetto|Perfekt)\)', text):
             self.stars = 1
+        
+        # Process hints if the game was won and not perfect
+        if self.tries != "X" and self.tries is not None and not self.stars:
+            # Look for hint pattern
+            hint_match = re.search(r'\((\d+) [^\)]+\)', text)
+            if hint_match:
+                hint_count = int(hint_match.group(1))
+                # Apply triangular penalty formula: n(n+1)/2
+                penalty = int((hint_count * (hint_count + 1)) / 2)
+                self.tries = int(self.tries) + penalty
 
-        # Hints
-        hints = 0
-        if len(first_line) > 3 and not self.stars and '(' in lines[0] and ')' in lines[0] and self.tries != "X":
-            hints = first_line[3][1:]
-            self.tries = int(int(self.tries) + ((int(hints) * (int(hints) + 1)) / 2))  # +1, +2, +3 (triangulars)
 
 
 @dataclass
@@ -2514,10 +2671,9 @@ class Unzoomed(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        self.tries = first_line[2].split("/")[0]
+        matches = re.search(r'#(\d+) (\d+)/6', text)
+        self.day = matches.group(1) if matches else None
+        self.tries = matches.group(2) if matches else None
         if '🟢' not in text:
             self.tries = 'X'
 
@@ -2551,12 +2707,9 @@ class Waffle(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[0].replace("#waffle", "")
-        punti = first_line[1].split("/")[0]
-        self.tries = 15 - int(punti) if punti != "X" else "X"
+        matches = re.search(r'#waffle(\d+) (\d+|X)/5', text)
+        self.day = matches.group(1) if matches else None
+        self.tries = 15 - int(matches.group(2)) if matches.group(2) != 'X' else 'X'
         self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
 
 
@@ -2593,10 +2746,11 @@ class WhereTaken(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[2][1:]
-        self.tries = first_line[4].split("/")[0]
+        day_matches = re.search(r'#(\d+)', text)
+        self.day = day_matches.group(1) if day_matches else None
+        punti_matches = re.search(r'(\d+|X)/6', text)
+        self.tries = punti_matches.group(1) if punti_matches else None
+
         self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
 
 
@@ -2626,11 +2780,10 @@ class WhenTaken(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        tries = lines[2].split()[-2].split("/")[0]
-        self.tries = str(1000 - int(tries))
+        day_matches = re.search(r'#(\d+)', text)
+        self.day = day_matches.group(1) if day_matches else None
+        punti_matches = re.search(r'I scored (\d+)', text)
+        self.tries = str(1000 - int(punti_matches.group(1))) if punti_matches else None
 
 
 @dataclass
@@ -2645,10 +2798,12 @@ class WordGrid(Giochino):
 
     examples = [
         "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.0\nwordgrid.clevergoat.com 🐐",
+        "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.1\nwordgrid.clevergoat.com 🐐",
     ]
     # Remember: tries are multiplied by 10
     expected = [
         {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "60", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "61", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2659,12 +2814,11 @@ class WordGrid(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[2][1:]
+        match_day = re.search(r'#(\d+)', text)
+        self.day = match_day.group(1) if match_day else None
+        match_rarity = re.search(r'Rarity: (\d+\.\d+)', text)
         # The point is always a flat with a decimal. We will multiply by 10 to get a whole int, and then will divide by then when displaying it in the classifica.
-        self.tries = str(int(float(lines[4].split()[-1]) * 10))
+        self.tries = str(int(float(match_rarity.group(1)) * 10))
 
 
 @dataclass
@@ -2692,11 +2846,11 @@ class Wordle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        # Wordle ti odio, chi cazzo scrive 1000 come "1.000" o "1,000"
-        self.day = first_line[1].replace(".", "").replace(",", "")
-        self.tries = first_line[-1].split("/")[0]
+
+        matches = re.search(r'Wordle (\d?[\,\.]?\d*) (\d+|X)/6', text)
+        # print(f'matches: {matches.group(1)}')
+        self.day = matches.group(1).replace(",", "").replace(".", "") if matches else None
+        self.tries = matches.group(2) if matches else None
         self.stars = None
 
 @dataclass
@@ -2727,10 +2881,10 @@ class WordPeaks(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[2][1:]
-        self.tries = first_line[3].split("/")[0]
+        matches = re.search(r'Word Peaks #(\d+) (\d+|X)/6', text)
+        self.day = matches.group(1) if matches else None
+        self.tries = matches.group(2) if matches else None
+        self.stars = None
 
 
 @dataclass
@@ -2746,11 +2900,13 @@ class Worldle(Giochino):
         "#Worldle #807 (07.04.2024) 1/6 (100%)\n🟩🟩🟩🟩🟩🎉\n🧭⭐\nhttps://worldle.teuteuf.fr",
         "#Worldle #808 (08.04.2024) 4/6 (100%)\n🟩🟩🟩🟨⬜↗️\n🟩🟩🟩🟩🟨↘️\n🟩🟩🟩🟩🟨⬇️\n🟩🟩🟩🟩🟩🎉\n\nhttps://worldle.teuteuf.fr",
         "#Worldle #808 (08.04.2024) X/6 (94%)\n🟩🟩🟩⬛️⬛️⬆️\n🟩🟩🟩🟩⬛️↖️\n🟩🟩🟩🟩🟨↖️\n🟩🟩🟨⬛️⬛️↗️\n🟩🟨⬛️⬛️⬛️↗️\n🟩🟩🟩🟩🟨➡️\n\nhttps://worldle.teuteuf.fr",
+        '#Worldle #1148 (14.03.2025) 1/6 (100%)\n🟩🟩🟩🟩🟩🎉\n🧭⭐📍🚩🗿📜🛡️🔤🗣️👫🪙🏙📦📐\nhttps://worldle.teuteuf.fr',
     ]
     expected = [
         {"day": "807", "name": "Worldle", "stars": 2, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "808", "name": "Worldle", "stars": 0, "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "808", "name": "Worldle", "stars": 0, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1148", "name": "Worldle", "stars": 14, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2762,20 +2918,26 @@ class Worldle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        self.tries = first_line[3].split("/")[0]
-        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))  # 🧭
-        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))  # ⭐️
-        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))  # 🚩
-        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))  # 🔤
-        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))  # 🗣
-        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))  # 👫
-        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))  # 🪙
-        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))  # 🏙
-        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))  # 📐
-        self.stars = bussola + stars + flag + abc + language + population + coin + cityscape + area
+        match_day = re.search(r'#(\d+)', text)
+        self.day = match_day.group(1) if match_day else None
+        match_points = re.search(r'(\d+|X)/6', text)
+        self.tries = match_points.group(1) if match_points else None
+
+        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))       # 🧭
+        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))             # ⭐️
+        pinpoint = text.count(b"\xf0\x9f\x93\x8d".decode("utf-8"))      # 📍
+        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))          # 🚩
+        head = text.count(b"\xf0\x9f\x97\xbf".decode("utf-8"))          # 🗿
+        paper = text.count(b"\xf0\x9f\x93\x9c".decode("utf-8"))         # 📜
+        shield = text.count(b"\xf0\x9f\x9b\xa1".decode("utf-8"))        # 🛡️
+        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))           # 🔤
+        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))      # 🗣
+        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))    # 👫
+        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))          # 🪙
+        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))     # 🏙
+        box = text.count(b"\xf0\x9f\x93\xa6".decode("utf-8"))           # 📦
+        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))          # 📐
+        self.stars = bussola + stars + pinpoint + flag + head + paper + shield + abc + language + population + coin + cityscape + box + area
 
 
 #######
@@ -2853,6 +3015,6 @@ def test(print_debug, giochino=None):
 
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
-    # giochino_da_testare = None
-    giochino_da_testare = Lyricle
+    giochino_da_testare = None
+    # giochino_da_testare = TravleITA
     test(True, giochino_da_testare)
