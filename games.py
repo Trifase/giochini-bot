@@ -2083,10 +2083,9 @@ class Spellcheck(Giochino):
 
     def parse(self):
         text = self.raw_text
+        day_match = re.search(r'Spellcheck #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
         self.tries = 15 - text.count("🟩")
         self.stars = None
 
@@ -2117,20 +2116,18 @@ class Spotle(Giochino):
 
     def parse(self):
         text = self.raw_text
+        day_match = re.search(r'Spotle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:-1]
-        punteggio = lines[2].replace(" ", "")
         punteggio_bonificato = ""
-        for char in punteggio:
+        for char in text:
             if char in ["⬛", "🟥", "🟩", "⬜", "🎁"]:
                 punteggio_bonificato += char
         
-        if ("🟩" not in punteggio and "🎁" not in punteggio) or "❌" in punteggio:
+        if ("🟩" not in text and "🎁" not in text) or "❌" in text:
             self.tries = "X"
         else:
-            if "🎁" in punteggio:
+            if "🎁" in text:
                 self.tries = str(punteggio_bonificato.index("🎁") + 1)
             else:
                 self.tries = str(punteggio_bonificato.index("🟩") + 1)
@@ -2162,13 +2159,11 @@ class Spots(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[2][1:]
-        if "🟩🟩🟩🟩" in lines[2]:
-            self.tries = lines[1].split(": ")[-1]
-        else:
-            self.tries = "X"
+        day_match = re.search(r'Spots Code #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        guesses_match = re.search(r'Guesses: (\d+)', text)
+        self.tries = guesses_match.group(1) if "🟩🟩🟩🟩" in text else 'X'
 
 
 @dataclass
@@ -2200,10 +2195,9 @@ class Squareword(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][:-1]
-        self.tries = first_line[2]
+        matches = re.search(r'squareword.org (\d+): (\d+) guesses', text)
+        self.day = matches.group(1) if matches else None
+        self.tries = matches.group(2) if matches else None
         self.stars = None
 
 
@@ -2236,14 +2230,13 @@ class Stepdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
-        count = lines[-1].count("🟩")
-        won = count == 7
+        day_match = re.search(r'Stepdle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        punti_match = re.search(r'(\d+)/20', text)
+        won = any(line.count("🟩") == 7 for line in text.splitlines())
         if won:
-            punti = lines[1].split()[0].split("/")[0]
-            self.tries = punti
+            self.tries = punti_match.group(1) if punti_match else None
         else:
             self.tries = "X"
 
@@ -2277,9 +2270,8 @@ class Strands(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        first_line = lines[0].split()
-        self.day = first_line[1][1:]
+        day_match = re.search(r'Strands #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
         count = 0
         count += text.count('💡')
         self.tries = str(count)
@@ -2316,13 +2308,10 @@ class Tango(Giochino):
     def parse(self):
         text = self.raw_text
 
-        lines = text.splitlines()
-        if "|" in text:
-            self.day = lines[0].split(' | ')[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in lines[0].split('|')[-1].split()[0] if x in "0123456789"])
-        else:
-            self.day = lines[0].split()[-1].replace('#', '')
-            self.tries = "".join([x for x in lines[1] if x in "0123456789"])
+        matches_day = re.search(r'Tango #(\d+)', text)
+        matches_time = re.search(r'(\d+):(\d+)', text)
+        self.day = matches_day.group(1) if matches_day else None
+        self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
 
 @dataclass
 class TempoIndovinr(Giochino):
@@ -2352,10 +2341,10 @@ class TempoIndovinr(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        lines = text.splitlines()
-        self.day = lines[0].split()[-1]
-        self.tries = 1000 - int(lines[1].split()[2].split("/")[0])
+        day_match = re.search(r'day (\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+        point_match = re.search(r'Ho fatto (\d+)/1000 punti', text)
+        self.tries = 1000 - int(point_match.group(1)) if point_match else None 
         self.stars = None
 
 
@@ -2382,21 +2371,20 @@ class Thirdle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
         _can_handle_this = "#thirdle" in raw_text and '🏆' in raw_text
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
+        day_match = re.search(r'#thirdle(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
 
-        lines = text.splitlines()
-        self.day = lines[0].split()[-1].replace('#thirdle','')
-        punti = lines[2].split()[1]
-        if punti == 'X':
-            self.tries = punti
+        match_points = re.search(r'(\d+|X) / 6', text)
+        if match_points.group(1) == 'X':
+            self.tries = match_points.group(1)
         else:
-            self.tries = int(punti)
-        self.stars = None
+            self.tries = int(match_points.group(1))
+            self.stars = None
 
 
 @dataclass
@@ -2976,5 +2964,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
     giochino_da_testare = None
-    giochino_da_testare = Rotaboxes
+    giochino_da_testare = Thirdle
     test(True, giochino_da_testare)
