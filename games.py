@@ -1064,7 +1064,7 @@ class Flickle(Giochino):
         self.day = day_match.group(1) if day_match else None
 
         # Find the emoji line containing the results 
-        emoji_line = re.search(r'🎥\s+([🟥🟩⬛\s]+)', text)
+        emoji_line = re.search(r'🎬([🟥🟩⬛\s]+)', text)
         if emoji_line:
             # Remove spaces and get the results string
             punteggio = emoji_line.group(1).replace(" ", "")
