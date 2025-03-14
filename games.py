@@ -394,18 +394,19 @@ class Chrono(Giochino):
         "🥈 CHRONO  #760\n\n🟢🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢🟢\n\n⏱: 33.3\n🔥: 1\nhttps://chrono.quest",
         "🥉 CHRONO  #748\n\n🟢🟢⚪️⚪️⚪️🟢\n🟢🟢⚪️⚪️🟢🟢\n🟢🟢🟢🟢🟢🟢\n\n⏱: 55.8\n🔥: 2\nhttps://chrono.quest",
         "😬 CHRONO  #748\n\n🟢⚪️🟢⚪️⚪️🟢\n🟢⚪️⚪️⚪️🟢🟢\n🟢⚪️⚪️⚪️🟢🟢\n\n⏱: 81.8\n🔥: 0\nhttps://chrono.quest",
+        'Chrono\n🥈 CHRONO  #1107\n\n🟢🟢⚪️🟢🟢⚪️\n🟢🟢🟢🟢🟢🟢\n\n⏱: 36.4\n🔥: 2\nhttps://chrono.quest'
     ]
     expected = [
         {"day": "749", "name": "Chrono", "stars": 9949.2, "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "760", "name": "Chrono", "stars": 9966.7, "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "748", "name": "Chrono", "stars": 9944.2, "timestamp": 10, "tries": 3, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "748", "name": "Chrono", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1107", "name": "Chrono", "stars": 9963.6, "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "CHRONO" in lines[0] and "#" in lines[0] and "🔥" in raw_text and "https://chrono.ques" in lines[-1]
+        _can_handle_this = "CHRONO" in raw_text and "#" in raw_text and "🔥" in raw_text and "https://chrono.ques" in raw_text
         return _can_handle_this
 
     def parse(self):
@@ -414,7 +415,7 @@ class Chrono(Giochino):
         day_match = re.search(r'CHRONO\s+#(\d+)', text)
         self.day = day_match.group(1) if day_match else None
         
-        medal_match = re.search(r'^(🥇|🥈|🥉|😬)', text)
+        medal_match = re.search(r'(🥇|🥈|🥉|😬)', text)
         medal = medal_match.group(1) if medal_match else None
         
         # Set tries based on medal
@@ -3016,5 +3017,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == '__main__':
     giochino_da_testare = None
-    # giochino_da_testare = TravleITA
+    giochino_da_testare = Chrono
     test(True, giochino_da_testare)
