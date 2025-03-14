@@ -43,7 +43,7 @@ def time_from_emoji(input_string: str) -> str:
 
 def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
     if isinstance(date, str) and game == "Globle":
-        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
         date = datetime.datetime.strptime(date, "%b %d, %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
@@ -93,11 +93,13 @@ def is_connection_completed(connection: list[str]) -> bool:
         return True
     return False
 
+
 def sanitize(text: str) -> str:
-    #replace unicode \xa0 with space
+    # replace unicode \xa0 with space
     text_after = text.replace("\xa0", " ")
     # print(f"{text.encode('utf-8')}\n↓\n{text_after.encode('utf-8')}")
     return text_after
+
 
 def time_to_seconds(time_str: str) -> int:
     time_lst: list[str] = time_str.split(" ")
@@ -110,6 +112,7 @@ def time_to_seconds(time_str: str) -> int:
         elif t.endswith("h"):
             seconds += int(t[:-1]) * 60 * 60
     return seconds
+
 
 class GameFilter(MessageFilter):
     def __init__(self):
@@ -144,7 +147,7 @@ class Giochino:
     raw_text: str = None
     # Tests and expected results
     examples: list[str] = None
-    expected: list[dict|None] = None
+    expected: list[dict | None] = None
     # Misc information about the game/class
     has_extra: bool = False  # if the game has additional points, currently set but unused
     can_lose: bool = True  # if the game can be lost (e.g has a copypaste string for lost plays), set but unused
@@ -231,7 +234,7 @@ class UnsupportedGame(Giochino):
                 "🔊" in raw_text and "#Heardle" in raw_text,  # Headle
                 "I solved" in raw_text and "New York Times Mini Crossword" in raw_text,  # NY Mini Crossword
                 "Strands #" in raw_text and "🔵" in raw_text,  # Strands
-                "Apparle #" in raw_text and "https://apparle.com" in raw_text, # Apparle
+                "Apparle #" in raw_text and "https://apparle.com" in raw_text,  # Apparle
             ]
         )
         return _can_handle_this
@@ -285,17 +288,16 @@ class Angle(Giochino):
         text = self.raw_text
         self.stars = None
 
-        day_match = re.search(r'#Angle #(\d+)', text)
+        day_match = re.search(r"#Angle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        score_match = re.search(r'#Angle #\d+ ([X\d]+)/\d+', text)
+        score_match = re.search(r"#Angle #\d+ ([X\d]+)/\d+", text)
 
         if score_match:
             points = score_match.group(1)
             self.tries = points  # Will be either a number or "X"
         else:
             self.tries = None
-
 
 
 # @dataclass
@@ -367,14 +369,14 @@ class Bandle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        self.tries = 'X'
+        self.tries = "X"
 
-        self.day = re.search(r'Bandle #(\d+)', text).group(1)
+        self.day = re.search(r"Bandle #(\d+)", text).group(1)
 
-        punti = re.search(r'(\S)\/6', text).group(1)
+        punti = re.search(r"(\S)\/6", text).group(1)
         print(punti)
 
-        if punti.lower() != 'x':
+        if punti.lower() != "x":
             self.tries = punti
 
 
@@ -394,7 +396,7 @@ class Chrono(Giochino):
         "🥈 CHRONO  #760\n\n🟢🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢🟢\n\n⏱: 33.3\n🔥: 1\nhttps://chrono.quest",
         "🥉 CHRONO  #748\n\n🟢🟢⚪️⚪️⚪️🟢\n🟢🟢⚪️⚪️🟢🟢\n🟢🟢🟢🟢🟢🟢\n\n⏱: 55.8\n🔥: 2\nhttps://chrono.quest",
         "😬 CHRONO  #748\n\n🟢⚪️🟢⚪️⚪️🟢\n🟢⚪️⚪️⚪️🟢🟢\n🟢⚪️⚪️⚪️🟢🟢\n\n⏱: 81.8\n🔥: 0\nhttps://chrono.quest",
-        'Chrono\n🥈 CHRONO  #1107\n\n🟢🟢⚪️🟢🟢⚪️\n🟢🟢🟢🟢🟢🟢\n\n⏱: 36.4\n🔥: 2\nhttps://chrono.quest'
+        "Chrono\n🥈 CHRONO  #1107\n\n🟢🟢⚪️🟢🟢⚪️\n🟢🟢🟢🟢🟢🟢\n\n⏱: 36.4\n🔥: 2\nhttps://chrono.quest",
     ]
     expected = [
         {"day": "749", "name": "Chrono", "stars": 9949.2, "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
@@ -410,16 +412,15 @@ class Chrono(Giochino):
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
-
     def parse(self):
         text = self.raw_text
-        
-        day_match = re.search(r'CHRONO\s+#(\d+)', text)
+
+        day_match = re.search(r"CHRONO\s+#(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
-        medal_match = re.search(r'(🥇|🥈|🥉|😬)', text)
+
+        medal_match = re.search(r"(🥇|🥈|🥉|😬)", text)
         medal = medal_match.group(1) if medal_match else None
-        
+
         # Set tries based on medal
         if medal == "🥇":
             self.tries = 1
@@ -431,8 +432,8 @@ class Chrono(Giochino):
             self.tries = "X"
         else:
             self.tries = None
-    
-        time_match = re.search(r'⏱: (\d+\.\d+)', text)
+
+        time_match = re.search(r"⏱: (\d+\.\d+)", text)
         time = float(time_match.group(1)) if time_match else None
 
         # Calculate stars based on time (10000 - time)
@@ -471,12 +472,11 @@ class Chronophoto(Giochino):
     def parse(self):
         text = self.raw_text
 
-        score_match = re.search(r'I got a score of (\d+)', text)
+        score_match = re.search(r"I got a score of (\d+)", text)
         score = int(score_match.group(1)) if score_match else None
 
-        date_match = re.search(r'Chronophoto: (\d+/\d+/\d+)', text)
+        date_match = re.search(r"Chronophoto: (\d+/\d+/\d+)", text)
         date_str = date_match.group(1) if date_match else None
-
 
         if date_str:
             self.day = get_day_from_date(self._date, self._day, "Chronophoto", date_str)
@@ -535,8 +535,8 @@ class Cloudle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
-        tries_match = re.search(r': ([X\d]+)/\d+', text)
+
+        tries_match = re.search(r": ([X\d]+)/\d+", text)
         if tries_match:
             self.tries = tries_match.group(1)
         else:
@@ -577,10 +577,10 @@ class Colorfle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'Colorfle (\d+)', text)
+        day_match = re.search(r"Colorfle (\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        tries_match = re.search(r'(\d+|X)/6', text)
+        tries_match = re.search(r"(\d+|X)/6", text)
         self.tries = tries_match.group(1) if tries_match else None
 
         self.stars = None
@@ -602,15 +602,15 @@ class Connections(Giochino):
         "Connections \nPuzzle #299\n🟩🟩🟩🟩\n🟨🟨🟨🟨\n🟦🟦🟦🟦\n🟪🟪🟪🟪",
         "Connections \nPuzzle #300\n🟩🟪🟩🟩\n🟩🟪🟩🟩\n🟩🟪🟩🟩\n🟩🟩🟩🟩\n🟦🟦🟦🟦\n🟪🟪🟪🟪\n🟨🟨🟨🟨",
         "Connections \nPuzzle #302\n🟨🟨🟨🟨\n🟪🟩🟪🟪\n🟪🟪🟪🟦\n🟪🟦🟪🟪\n🟪🟪🟩🟪",
-        'Connections\nPuzzle #324 \n🟨🟨🟨🟨 \n🟦🟦🟩🟦 \n🟦🟦🟪🟦 \n🟦🟦🟦🟦 \n🟩🟩🟩🟪 \n🟩🟩🟩🟩 \n🟪🟪🟪🟪',
-        'Connections\nPuzzle #528\n🟪🟪🟪🟪\n🟦🟦🟦🟦\n🟩🟩🟩🟩\n🟨🟨🟨🟨',
+        "Connections\nPuzzle #324 \n🟨🟨🟨🟨 \n🟦🟦🟩🟦 \n🟦🟦🟪🟦 \n🟦🟦🟦🟦 \n🟩🟩🟩🟪 \n🟩🟩🟩🟩 \n🟪🟪🟪🟪",
+        "Connections\nPuzzle #528\n🟪🟪🟪🟪\n🟦🟦🟦🟦\n🟩🟩🟩🟩\n🟨🟨🟨🟨",
     ]
     expected = [
         {"day": "299", "name": "Connections", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "300", "name": "Connections", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "302", "name": "Connections", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {'day': '324', 'name': 'Connections', 'timestamp': 10, 'tries': 4, 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '528', 'name': 'Connections', 'timestamp': 10, 'tries': 1, 'user_id': 456481297, 'user_name': 'Trifase', 'stars': 1},
+        {"day": "324", "name": "Connections", "timestamp": 10, "tries": 4, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "528", "name": "Connections", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase", "stars": 1},
     ]
 
     @staticmethod
@@ -621,14 +621,14 @@ class Connections(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number
-        day_match = re.search(r'Puzzle #(\d+)', text)
+        day_match = re.search(r"Puzzle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Extract all lines with colored squares
-        square_lines = re.findall(r'[🟩🟨🟦🟪]+', text)
-        
+        square_lines = re.findall(r"[🟩🟨🟦🟪]+", text)
+
         # Use the existing is_connection_completed function to check completion
         if is_connection_completed(square_lines):
             self.tries = len(square_lines) - 3
@@ -673,20 +673,20 @@ class Contexto(Giochino):
         text = self.raw_text
 
         # Extract day number
-        day_match = re.search(r'contexto\.me #(\d+)', text)
+        day_match = re.search(r"contexto\.me #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Check if the user gave up
-        if re.search(r'but I gave up', text):
+        if re.search(r"but I gave up", text):
             self.tries = "X"
         # Check if hints were used
-        elif hint_match := re.search(r'got it in (\d+) guesses and (\d+) hints', text):
+        elif hint_match := re.search(r"got it in (\d+) guesses and (\d+) hints", text):
             guesses = int(hint_match.group(1))
             hints = int(hint_match.group(2))
             self.tries = guesses + (hints * 15)
         # Regular case - no hints
         else:
-            tries_match = re.search(r'got it in (\d+) guesses', text)
+            tries_match = re.search(r"got it in (\d+) guesses", text)
             self.tries = tries_match.group(1) if tries_match else None
 
 
@@ -702,8 +702,8 @@ class Countryle(Giochino):
     can_lose: False
 
     examples = [
-        '#Countryle 818\nGuessed in 1 tries.\n\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com',
-        '#Countryle 818\nGuessed in 4 tries.\n\n🟢⚪️⚪️⚪️⚪️\n🟢🟢⚪️⚪️⚪️\n🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com',
+        "#Countryle 818\nGuessed in 1 tries.\n\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
+        "#Countryle 818\nGuessed in 4 tries.\n\n🟢⚪️⚪️⚪️⚪️\n🟢🟢⚪️⚪️⚪️\n🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
     ]
     expected = [
         {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
@@ -720,14 +720,15 @@ class Countryle(Giochino):
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r'#Countryle (\d+)', text)
+        day_match = re.search(r"#Countryle (\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         # Extract tries count using regex
-        tries_match = re.search(r'Guessed in (\d+) tries', text)
+        tries_match = re.search(r"Guessed in (\d+) tries", text)
         self.tries = tries_match.group(1) if tries_match else None
 
         self.stars = None
+
 
 @dataclass
 class Crossclimb(Giochino):
@@ -741,20 +742,20 @@ class Crossclimb(Giochino):
     can_lose: False
 
     examples = [
-        'Crossclimb #159 | 1:27\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
-        'Crossclimb #160 | 0:45 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
-        'Crossclimb #162 | 1:42 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.',
-        'Crossclimb #163 | 1:34\nFill order: 1️⃣ 2️⃣ 3️⃣ 5️⃣ 4️⃣ ⬇️ ⬆️ 🪜\nlnkd.in/crossclimb.',
-        'Crossclimb #225\n0:38 🪜\nlnkd.in/crossclimb.',
-        'Crossclimb #223\n1:02 🪜\nlnkd.in/crossclimb.',
+        "Crossclimb #159 | 1:27\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.",
+        "Crossclimb #160 | 0:45 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.",
+        "Crossclimb #162 | 1:42 and flawless\nFill order: 1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ ⬆️ ⬇️ 🪜\nlnkd.in/crossclimb.",
+        "Crossclimb #163 | 1:34\nFill order: 1️⃣ 2️⃣ 3️⃣ 5️⃣ 4️⃣ ⬇️ ⬆️ 🪜\nlnkd.in/crossclimb.",
+        "Crossclimb #225\n0:38 🪜\nlnkd.in/crossclimb.",
+        "Crossclimb #223\n1:02 🪜\nlnkd.in/crossclimb.",
     ]
     expected = [
-        {"day": "159", "name": "Crossclimb", "timestamp": 10, "tries": '127', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "160", "name": "Crossclimb", "timestamp": 10, "tries": '045', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "162", "name": "Crossclimb", "timestamp": 10, "tries": '142', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "163", "name": "Crossclimb", "timestamp": 10, "tries": '134', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "225", "name": "Crossclimb", "timestamp": 10, "tries": '038', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "223", "name": "Crossclimb", "timestamp": 10, "tries": '102', "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "159", "name": "Crossclimb", "timestamp": 10, "tries": "127", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "160", "name": "Crossclimb", "timestamp": 10, "tries": "045", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "162", "name": "Crossclimb", "timestamp": 10, "tries": "142", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "163", "name": "Crossclimb", "timestamp": 10, "tries": "134", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "225", "name": "Crossclimb", "timestamp": 10, "tries": "038", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "223", "name": "Crossclimb", "timestamp": 10, "tries": "102", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -766,20 +767,21 @@ class Crossclimb(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'Crossclimb #(\d+)', text)
+        day_match = re.search(r"Crossclimb #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        if '|' in text:
-            time_match = re.search(r'\| (\d+:\d+)', text)
+        if "|" in text:
+            time_match = re.search(r"\| (\d+:\d+)", text)
             if time_match:
                 time_str = time_match.group(1)
                 self.tries = "".join([x for x in time_str if x in "0123456789"])
 
         else:
-            time_match = re.search(r'\n(\d+:\d+)', text)
+            time_match = re.search(r"\n(\d+:\d+)", text)
             if time_match:
                 time_str = time_match.group(1)
                 self.tries = "".join([x for x in time_str if x in "0123456789"])
+
 
 @dataclass
 class Decipher(Giochino):
@@ -793,10 +795,10 @@ class Decipher(Giochino):
     can_lose: True
 
     examples = [
-        'Decipher #2\ndeciphered in ⏱️ 3h 1m 44s\n⭐⭐⭐⭐\nhttps://decipher.wtf',
-        'Decipher #84\ndeciphered in ⏱ 3m 15s\n⭐️⭐️\nhttps://decipher.wtf',
-        'Decipher #248\n💥 Failed\nhttps://decipher.wtf',
-        'Decipher #254\ndeciphered in ⏱️ 39s\n⭐️⭐️\nhttps://decipher.wtf',
+        "Decipher #2\ndeciphered in ⏱️ 3h 1m 44s\n⭐⭐⭐⭐\nhttps://decipher.wtf",
+        "Decipher #84\ndeciphered in ⏱ 3m 15s\n⭐️⭐️\nhttps://decipher.wtf",
+        "Decipher #248\n💥 Failed\nhttps://decipher.wtf",
+        "Decipher #254\ndeciphered in ⏱️ 39s\n⭐️⭐️\nhttps://decipher.wtf",
     ]
     expected = [
         {"day": "2", "name": "Decipher", "timestamp": 10, "tries": 10914, "user_id": 456481297, "user_name": "Trifase"},
@@ -813,21 +815,21 @@ class Decipher(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number using regex
-        day_match = re.search(r'Decipher #(\d+)', text)
+        day_match = re.search(r"Decipher #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Check for failed attempt
-        if re.search(r'Failed|💥', text):
+        if re.search(r"Failed|💥", text):
             self.tries = "X"
         else:
             # Extract time using regex
-            time_match = re.search(r'deciphered in ⏱[️]?\s+(.+)', text)
+            time_match = re.search(r"deciphered in ⏱[️]?\s+(.+)", text)
             if time_match:
                 string_time = time_match.group(1)
                 self.tries = time_to_seconds(string_time)
-                
+
                 # Count stars and apply penalty
                 stars = text.count("⭐")
                 # 10 seconds penalty for each star lost
@@ -848,14 +850,14 @@ class DominoFit(Giochino):
     examples = [
         "DOMINO FIT #42 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️✅\n⌚️0️⃣4️⃣5️⃣",
         "DOMINO FIT #47 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️🧙\u200d♂️\n⌚0️⃣2️⃣3️⃣",
-        'DOMINO FIT #329 6x6 \n🏅🧙\u200d♂️⬜⬜\n⌚0️⃣1️⃣3️⃣',
-        'DOMINO FIT #329 6x6 \n🏅✅✅⬜️\n⌚️0️⃣2️⃣2️⃣',
+        "DOMINO FIT #329 6x6 \n🏅🧙\u200d♂️⬜⬜\n⌚0️⃣1️⃣3️⃣",
+        "DOMINO FIT #329 6x6 \n🏅✅✅⬜️\n⌚️0️⃣2️⃣2️⃣",
     ]
     expected = [
         {"day": "42", "name": "DominoFit", "timestamp": 10, "tries": 45, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "47", "name": "DominoFit", "timestamp": 10, "tries": 23, "user_id": 456481297, "user_name": "Trifase"},
-        {'day': '329', 'name': 'DominoFit', 'timestamp': 10, 'tries': 213, 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '329', 'name': 'DominoFit', 'timestamp': 10, 'tries': 122, 'user_id': 456481297, 'user_name': 'Trifase'},
+        {"day": "329", "name": "DominoFit", "timestamp": 10, "tries": 213, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "329", "name": "DominoFit", "timestamp": 10, "tries": 122, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -866,25 +868,28 @@ class DominoFit(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number using regex
-        day_match = re.search(r'DOMINO FIT #(\d+)', text)
+        day_match = re.search(r"DOMINO FIT #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Extract time using emoji pattern
-        time_pattern = re.search(r'⌚[]]?([0-9️⃣]+)', text)
+        time_pattern = re.search(r"⌚[]]?([0-9️⃣]+)", text)
         if time_pattern:
             time_str = time_pattern.group(1)
             str_points = time_from_emoji(time_str.strip())
             self.tries = int(str_points.strip())
-            
+
             # Count white squares for penalties
             white_squares = text.count("⬜")
             if white_squares:
                 self.tries += 100 * white_squares
-                self.win_message = f"Ok, però guarda che hai saltato dei livelli e avrai {white_squares} {'minuto' if white_squares == 1 else 'minuti'} di penalità!"
-        
+                self.win_message = (
+                    f"Ok, però guarda che hai saltato dei livelli e avrai {white_squares} {'minuto' if white_squares == 1 else 'minuti'} di penalità!"
+                )
+
         self.stars = None
+
 
 @dataclass
 class Flagle(Giochino):
@@ -901,17 +906,17 @@ class Flagle(Giochino):
         "#Flagle #777 (08.04.2024) 1/6\n🟩🟩🟩\n🟩🟩🟩\nhttps://www.flagle.io",
         "#Flagle #773 (04.04.2024) 5/6\n🟥🟩🟥\n🟩🟥🟥\nhttps://www.flagle.io",
         "#Flagle #773 (04.04.2024) X/6\n🟥🟥🟥\n🟥🟥🟥\nhttps://www.flagle.io",
-        '#Flagle #1049 (05.01.2025) 4/6\n🟩🟩🟥\n🟥🟥🟩\n🗺🛡⛳️🧭👫\nhttps://www.flagle.io',
-        '#Flagle #1043 (30.12.2024) 4/6\n🟩🟥🟥\n🟩🟥🟩\n🗺🛡🧭\nhttps://www.flagle.io',
-        '#Flagle #1049 (05.01.2025) 4/6\n🟩🟩🟥\n🟥🟥🟩\n🗺🛡⛳️🧭👫🪙\nhttps://www.flagle.io',
+        "#Flagle #1049 (05.01.2025) 4/6\n🟩🟩🟥\n🟥🟥🟩\n🗺🛡⛳️🧭👫\nhttps://www.flagle.io",
+        "#Flagle #1043 (30.12.2024) 4/6\n🟩🟥🟥\n🟩🟥🟩\n🗺🛡🧭\nhttps://www.flagle.io",
+        "#Flagle #1049 (05.01.2025) 4/6\n🟩🟩🟥\n🟥🟥🟩\n🗺🛡⛳️🧭👫🪙\nhttps://www.flagle.io",
     ]
     expected = [
         {"day": "777", "name": "Flagle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "773", "name": "Flagle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {'day': '1049', 'name': 'Flagle', 'stars': 5, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '1043', 'name': 'Flagle', 'stars': 3, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '1049', 'name': 'Flagle', 'stars': 6, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {"day": "1049", "name": "Flagle", "stars": 5, "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1043", "name": "Flagle", "stars": 3, "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1049", "name": "Flagle", "stars": 6, "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -921,24 +926,23 @@ class Flagle(Giochino):
         return _can_handle_this
 
     def parse(self):
-
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r'#Flagle #(\d+)', text)
+        day_match = re.search(r"#Flagle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         # Extract the tries count using regex
-        tries_match = re.search(r'(\d+|X)/6', text)
+        tries_match = re.search(r"(\d+|X)/6", text)
         self.tries = tries_match.group(1) if tries_match else None
 
         # Count special symbols for stars
-        bussola = text.count('🧭')
-        population = text.count('👫')
-        coin = text.count('🪙')
-        mappa = text.count('🗺')
-        scudo = text.count('🛡')
-        golf = text.count('⛳')
+        bussola = text.count("🧭")
+        population = text.count("👫")
+        coin = text.count("🪙")
+        mappa = text.count("🗺")
+        scudo = text.count("🛡")
+        golf = text.count("⛳")
 
         self.stars = bussola + population + coin + mappa + scudo + golf
 
@@ -954,11 +958,9 @@ class FoodGuessr(Giochino):
 
     can_lose: False
     examples = [
-       'FoodGuessr - 09 Mar 2024 GMT\n  Round 1 🌕🌕🌕🌖\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌗🌑\nTotal score: 12,500 / 15,000\n\nCan you beat my score? New game daily!\nPlay at https://foodguessr.com',
+        "FoodGuessr - 09 Mar 2024 GMT\n  Round 1 🌕🌕🌕🌖\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌗🌑\nTotal score: 12,500 / 15,000\n\nCan you beat my score? New game daily!\nPlay at https://foodguessr.com",
     ]
-    expected = [
-        {'day': '200', 'name': 'FoodGuessr', 'stars': None, 'timestamp': 10, 'tries': 2500, 'user_id': 456481297, 'user_name': 'Trifase'}
-    ]
+    expected = [{"day": "200", "name": "FoodGuessr", "stars": None, "timestamp": 10, "tries": 2500, "user_id": 456481297, "user_name": "Trifase"}]
 
     @staticmethod
     def can_handle_this(raw_text):
@@ -968,22 +970,23 @@ class FoodGuessr(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract date with regex
-        date_match = re.search(r'FoodGuessr - ([\d]+ [A-Za-z]+ [\d]{4})', text)
+        date_match = re.search(r"FoodGuessr - ([\d]+ [A-Za-z]+ [\d]{4})", text)
         if date_match:
-            locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-            actual_day = datetime.datetime.strptime(date_match.group(1).replace(' GMT', ''), '%d %b %Y').date()
+            locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+            actual_day = datetime.datetime.strptime(date_match.group(1).replace(" GMT", ""), "%d %b %Y").date()
             locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
             self.day = get_day_from_date(self._date, self._day, "FoodGuessr", actual_day)
-        
+
         # Extract score with regex
-        score_match = re.search(r'Total score: ([\d,\.]+)', text)
+        score_match = re.search(r"Total score: ([\d,\.]+)", text)
         if score_match:
             points = score_match.group(1).replace(",", "").replace(".", "")
             self.tries = 15_000 - int(points)
-        
+
         self.stars = None
+
 
 @dataclass
 class Framed(Giochino):
@@ -1006,18 +1009,18 @@ class Framed(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["Framed", "https://framed.wtf"]
-        _can_handle_this = all(c in raw_text for c in wordlist) and 'one-frame' not in raw_text
+        _can_handle_this = all(c in raw_text for c in wordlist) and "one-frame" not in raw_text
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r'Framed #(\d+)', text)
+        day_match = re.search(r"Framed #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        # Find the emoji line containing the results 
-        emoji_line = re.search(r'🎥\s+([🟥🟩⬛\s]+)', text)
+        # Find the emoji line containing the results
+        emoji_line = re.search(r"🎥\s+([🟥🟩⬛\s]+)", text)
         if emoji_line:
             # Remove spaces and get the results string
             punteggio = emoji_line.group(1).replace(" ", "")
@@ -1040,9 +1043,9 @@ class Flickle(Giochino):
     can_lose: True
 
     examples = [
-        '#Flickle #1067\n\n    🎬⬛️⬛️⬛️🟩⬜️⬜️\n\n    📆 Daily Streak: 1 (Best 1)\n    🏆 Win Streak: 1 (Best 1)\n\n    https://flickle.app/',
-        '#Flickle #1067\n\n    🎬⬛️⬛️⬛️⬛️⬛️⬛️❌\n\n    📆 Daily Streak: 1 (Best 1)\n    💀 Loss Streak: 1 (Worst 1)\n\n    https://flickle.app/',
-        '#Flickle #1066\n\n🎬🟥🟥🟥⬛⬛⬛❌\n\n📆 Daily Streak: 1 (Best 1)\n💀 Loss Streak: 1 (Worst 1)\n\nhttps://flickle.app/'
+        "#Flickle #1067\n\n    🎬⬛️⬛️⬛️🟩⬜️⬜️\n\n    📆 Daily Streak: 1 (Best 1)\n    🏆 Win Streak: 1 (Best 1)\n\n    https://flickle.app/",
+        "#Flickle #1067\n\n    🎬⬛️⬛️⬛️⬛️⬛️⬛️❌\n\n    📆 Daily Streak: 1 (Best 1)\n    💀 Loss Streak: 1 (Worst 1)\n\n    https://flickle.app/",
+        "#Flickle #1066\n\n🎬🟥🟥🟥⬛⬛⬛❌\n\n📆 Daily Streak: 1 (Best 1)\n💀 Loss Streak: 1 (Worst 1)\n\nhttps://flickle.app/",
     ]
     expected = [
         {"day": "1067", "name": "Flickle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
@@ -1053,18 +1056,18 @@ class Flickle(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["#Flickle", "https://flickle.app"]
-        _can_handle_this = all(c in raw_text for c in wordlist) and 'one-frame' not in raw_text
+        _can_handle_this = all(c in raw_text for c in wordlist) and "one-frame" not in raw_text
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r'Flickle #(\d+)', text)
+        day_match = re.search(r"Flickle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        # Find the emoji line containing the results 
-        emoji_line = re.search(r'🎬([🟥🟩⬛\s]+)', text)
+        # Find the emoji line containing the results
+        emoji_line = re.search(r"🎬([🟥🟩⬛\s]+)", text)
         if emoji_line:
             # Remove spaces and get the results string
             punteggio = emoji_line.group(1).replace(" ", "")
@@ -1073,6 +1076,7 @@ class Flickle(Giochino):
             else:
                 # Find the position of the first green square
                 self.tries = str(punteggio.index("🟩") + 1)
+
 
 @dataclass
 class FramedOneFrame(Giochino):
@@ -1102,11 +1106,11 @@ class FramedOneFrame(Giochino):
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r'Challenge #(\d+)', text)
+        day_match = re.search(r"Challenge #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         # Find emoji pattern and evaluate results
-        emoji_line = re.search(r'🎥\s+((?:[🟥🟩⬛\s]+))', text)
+        emoji_line = re.search(r"🎥\s+((?:[🟥🟩⬛\s]+))", text)
         if emoji_line:
             punteggio = emoji_line.group(1).replace(" ", "")
             if "🟩" not in punteggio:
@@ -1115,6 +1119,7 @@ class FramedOneFrame(Giochino):
                 # Find position of first green square (1-indexed)
                 green_index = punteggio.find("🟩")
                 self.tries = str(green_index + 1) if green_index >= 0 else "X"
+
 
 @dataclass
 class Flipple(Giochino):
@@ -1128,17 +1133,16 @@ class Flipple(Giochino):
     can_lose: False
 
     examples = [
-        'Flipple #96 ⬇️\n🟩⬜️⬜️⬜️🟩\n🟩⬜️🟩⬜️🟩\n🟩⬜️🟩🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
-        'Flipple #194 ⬇️\n🟩🟩⬜⬜🟩\n🟩🟩⬜🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
-        'Flipple #196 ⬇️\n⬜⬜⬜🟩\n🟩⬜⬜🟩\n🟩⬜🟩🟩\n🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
-        'Flipple 4 #196 ⬇️\n⬜⬜⬜🟩\n🟩⬜⬜🟩\n🟩⬜🟩🟩\n🟩🟩🟩🟩\nflipple.clevergoat.com 🐐',
-        
+        "Flipple #96 ⬇️\n🟩⬜️⬜️⬜️🟩\n🟩⬜️🟩⬜️🟩\n🟩⬜️🟩🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐",
+        "Flipple #194 ⬇️\n🟩🟩⬜⬜🟩\n🟩🟩⬜🟩🟩\n🟩🟩🟩🟩🟩\nflipple.clevergoat.com 🐐",
+        "Flipple #196 ⬇️\n⬜⬜⬜🟩\n🟩⬜⬜🟩\n🟩⬜🟩🟩\n🟩🟩🟩🟩\nflipple.clevergoat.com 🐐",
+        "Flipple 4 #196 ⬇️\n⬜⬜⬜🟩\n🟩⬜⬜🟩\n🟩⬜🟩🟩\n🟩🟩🟩🟩\nflipple.clevergoat.com 🐐",
     ]
     expected = [
         {"day": "96", "name": "Flipple", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
-        {'day': '194', 'name': 'Flipple', 'timestamp': 10, 'tries': '3', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {"day": "194", "name": "Flipple", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         None,
-        None
+        None,
     ]
 
     @staticmethod
@@ -1151,11 +1155,11 @@ class Flipple(Giochino):
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r'Flipple\s+(?:#|4\s+#)?(\d+)', text)
+        day_match = re.search(r"Flipple\s+(?:#|4\s+#)?(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         # Count lines containing emoji squares (excluding header/footer lines)
-        emoji_lines = [f for f in re.findall(r'[🟩⬜️]+', text, re.MULTILINE) if f != '️']
+        emoji_lines = [f for f in re.findall(r"[🟩⬜️]+", text, re.MULTILINE) if f != "️"]
 
         # The number of tries is the count of valid game rows
         if emoji_lines and len(emoji_lines) > 0:
@@ -1164,6 +1168,7 @@ class Flipple(Giochino):
             self.tries = None
 
         self.stars = None
+
 
 @dataclass
 class Geogrid(Giochino):
@@ -1177,9 +1182,9 @@ class Geogrid(Giochino):
     can_lose: False
 
     examples = [
-        '✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame',
-        '❌ ✅ ✅\n✅ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 629.3\nRank: 8,858 / 11,488\nhttps://geogridgame.com\n@geogridgame',
-        '❌ ❌ ❌\n❌ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 900\nRank: 9,082 / 11,501\nhttps://geogridgame.com\n@geogridgame',
+        "✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame",
+        "❌ ✅ ✅\n✅ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 629.3\nRank: 8,858 / 11,488\nhttps://geogridgame.com\n@geogridgame",
+        "❌ ❌ ❌\n❌ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 900\nRank: 9,082 / 11,501\nhttps://geogridgame.com\n@geogridgame",
     ]
     expected = [
         {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "112", "user_id": 456481297, "user_name": "Trifase"},
@@ -1192,22 +1197,23 @@ class Geogrid(Giochino):
         wordlist = ["https://geogridgame.com", "@geogridgame"]
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
-    
+
     def parse(self):
         text = self.raw_text
-        
+
         # Use regex to extract day number from anywhere in text
-        day_match = re.search(r'Board #(\d+)', text)
+        day_match = re.search(r"Board #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Use regex to extract score
-        score_match = re.search(r'Score: ([0-9.,]+)', text)
+        score_match = re.search(r"Score: ([0-9.,]+)", text)
         if score_match:
             # Convert to integer by removing decimal and thousands separators
             score = int(float(score_match.group(1)))
-            self.tries = 'X' if score == 900 else str(score)
-        
+            self.tries = "X" if score == 900 else str(score)
+
         self.stars = None
+
 
 @dataclass
 class Globle(Giochino):
@@ -1237,18 +1243,18 @@ class Globle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract date from first line for day calculation
-        date_match = re.search(r'🌎\s+([A-Za-z]+\s+\d+,\s+\d{4})', text)
+        date_match = re.search(r"🌎\s+([A-Za-z]+\s+\d+,\s+\d{4})", text)
         if date_match:
             date_str = date_match.group(1)
             self.day = get_day_from_date(self._date, self._day, "Globle", date_str)
-        
+
         # Find score using regex pattern for "= N" format
-        tries_match = re.search(r'=\s*(\d+)', text)
+        tries_match = re.search(r"=\s*(\d+)", text)
         if tries_match:
             self.tries = tries_match.group(1)
-            
+
         self.stars = None
 
 
@@ -1273,6 +1279,7 @@ class GuessTheGame(Giochino):
         {"day": "692", "name": "GuessTheGame", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "684", "name": "GuessTheGame", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
     ]
+
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["#GuessTheGame", "https://GuessThe.Game/p"]
@@ -1282,11 +1289,11 @@ class GuessTheGame(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'#GuessTheGame #(\d+)', text)
+        day_match = re.search(r"#GuessTheGame #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         # Find emoji pattern and evaluate results
-        emoji_line = re.search(r'🎮\s+((?:[🟥🟩🟨⬜\s]+))', text)
+        emoji_line = re.search(r"🎮\s+((?:[🟥🟩🟨⬜\s]+))", text)
         if emoji_line:
             punteggio = emoji_line.group(1).replace(" ", "")
             if "🟩" not in punteggio:
@@ -1319,20 +1326,20 @@ class HighFive(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day from the URL in the last line
-        url_match = re.search(r'(\d{4}-\d{2}-\d{2})', text)
+        url_match = re.search(r"(\d{4}-\d{2}-\d{2})", text)
         if url_match:
             date_str = url_match.group(1)
             self.day = get_day_from_date(self._date, self._day, "HighFive", date_str)
-        
+
         # Extract score from first line with regex
-        score_match = re.search(r'I scored (\d+) points', text)
+        score_match = re.search(r"I scored (\d+) points", text)
         if score_match:
             score = int(score_match.group(1))
             # Store as negative since that's the format used in the system
             self.tries = str(0 - score)
-        
+
         self.stars = None
 
 
@@ -1346,13 +1353,13 @@ class Lyricle(Giochino):
     _url = "https://lyricle.app"
 
     examples = [
-        '#Lyricle #1052\n\n⬛️⬛️⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app',
-        '#Lyricle #1051\n\n🟩⬛⬛⬛⬛⬛\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app',
-        ]
+        "#Lyricle #1052\n\n⬛️⬛️⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app",
+        "#Lyricle #1051\n\n🟩⬛⬛⬛⬛⬛\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app",
+    ]
     expected = [
         {"day": "1052", "name": "Lyricle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "1051", "name": "Lyricle", "timestamp": 10, "tries": '1', "user_id": 456481297, "user_name": "Trifase"},
-        ]
+        {"day": "1051", "name": "Lyricle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+    ]
 
     can_lose: True
 
@@ -1365,20 +1372,18 @@ class Lyricle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'#Lyricle #(\d+)', text)
+        day_match = re.search(r"#Lyricle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
         self.tries = "X"
         self.stars = None
 
-        emoji_line_match = re.search(r'([⬛🟥🟩⬜]+)', text)
+        emoji_line_match = re.search(r"([⬛🟥🟩⬜]+)", text)
         if emoji_line_match:
             emoji_line = emoji_line_match.group(1)
             green_index = emoji_line.find("🟩")
             if green_index != -1:
                 # Calculate position by counting squares before green
-                self.tries = str(emoji_line[:green_index].count("⬛") + 
-                            emoji_line[:green_index].count("🟥") + 
-                            emoji_line[:green_index].count("⬜") + 1)
+                self.tries = str(emoji_line[:green_index].count("⬛") + emoji_line[:green_index].count("🟥") + emoji_line[:green_index].count("⬜") + 1)
 
 
 @dataclass
@@ -1409,19 +1414,19 @@ class Metaflora(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number using regex
-        day_match = re.search(r'Plant #(\d+)', text)
+        day_match = re.search(r"Plant #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Check if the user was stumped or successful
-        if re.search(r'I was stumped', text):
+        if re.search(r"I was stumped", text):
             self.tries = "X"
         else:
             # Extract number of guesses
-            tries_match = re.search(r'in (\d+) guesses', text)
+            tries_match = re.search(r"in (\d+) guesses", text)
             self.tries = tries_match.group(1) if tries_match else None
-        
+
         self.stars = None
 
 
@@ -1455,19 +1460,19 @@ class Metazooa(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number using regex
-        day_match = re.search(r'Animal #(\d+)', text)
+        day_match = re.search(r"Animal #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Check if the user was stumped or successful
-        if re.search(r'I was stumped', text):
+        if re.search(r"I was stumped", text):
             self.tries = "X"
         else:
             # Extract number of guesses using regex
-            tries_match = re.search(r'in (\d+) guesses?!', text)
+            tries_match = re.search(r"in (\d+) guesses?!", text)
             self.tries = tries_match.group(1) if tries_match else None
-        
+
         self.stars = None
 
 
@@ -1485,15 +1490,14 @@ class Moviedle(Giochino):
         "#Moviedle #2024-01-29 \n\n 🎥 🟥 🟥 ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2024-01-29",
         "#Moviedle #2024-03-07 \n\n 🎥 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/moviedle/2024-03-07",
         "#Moviedle #2024-01-21 \n\n 🎥 ⬛️ ⬛️ 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/moviedle/2024-01-21",
-        '#Moviedle #2025-03-04 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2025-03-04',
+        "#Moviedle #2025-03-04 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2025-03-04",
     ]
     expected = [
         {"day": "459", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "420", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "458", "name": "Moviedle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "412", "name": "Moviedle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {'day': '820', 'name': 'Moviedle', 'timestamp': 10, 'tries': 'X', 'user_id': 456481297, 'user_name': 'Trifase'},
-
+        {"day": "820", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1505,11 +1509,11 @@ class Moviedle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        date_str = re.search(r'#Moviedle (#\d{4}-\d{2}-\d{2})', text).group(1)
+        date_str = re.search(r"#Moviedle (#\d{4}-\d{2}-\d{2})", text).group(1)
         self.day = get_day_from_date(self._date, self._day, "Moviedle", date_str)
 
         # Find emoji pattern and evaluate results
-        emoji_line = re.search(r'🎥\s+((?:[🟥🟩⬜️⬛️\s]+))', text)
+        emoji_line = re.search(r"🎥\s+((?:[🟥🟩⬜️⬛️\s]+))", text)
         if emoji_line:
             punteggio = emoji_line.group(1).replace(" ", "")
 
@@ -1556,14 +1560,13 @@ class Murdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        date_match = re.search(r'Murdle for (\d+/\d+/\d+)', text)
+        date_match = re.search(r"Murdle for (\d+/\d+/\d+)", text)
         if date_match:
             date_str = date_match.group(1)
             # Murdle doesn't have a #day, so we parse the date and get our own numeration (Jun 23, 2023 -> 200)
             self.day = get_day_from_date(self._date, self._day, "Murdle", date_str)
 
-
-        punteggio = re.search(r'(.\ufe0f.:.\ufe0f..\ufe0f.)', text).group(1)
+        punteggio = re.search(r"(.\ufe0f.:.\ufe0f..\ufe0f.)", text).group(1)
         if "❌" in text:
             self.tries = "X"
         else:
@@ -1600,7 +1603,7 @@ class Nerdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        match = re.search(r'nerdlegame\s+(\d+)\s+(\d+|X)/\d+', text)
+        match = re.search(r"nerdlegame\s+(\d+)\s+(\d+|X)/\d+", text)
         if match:
             self.day = match.group(1)
             self.tries = match.group(2)
@@ -1637,10 +1640,10 @@ class NerdleCross(Giochino):
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r'cross nerdle #(\d+)', text, re.IGNORECASE)
+        day_match = re.search(r"cross nerdle #(\d+)", text, re.IGNORECASE)
         self.day = day_match.group(1) if day_match else None
 
-        points_match = re.search(r'points:\s?(\d+)\/6', text, re.IGNORECASE)
+        points_match = re.search(r"points:\s?(\d+)\/6", text, re.IGNORECASE)
         if points_match:
             points = int(points_match.group(1))
             # Convert score: NerdleCross uses positive points from 0 to 6
@@ -1662,10 +1665,10 @@ class NFLXdle(Giochino):
     has_extra = True
 
     examples = [
-        '#NFLXdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 📺 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04', #vinta
-        '#NFLXdle #2024-09-04 \n\n ⌛️ 6️⃣ seconds \n 📺 🟥 🟥 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04', #vinta
-        '#NFLXdle #2024-09-04 \n\n ⌛️ 2️⃣1️⃣ seconds \n 📺 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04', #persa (tempo)
-        '#NFLXdle #2024-09-03 \n\n ⌛️ 6️⃣ seconds \n 📺 🟥 🟥 🟥 🟥 🟥 🟥  \n https://likewise.com/games/nflxdle/2024-09-03' #persa (tentativi)
+        "#NFLXdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 📺 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04",  # vinta
+        "#NFLXdle #2024-09-04 \n\n ⌛️ 6️⃣ seconds \n 📺 🟥 🟥 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04",  # vinta
+        "#NFLXdle #2024-09-04 \n\n ⌛️ 2️⃣1️⃣ seconds \n 📺 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04",  # persa (tempo)
+        "#NFLXdle #2024-09-03 \n\n ⌛️ 6️⃣ seconds \n 📺 🟥 🟥 🟥 🟥 🟥 🟥  \n https://likewise.com/games/nflxdle/2024-09-03",  # persa (tentativi)
     ]
     expected = [
         {"day": "100", "name": "NFLXdle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": "5"},
@@ -1683,15 +1686,14 @@ class NFLXdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        date_str = re.search(r'#NFLXdle (#\d{4}-\d{2}-\d{2})', text).group(1)
+        date_str = re.search(r"#NFLXdle (#\d{4}-\d{2}-\d{2})", text).group(1)
         self.day = get_day_from_date(self._date, self._day, "NFLXdle", date_str)
-
 
         if "🟩" not in text:
             self.tries = "X"
         else:
             self.stars = str(text.count("⬜️"))
-            time = re.search(r'((?:\S\ufe0f\S)+)', text).group(1)
+            time = re.search(r"((?:\S\ufe0f\S)+)", text).group(1)
             self.tries = time_from_emoji(time)
 
 
@@ -1705,9 +1707,9 @@ class Numble(Giochino):
     _url = "https://numble.wtf"
 
     examples = [
-        'Numble #832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf',
-        'Numble #832\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 900\n50.538s\nhttps://numble.wtf',
-        'Numble #834\nSOLVED: ✅\nNumbers used: 3/6\nFinal answer: 48\n1m 28.660s\nhttps://numble.wtf'
+        "Numble #832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf",
+        "Numble #832\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 900\n50.538s\nhttps://numble.wtf",
+        "Numble #834\nSOLVED: ✅\nNumbers used: 3/6\nFinal answer: 48\n1m 28.660s\nhttps://numble.wtf",
     ]
     expected = [
         {"day": "832", "name": "Numble", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
@@ -1724,24 +1726,23 @@ class Numble(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'Numble #(\d+)', text)
+        day_match = re.search(r"Numble #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        solved = '✅' in text
+        solved = "✅" in text
         if not solved:
-            self.tries = 'X'
+            self.tries = "X"
         else:
-            time_match = re.search(r'(\d+m\s+)?(\d+\.\d+)s', text)
+            time_match = re.search(r"(\d+m\s+)?(\d+\.\d+)s", text)
             self.tries = str(self.duration(time_match.group(0)))
-            numbers_match = re.search(r'Numbers used: (\d+)/(\d+)', text)
+            numbers_match = re.search(r"Numbers used: (\d+)/(\d+)", text)
             if numbers_match:
                 used = numbers_match.group(1)
                 maximum = numbers_match.group(2)
                 self.stars = str(int(maximum) - int(used))
 
-
     def duration(self, string):
-        mult = {"s": 1, "m": 60, "h": 60*60, "d": 60*60*24}
+        mult = {"s": 1, "m": 60, "h": 60 * 60, "d": 60 * 60 * 24}
         parts = re.findall(r"(\d+(?:\.\d+)?)([smhd])", string)
         total_seconds = sum(float(x) * mult[m] for x, m in parts)
         return int(total_seconds)
@@ -1772,7 +1773,7 @@ class Parole(Giochino):
         return _can_handle_this
 
     def parse(self):
-        matches = re.search(r'le (\d+) (\d|X)/6', self.raw_text)
+        matches = re.search(r"le (\d+) (\d|X)/6", self.raw_text)
         self.day = matches.group(1)
         self.tries = matches.group(2)
 
@@ -1789,8 +1790,8 @@ class Pedantle(Giochino):
     can_lose: False
 
     examples = [
-        'I found #pedantle #833 in 133 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://pedantle.certitudes.org/',
-        'I found #pedantle #840 in 99 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://pedantle.certitudes.org/',
+        "I found #pedantle #833 in 133 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://pedantle.certitudes.org/",
+        "I found #pedantle #840 in 99 guesses!\n🟩🟩🟩🟩🟩🟩🟩🟧🟧🟧🟧🟧🟧🟧🟧🟥🟥🟥🟥🟥\nhttps://pedantle.certitudes.org/",
     ]
     expected = [
         {"day": "833", "name": "Pedantle", "timestamp": 10, "tries": "133", "user_id": 456481297, "user_name": "Trifase"},
@@ -1804,7 +1805,7 @@ class Pedantle(Giochino):
         return _can_handle_this
 
     def parse(self):
-        matches = re.search(r'#pedantle #(\d+) in (\d+) guesses', self.raw_text)
+        matches = re.search(r"#pedantle #(\d+) in (\d+) guesses", self.raw_text)
         self.day = matches.group(1)
         self.tries = matches.group(2)
 
@@ -1838,10 +1839,10 @@ class Picsey(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'Picsey (\d+\.\d+\.\d+)', text).group(1)
+        day_match = re.search(r"Picsey (\d+\.\d+\.\d+)", text).group(1)
         self.day = get_day_from_date(self._date, self._day, "Picsey", day_match)
-        
-        point_match = re.search(r'(\d+)p', text).group(1)
+
+        point_match = re.search(r"(\d+)p", text).group(1)
         points = int(point_match)
         # Picsey uses positive poits, from 0 to 100. We as usual save 100-n and then revert it when printing the results.
         self.tries = 100 - points
@@ -1862,28 +1863,26 @@ class Pinpoint(Giochino):
     can_lose: True
 
     examples = [
-        'Pinpoint n. 159 | 3 risposte giuste\n1️⃣ | 0% di corrispondenza \n2️⃣ | 3% di corrispondenza \n3️⃣ | 100% di corrispondenza  📌\nlnkd.in/pinpoint.',
-        'Pinpoint #167 | 2 tentativi\n1️⃣ | Corrispondenza: 18%\n2️⃣ | Corrispondenza: 100% 📌\nlnkd.in/pinpoint.',
-        'Pinpoint #169\n📌 ⬜ ⬜ ⬜ ⬜ (1/5)\nlnkd.in/pinpoint.',
-        'Pinpoint #169\n🤔 📌 ⬜ ⬜ ⬜ (2/5)\nlnkd.in/pinpoint.',
-        'Pinpoint #169\n🤔 🤔 🤔 🤔 📌 (5/5)\nlnkd.in/pinpoint.',
-        'Pinpoint #169\n🤔 🤔 🤔 🤔 🤔 (X/5)\nlnkd.in/pinpoint.',
-        'Pinpoint #170 | 3 guesses\n1️⃣  | 64% match\n2️⃣  | 78% match\n3️⃣  | 100% match 📌\nlnkd.in/pinpoint.',
-        'Pinpoint #181 | 1 guess\n1️⃣  | 100% match 📌\nlnkd.in/pinpoint.',
-        'Pinpoint #195 | 1 tentativo\n1️⃣ | Corrispondenza: 100% 📌\nlnkd.in/pinpoint.',
-
+        "Pinpoint n. 159 | 3 risposte giuste\n1️⃣ | 0% di corrispondenza \n2️⃣ | 3% di corrispondenza \n3️⃣ | 100% di corrispondenza  📌\nlnkd.in/pinpoint.",
+        "Pinpoint #167 | 2 tentativi\n1️⃣ | Corrispondenza: 18%\n2️⃣ | Corrispondenza: 100% 📌\nlnkd.in/pinpoint.",
+        "Pinpoint #169\n📌 ⬜ ⬜ ⬜ ⬜ (1/5)\nlnkd.in/pinpoint.",
+        "Pinpoint #169\n🤔 📌 ⬜ ⬜ ⬜ (2/5)\nlnkd.in/pinpoint.",
+        "Pinpoint #169\n🤔 🤔 🤔 🤔 📌 (5/5)\nlnkd.in/pinpoint.",
+        "Pinpoint #169\n🤔 🤔 🤔 🤔 🤔 (X/5)\nlnkd.in/pinpoint.",
+        "Pinpoint #170 | 3 guesses\n1️⃣  | 64% match\n2️⃣  | 78% match\n3️⃣  | 100% match 📌\nlnkd.in/pinpoint.",
+        "Pinpoint #181 | 1 guess\n1️⃣  | 100% match 📌\nlnkd.in/pinpoint.",
+        "Pinpoint #195 | 1 tentativo\n1️⃣ | Corrispondenza: 100% 📌\nlnkd.in/pinpoint.",
     ]
     expected = [
-        {"day": "159", "name": "Pinpoint", "timestamp": 10, "tries": '3', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "167", "name": "Pinpoint", "timestamp": 10, "tries": '2', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": '1', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": '2', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": '5', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": 'X', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "170", "name": "Pinpoint", "timestamp": 10, "tries": '3', "user_id": 456481297, "user_name": "Trifase"},
-        {'day': '181', 'name': 'Pinpoint', 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '195', 'name': 'Pinpoint', 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
-
+        {"day": "159", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "167", "name": "Pinpoint", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "169", "name": "Pinpoint", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "170", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "181", "name": "Pinpoint", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "195", "name": "Pinpoint", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1892,30 +1891,30 @@ class Pinpoint(Giochino):
         _can_handle_this = all(w in raw_text for w in wordlist)
         return _can_handle_this
 
-
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number using regex
-        day_match = re.search(r'Pinpoint (?:n\. |#)(\d+)', text)
+        day_match = re.search(r"Pinpoint (?:n\. |#)(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Check if the user won or lost
-        if 'X/' in text or '📌' not in text:
-            self.tries = 'X'
+        if "X/" in text or "📌" not in text:
+            self.tries = "X"
         else:
             # Check for different result formats
-            if '📌' in text:
-                if '/5' in text:
-                    position_match = re.search(r'\((\d+)/5\)', text)
+            if "📌" in text:
+                if "/5" in text:
+                    position_match = re.search(r"\((\d+)/5\)", text)
                     self.tries = position_match.group(1) if position_match else None
                 else:
-                    if tries_match := re.search(r'(\d+) (?:guesses?|tentativi|tentativo)', text):
+                    if tries_match := re.search(r"(\d+) (?:guesses?|tentativi|tentativo)", text):
                         self.tries = tries_match.group(1)
-                    elif tries_match := re.search(r'\| (\d+) ', text):
+                    elif tries_match := re.search(r"\| (\d+) ", text):
                         self.tries = tries_match.group(1)
 
         self.stars = None
+
 
 @dataclass
 class Polygonle(Giochino):
@@ -1946,7 +1945,7 @@ class Polygonle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches = re.search(r'Polygonle (\d+) (.)', text)
+        matches = re.search(r"Polygonle (\d+) (.)", text)
         self.day = matches.group(1)
         punti = matches.group(2)
 
@@ -1970,10 +1969,10 @@ class Posterdle(Giochino):
     has_extra = True
 
     examples = [
-        '#Posterdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 🍿 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04', #vinta
-        '#Posterdle #2024-09-04 \n\n ⌛️ 6️⃣ seconds \n 🍿 🟥 🟥 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04', #vinta
-        '#Posterdle #2024-09-04 \n\n ⌛️ 2️⃣1️⃣ seconds \n 🍿 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04', #persa (tempo)
-        '#Posterdle #2024-09-03 \n\n ⌛️ 6️⃣ seconds \n 🍿 🟥 🟥 🟥 🟥 🟥 🟥  \n https://likewise.com/games/posterdle/2024-09-03' #persa (tentativi)
+        "#Posterdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 🍿 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04",  # vinta
+        "#Posterdle #2024-09-04 \n\n ⌛️ 6️⃣ seconds \n 🍿 🟥 🟥 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04",  # vinta
+        "#Posterdle #2024-09-04 \n\n ⌛️ 2️⃣1️⃣ seconds \n 🍿 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04",  # persa (tempo)
+        "#Posterdle #2024-09-03 \n\n ⌛️ 6️⃣ seconds \n 🍿 🟥 🟥 🟥 🟥 🟥 🟥  \n https://likewise.com/games/posterdle/2024-09-03",  # persa (tentativi)
     ]
     expected = [
         {"day": "100", "name": "Posterdle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": "5"},
@@ -1991,18 +1990,15 @@ class Posterdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-
-        date_str = re.search(r'#Posterdle (#\d{4}-\d{2}-\d{2})', text).group(1)
+        date_str = re.search(r"#Posterdle (#\d{4}-\d{2}-\d{2})", text).group(1)
         self.day = get_day_from_date(self._date, self._day, "Posterdle", date_str)
-
 
         if "🟩" not in text:
             self.tries = "X"
         else:
             self.stars = str(text.count("⬜️"))
-            time = re.search(r'((?:\S\ufe0f\S)+)', text).group(1)
+            time = re.search(r"((?:\S\ufe0f\S)+)", text).group(1)
             self.tries = time_from_emoji(time)
-
 
 
 @dataclass
@@ -2017,17 +2013,16 @@ class Queens(Giochino):
     can_lose: False
 
     examples = [
-        'Queens n. 159 | 1:36 \nAi primi posti 👑: 🟦 🟨 🟪\nlnkd.in/queens.',
-        'Queens #161 | 2:56\nAi primi posti 👑: 🟥 🟧 ⬜️\nlnkd.in/queens.',
-        'Queens #161 | 0:58 and flawless\nFirst 👑s: 🟫 🟥 🟧 \nlnkd.in/queens.',
-        'Queens #161\n0:58 👑\nlnkd.in/queens.',
+        "Queens n. 159 | 1:36 \nAi primi posti 👑: 🟦 🟨 🟪\nlnkd.in/queens.",
+        "Queens #161 | 2:56\nAi primi posti 👑: 🟥 🟧 ⬜️\nlnkd.in/queens.",
+        "Queens #161 | 0:58 and flawless\nFirst 👑s: 🟫 🟥 🟧 \nlnkd.in/queens.",
+        "Queens #161\n0:58 👑\nlnkd.in/queens.",
     ]
     expected = [
-        {"day": "159", "name": "Queens", "timestamp": 10, "tries": '136', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "161", "name": "Queens", "timestamp": 10, "tries": '256', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "161", "name": "Queens", "timestamp": 10, "tries": '058', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "161", "name": "Queens", "timestamp": 10, "tries": '058', "user_id": 456481297, "user_name": "Trifase"},
-
+        {"day": "159", "name": "Queens", "timestamp": 10, "tries": "136", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "161", "name": "Queens", "timestamp": 10, "tries": "256", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "161", "name": "Queens", "timestamp": 10, "tries": "058", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "161", "name": "Queens", "timestamp": 10, "tries": "058", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2039,10 +2034,11 @@ class Queens(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches_day = re.search(r'Queens (?:n\. |#)(\d+)', text)
-        matches_time = re.search(r'(\d+):(\d+)', text)
+        matches_day = re.search(r"Queens (?:n\. |#)(\d+)", text)
+        matches_time = re.search(r"(\d+):(\d+)", text)
         self.day = matches_day.group(1) if matches_day else None
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
+
 
 @dataclass
 class Reversle(Giochino):
@@ -2071,10 +2067,11 @@ class Reversle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches = re.search(r'Reversle #(\d+) (\d+\.\d+)s', text)
+        matches = re.search(r"Reversle #(\d+) (\d+\.\d+)s", text)
         self.day = matches.group(1) if matches else None
         punti = matches.group(2).replace(".", "").replace(",", "")
         self.tries = int(punti)
+
 
 @dataclass
 class Rotaboxes(Giochino):
@@ -2104,8 +2101,8 @@ class Rotaboxes(Giochino):
 
     def parse(self):
         text = self.raw_text
-        day_match = re.search(r'rotabox.es/(\d+)', text)
-        clicks_match = re.search(r'clicks: (\d+)', text)
+        day_match = re.search(r"rotabox.es/(\d+)", text)
+        clicks_match = re.search(r"clicks: (\d+)", text)
         self.day = day_match.group(1) if day_match else None
         self.tries = int(clicks_match.group(1)) if clicks_match else None
 
@@ -2140,7 +2137,7 @@ class Spellcheck(Giochino):
 
     def parse(self):
         text = self.raw_text
-        day_match = re.search(r'Spellcheck #(\d+)', text)
+        day_match = re.search(r"Spellcheck #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         self.tries = 15 - text.count("🟩")
@@ -2173,14 +2170,14 @@ class Spotle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        day_match = re.search(r'Spotle #(\d+)', text)
+        day_match = re.search(r"Spotle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         punteggio_bonificato = ""
         for char in text:
             if char in ["⬛", "🟥", "🟩", "⬜", "🎁"]:
                 punteggio_bonificato += char
-        
+
         if ("🟩" not in text and "🎁" not in text) or "❌" in text:
             self.tries = "X"
         else:
@@ -2188,6 +2185,7 @@ class Spotle(Giochino):
                 self.tries = str(punteggio_bonificato.index("🎁") + 1)
             else:
                 self.tries = str(punteggio_bonificato.index("🟩") + 1)
+
 
 @dataclass
 class Spots(Giochino):
@@ -2199,8 +2197,8 @@ class Spots(Giochino):
     _url = "https://spots.wtf"
 
     examples = [
-        'Spots Code #54\nGuesses: 10\n🟨⬛️⬛️⬛️\n🟩🟩⬛️⬛️\n🟩⬛️⬛️⬛️\n🟨🟨⬛️⬛️\n🟨⬛️⬛️⬛️\n🟨🟨⬛️⬛️\n🟨⬛️⬛️⬛️\n🟨⬛️⬛️⬛️\n⬛️⬛️⬛️⬛️\n🟨⬛️⬛️⬛️\nhttps://spots.wtf',
-        'Spots Code #54\nGuesses: 4\n🟩🟩🟩🟩\n🟩🟩🟩⬛️\n🟩🟩⬛️⬛️\n🟩⬛️⬛️⬛️\nhttps://spots.wtf',
+        "Spots Code #54\nGuesses: 10\n🟨⬛️⬛️⬛️\n🟩🟩⬛️⬛️\n🟩⬛️⬛️⬛️\n🟨🟨⬛️⬛️\n🟨⬛️⬛️⬛️\n🟨🟨⬛️⬛️\n🟨⬛️⬛️⬛️\n🟨⬛️⬛️⬛️\n⬛️⬛️⬛️⬛️\n🟨⬛️⬛️⬛️\nhttps://spots.wtf",
+        "Spots Code #54\nGuesses: 4\n🟩🟩🟩🟩\n🟩🟩🟩⬛️\n🟩🟩⬛️⬛️\n🟩⬛️⬛️⬛️\nhttps://spots.wtf",
     ]
     expected = [
         {"day": "54", "name": "Spots", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
@@ -2216,11 +2214,11 @@ class Spots(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'Spots Code #(\d+)', text)
+        day_match = re.search(r"Spots Code #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        guesses_match = re.search(r'Guesses: (\d+)', text)
-        self.tries = guesses_match.group(1) if "🟩🟩🟩🟩" in text else 'X'
+        guesses_match = re.search(r"Guesses: (\d+)", text)
+        self.tries = guesses_match.group(1) if "🟩🟩🟩🟩" in text else "X"
 
 
 @dataclass
@@ -2252,7 +2250,7 @@ class Squareword(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches = re.search(r'squareword.org (\d+): (\d+) guesses', text)
+        matches = re.search(r"squareword.org (\d+): (\d+) guesses", text)
         self.day = matches.group(1) if matches else None
         self.tries = matches.group(2) if matches else None
         self.stars = None
@@ -2287,10 +2285,10 @@ class Stepdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'Stepdle #(\d+)', text)
+        day_match = re.search(r"Stepdle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        punti_match = re.search(r'(\d+)/20', text)
+        punti_match = re.search(r"(\d+)/20", text)
         won = any(line.count("🟩") == 7 for line in text.splitlines())
         if won:
             self.tries = punti_match.group(1) if punti_match else None
@@ -2309,10 +2307,7 @@ class Strands(Giochino):
 
     can_lose: False
 
-    examples = [
-        "Strands #74\n“Tasty!”\n🔵🔵🔵🔵\n🔵🔵🟡🔵\n🔵",
-        "Strands #75\n“Looking for a mate”\n💡🔵💡🔵\n💡🔵🔵🔵\n🟡🔵🔵"
-    ]
+    examples = ["Strands #74\n“Tasty!”\n🔵🔵🔵🔵\n🔵🔵🟡🔵\n🔵", "Strands #75\n“Looking for a mate”\n💡🔵💡🔵\n💡🔵🔵🔵\n🟡🔵🔵"]
     expected = [
         {"day": "74", "name": "Strands", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "75", "name": "Strands", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
@@ -2327,10 +2322,10 @@ class Strands(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_match = re.search(r'Strands #(\d+)', text)
+        day_match = re.search(r"Strands #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
         count = 0
-        count += text.count('💡')
+        count += text.count("💡")
         self.tries = str(count)
 
 
@@ -2346,15 +2341,14 @@ class Tango(Giochino):
     can_lose: False
 
     examples = [
-        'Tango #3 | 1:24 and flawless\nFirst 5 placements:\n🟨 🟨 🟨 🟨 🟨 🟨 \n2️⃣ 🟨 🟨 🟨 🟨 1️⃣ \n3️⃣ 4️⃣ 🟨 🟨 🟨 🟨 \n🟨 5️⃣ 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \nlnkd.in/tango.',
-        'Tango #3\n2:44 🌗\nlnkd.in/tango.',
-        'Tango #3 | 0:55 e impeccabilePrimi 5 posizionamenti:\n🟨🟨🟨🟨🟨🟨\n1️⃣🟨🟨🟨🟨🟨\n2️⃣3️⃣🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨5️⃣4️⃣🟨🟨\nlnkd.in/tango.'
+        "Tango #3 | 1:24 and flawless\nFirst 5 placements:\n🟨 🟨 🟨 🟨 🟨 🟨 \n2️⃣ 🟨 🟨 🟨 🟨 1️⃣ \n3️⃣ 4️⃣ 🟨 🟨 🟨 🟨 \n🟨 5️⃣ 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \nlnkd.in/tango.",
+        "Tango #3\n2:44 🌗\nlnkd.in/tango.",
+        "Tango #3 | 0:55 e impeccabilePrimi 5 posizionamenti:\n🟨🟨🟨🟨🟨🟨\n1️⃣🟨🟨🟨🟨🟨\n2️⃣3️⃣🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨5️⃣4️⃣🟨🟨\nlnkd.in/tango.",
     ]
     expected = [
-        {"day": "3", "name": "Tango", "timestamp": 10, "tries": '124', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "3", "name": "Tango", "timestamp": 10, "tries": '244', "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "3", "name": "Tango", "timestamp": 10, "tries": '055', "user_id": 456481297, "user_name": "Trifase"},
-
+        {"day": "3", "name": "Tango", "timestamp": 10, "tries": "124", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "3", "name": "Tango", "timestamp": 10, "tries": "244", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "3", "name": "Tango", "timestamp": 10, "tries": "055", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2366,10 +2360,11 @@ class Tango(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches_day = re.search(r'Tango #(\d+)', text)
-        matches_time = re.search(r'(\d+):(\d+)', text)
+        matches_day = re.search(r"Tango #(\d+)", text)
+        matches_time = re.search(r"(\d+):(\d+)", text)
         self.day = matches_day.group(1) if matches_day else None
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
+
 
 @dataclass
 class TempoIndovinr(Giochino):
@@ -2399,10 +2394,10 @@ class TempoIndovinr(Giochino):
 
     def parse(self):
         text = self.raw_text
-        day_match = re.search(r'day (\d+)', text)
+        day_match = re.search(r"day (\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        point_match = re.search(r'Ho fatto (\d+)/1000 punti', text)
-        self.tries = 1000 - int(point_match.group(1)) if point_match else None 
+        point_match = re.search(r"Ho fatto (\d+)/1000 punti", text)
+        self.tries = 1000 - int(point_match.group(1)) if point_match else None
         self.stars = None
 
 
@@ -2417,9 +2412,10 @@ class Thirdle(Giochino):
 
     can_lose: False
 
-    examples = ["#thirdle #thirdle775\n\n🏆 1 / 6 | 🔥 1\n\n🟩🟩 🟩🟩 🟩🟩",
-                '#thirdle #thirdle776\n\n🏆 4 / 6 | 🔥 2\n\n🟧⬛️ 🟧⬛️ 🟧⬛️\n🟩🟩 🟩⬛️ 🟧⬛️\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩🟩 🟩🟩',
-                '#thirdle #thirdle777\n\n🏆 X / 6 \n\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩'
+    examples = [
+        "#thirdle #thirdle775\n\n🏆 1 / 6 | 🔥 1\n\n🟩🟩 🟩🟩 🟩🟩",
+        "#thirdle #thirdle776\n\n🏆 4 / 6 | 🔥 2\n\n🟧⬛️ 🟧⬛️ 🟧⬛️\n🟩🟩 🟩⬛️ 🟧⬛️\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩🟩 🟩🟩",
+        "#thirdle #thirdle777\n\n🏆 X / 6 \n\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩\n🟩🟩 🟩⬛️ 🟩🟩",
     ]
     expected = [
         {"day": "775", "name": "Thirdle", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
@@ -2435,11 +2431,11 @@ class Thirdle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        day_match = re.search(r'#thirdle(\d+)', text)
+        day_match = re.search(r"#thirdle(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        match_points = re.search(r'(\d+|X) / 6', text)
-        if match_points.group(1) == 'X':
+        match_points = re.search(r"(\d+|X) / 6", text)
+        if match_points.group(1) == "X":
             self.tries = match_points.group(1)
         else:
             self.tries = int(match_points.group(1))
@@ -2474,10 +2470,10 @@ class TimeGuessr(Giochino):
 
     def parse(self):
         text = self.raw_text
-        match_day = re.search(r'#(\d+)', text)
+        match_day = re.search(r"#(\d+)", text)
         self.day = match_day.group(1) if match_day else None
 
-        match_points = re.search(r'(\d+),(\d+)', text)
+        match_points = re.search(r"(\d+),(\d+)", text)
         self.tries = 50_000 - int(match_points.group(1) + match_points.group(2)) if match_points else None
         self.stars = None
 
@@ -2509,7 +2505,7 @@ class Tradle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches = re.search(r'#(\d+) (\d+|X)/6', text)
+        matches = re.search(r"#(\d+) (\d+|X)/6", text)
 
         self.day = matches.group(1)
         self.tries = matches.group(2)
@@ -2528,19 +2524,17 @@ class Travle(Giochino):
     has_extra: True
 
     examples = [
-        "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",                   # vinto
-        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth",                # vinto, perfetto
-        "#travle #484 +3 (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",         # vinto, malus di 1
-        "#travle #484 +3 (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",         # vinto, malus di 2 (3)
-        "#travle #484 +3 (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",         # vinto, malus di 3 (6)
-
-        "#travle #484 +3 (🎌)\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",              # vinto, bonus
-        "#travle #484 +0 (🎌) (Perfect)\n✅✅✅✅\nhttps://travle.earth",           # vinto, bonus, perfetto
-        "#travle #484 +3 (🎌) (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",    # vinto, bonus, malus di 1
-        "#travle #484 +3 (🎌) (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",    # vinto, bonus, malus di 2 (3)
-        "#travle #484 +3 (🎌) (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",    # vinto, bonus, malus di 3 (6)
-
-        "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",      # perso
+        "#travle #484 +3\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",  # vinto
+        "#travle #484 +0 (Perfect)\n✅✅✅✅\nhttps://travle.earth",  # vinto, perfetto
+        "#travle #484 +3 (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 1
+        "#travle #484 +3 (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 2 (3)
+        "#travle #484 +3 (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, malus di 3 (6)
+        "#travle #484 +3 (🎌)\n🟩🟧✅🟥🟧✅✅\nhttps://travle.earth",  # vinto, bonus
+        "#travle #484 +0 (🎌) (Perfect)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, perfetto
+        "#travle #484 +3 (🎌) (1 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 1
+        "#travle #484 +3 (🎌) (2 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 2 (3)
+        "#travle #484 +3 (🎌) (3 suggerimento)\n✅✅✅✅\nhttps://travle.earth",  # vinto, bonus, malus di 3 (6)
+        "#travle #484 (4 lontano)\n🟧🟧🟥🟥🟧🟥🟥🟥🟥\nhttps://travle.earth",  # perso
     ]
     expected = [
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
@@ -2548,13 +2542,11 @@ class Travle(Giochino):
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
-
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "0", "user_id": 456481297, "user_name": "Trifase", "stars": 2},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
-
         {"day": "484", "name": "Travle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
@@ -2566,38 +2558,38 @@ class Travle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number using regex
-        day_match = re.search(r'#travle #(\d+)', text)
+        day_match = re.search(r"#travle #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Check if game was lost or won
         if "✅" not in text.splitlines()[1]:
             self.tries = "X"
         else:
             # Extract tries count
-            tries_match = re.search(r'#travle #\d+ \+(\d+)', text)
+            tries_match = re.search(r"#travle #\d+ \+(\d+)", text)
             self.tries = tries_match.group(1) if tries_match else None
-        
+
         # Initialize stars calculation
         self.stars = 0
-        
+
         # Check for perfect game
-        if re.search(r'\((Perfect|Perfetto|Perfekt)\)', text):
+        if re.search(r"\((Perfect|Perfetto|Perfekt)\)", text):
             self.stars += 1
-        
+
         # Check for bonus flag
         if "🎌" in text:
             self.stars += 1
-        
+
         # If there are no stars, set to None instead of 0
         if self.stars == 0:
             self.stars = None
-            
+
         # Process hints if the game was won
         if self.tries != "X" and self.tries is not None:
             # Look for hint pattern
-            hint_match = re.search(r'\((\d+) suggerimento\)', text)
+            hint_match = re.search(r"\((\d+) suggerimento\)", text)
             if hint_match:
                 hint_count = int(hint_match.group(1))
                 # Apply triangular penalty formula: n(n+1)/2
@@ -2635,34 +2627,33 @@ class TravleITA(Giochino):
 
     def parse(self):
         text = self.raw_text
-        
+
         # Extract day number using regex
-        day_match = re.search(r'#travle_ita #(\d+)', text)
+        day_match = re.search(r"#travle_ita #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
-        
+
         # Check if game was lost or won
         if "✅" not in text.splitlines()[1]:
             self.tries = "X"
         else:
             # Extract tries count
-            tries_match = re.search(r'#travle_ita #\d+ \+(\d+)', text)
+            tries_match = re.search(r"#travle_ita #\d+ \+(\d+)", text)
             self.tries = tries_match.group(1) if tries_match else None
-        
+
         # Check for perfect game - this sets stars
         self.stars = None
-        if re.search(r'\((Perfect|Perfetto|Perfekt)\)', text):
+        if re.search(r"\((Perfect|Perfetto|Perfekt)\)", text):
             self.stars = 1
-        
+
         # Process hints if the game was won and not perfect
         if self.tries != "X" and self.tries is not None and not self.stars:
             # Look for hint pattern
-            hint_match = re.search(r'\((\d+) [^\)]+\)', text)
+            hint_match = re.search(r"\((\d+) [^\)]+\)", text)
             if hint_match:
                 hint_count = int(hint_match.group(1))
                 # Apply triangular penalty formula: n(n+1)/2
                 penalty = int((hint_count * (hint_count + 1)) / 2)
                 self.tries = int(self.tries) + penalty
-
 
 
 @dataclass
@@ -2675,17 +2666,17 @@ class Unzoomed(Giochino):
     _url = "https://unzoomed.com"
 
     examples = [
-        'Unzoomed #89 1/6 🟢⚪️⚪️⚪️⚪️⚪️\n https://unzoomed.com',
-        'Unzoomed #89 4/6 🔴🔴🟡🟢⚪️⚪️\n https://unzoomed.com',
-        'Unzoomed #89 5/6 🔴🔴🔴🔴🟢⚪️\n https://unzoomed.com',
-        'Unzoomed #87 6/6 🔴🔴🔴🔴🟡🟡\n https://unzoomed.com',
+        "Unzoomed #89 1/6 🟢⚪️⚪️⚪️⚪️⚪️\n https://unzoomed.com",
+        "Unzoomed #89 4/6 🔴🔴🟡🟢⚪️⚪️\n https://unzoomed.com",
+        "Unzoomed #89 5/6 🔴🔴🔴🔴🟢⚪️\n https://unzoomed.com",
+        "Unzoomed #87 6/6 🔴🔴🔴🔴🟡🟡\n https://unzoomed.com",
     ]
 
     expected = [
-        {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '4', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '89', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': '5', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '87', 'name': 'Unzoomed', 'stars': None, 'timestamp': 10, 'tries': 'X', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {"day": "89", "name": "Unzoomed", "stars": None, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "89", "name": "Unzoomed", "stars": None, "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "89", "name": "Unzoomed", "stars": None, "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "87", "name": "Unzoomed", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2697,12 +2688,11 @@ class Unzoomed(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches = re.search(r'#(\d+) (\d+)/6', text)
+        matches = re.search(r"#(\d+) (\d+)/6", text)
         self.day = matches.group(1) if matches else None
         self.tries = matches.group(2) if matches else None
-        if '🟢' not in text:
-            self.tries = 'X'
-
+        if "🟢" not in text:
+            self.tries = "X"
 
 
 @dataclass
@@ -2733,9 +2723,9 @@ class Waffle(Giochino):
 
     def parse(self):
         text = self.raw_text
-        matches = re.search(r'#waffle(\d+) (\d+|X)/5', text)
+        matches = re.search(r"#waffle(\d+) (\d+|X)/5", text)
         self.day = matches.group(1) if matches else None
-        self.tries = 15 - int(matches.group(2)) if matches.group(2) != 'X' else 'X'
+        self.tries = 15 - int(matches.group(2)) if matches.group(2) != "X" else "X"
         self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
 
 
@@ -2772,9 +2762,9 @@ class WhereTaken(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_matches = re.search(r'#(\d+)', text)
+        day_matches = re.search(r"#(\d+)", text)
         self.day = day_matches.group(1) if day_matches else None
-        punti_matches = re.search(r'(\d+|X)/6', text)
+        punti_matches = re.search(r"(\d+|X)/6", text)
         self.tries = punti_matches.group(1) if punti_matches else None
 
         self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
@@ -2788,10 +2778,9 @@ class WhenTaken(Giochino):
     _day = "191"
     _emoji = "📍"
     _url = "https://whentaken.com"
-    
 
     examples = [
-        '#WhenTaken #191 (05.09.2024)\n\nI scored 505/1000 🎉\n\n1️⃣ 📍 3499 km - 🗓 22 yrs - ⚡️ 82 / 200\n2️⃣ 📍 441 km - 🗓 7 yrs - ⚡️ 178 / 200\n3️⃣ 📍 16972 km - 🗓 11 yrs - ⚡️ 82 / 200\n4️⃣ 📍 1181 km - 🗓 4 yrs - ⚡️ 162 / 200\n5️⃣ 📍 9698 km - 🗓 62 yrs - ⚡️ 1 / 200\n\nhttps://whentaken.com'
+        "#WhenTaken #191 (05.09.2024)\n\nI scored 505/1000 🎉\n\n1️⃣ 📍 3499 km - 🗓 22 yrs - ⚡️ 82 / 200\n2️⃣ 📍 441 km - 🗓 7 yrs - ⚡️ 178 / 200\n3️⃣ 📍 16972 km - 🗓 11 yrs - ⚡️ 82 / 200\n4️⃣ 📍 1181 km - 🗓 4 yrs - ⚡️ 162 / 200\n5️⃣ 📍 9698 km - 🗓 62 yrs - ⚡️ 1 / 200\n\nhttps://whentaken.com"
     ]
     expected = [
         {"day": "191", "name": "WhenTaken", "timestamp": 10, "tries": "495", "user_id": 456481297, "user_name": "Trifase"},
@@ -2806,9 +2795,9 @@ class WhenTaken(Giochino):
     def parse(self):
         text = self.raw_text
 
-        day_matches = re.search(r'#(\d+)', text)
+        day_matches = re.search(r"#(\d+)", text)
         self.day = day_matches.group(1) if day_matches else None
-        punti_matches = re.search(r'I scored (\d+)', text)
+        punti_matches = re.search(r"I scored (\d+)", text)
         self.tries = str(1000 - int(punti_matches.group(1))) if punti_matches else None
 
 
@@ -2820,7 +2809,6 @@ class WordGrid(Giochino):
     _day = "11"
     _emoji = "🦄"
     _url = "https://wordgrid.clevergoat.com/"
-
 
     examples = [
         "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.0\nwordgrid.clevergoat.com 🐐",
@@ -2840,9 +2828,9 @@ class WordGrid(Giochino):
 
     def parse(self):
         text = self.raw_text
-        match_day = re.search(r'#(\d+)', text)
+        match_day = re.search(r"#(\d+)", text)
         self.day = match_day.group(1) if match_day else None
-        match_rarity = re.search(r'Rarity: (\d+\.\d+)', text)
+        match_rarity = re.search(r"Rarity: (\d+\.\d+)", text)
         # The point is always a flat with a decimal. We will multiply by 10 to get a whole int, and then will divide by then when displaying it in the classifica.
         self.tries = str(int(float(match_rarity.group(1)) * 10))
 
@@ -2874,11 +2862,12 @@ class Wordle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches = re.search(r'Wordle (\d?[\,\.]?\d*) (\d+|X)/6', text)
+        matches = re.search(r"Wordle (\d?[\,\.]?\d*) (\d+|X)/6", text)
         # print(f'matches: {matches.group(1)}')
         self.day = matches.group(1).replace(",", "").replace(".", "") if matches else None
         self.tries = matches.group(2) if matches else None
         self.stars = None
+
 
 @dataclass
 class WordPeaks(Giochino):
@@ -2890,14 +2879,14 @@ class WordPeaks(Giochino):
     _url = "https://wordpeaks.com"
 
     examples = [
-        'Word Peaks #782 1/6\n\n  🟩🟩🟩🟩🟩\nhttps://wordpeaks.com',
-        'Word Peaks #782 3/6\n\n  🔼🔼🔼🟩🔼\n  🔼🟩🔼🔽🔼\n  🟩🟩🟩🟩🟩\nhttps://wordpeaks.com',
-        'Word Peaks #782 X/6\n\n  🔼🔽🔼🔽🔼\n  🔼🔽🔼🔼🔽\n  🟩🟩🔼🔽🔼\n  🔼🔼🔼🟩🔼\n  🔼🔽🔼🔽🔼\n  🔼🔼🔼🔽🔼\nhttps://wordpeaks.com',
+        "Word Peaks #782 1/6\n\n  🟩🟩🟩🟩🟩\nhttps://wordpeaks.com",
+        "Word Peaks #782 3/6\n\n  🔼🔼🔼🟩🔼\n  🔼🟩🔼🔽🔼\n  🟩🟩🟩🟩🟩\nhttps://wordpeaks.com",
+        "Word Peaks #782 X/6\n\n  🔼🔽🔼🔽🔼\n  🔼🔽🔼🔼🔽\n  🟩🟩🔼🔽🔼\n  🔼🔼🔼🟩🔼\n  🔼🔽🔼🔽🔼\n  🔼🔼🔼🔽🔼\nhttps://wordpeaks.com",
     ]
     expected = [
-        {'day': '782', 'name': 'WordPeaks', 'stars': None, 'timestamp': 10, 'tries': '1', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '782', 'name': 'WordPeaks', 'stars': None, 'timestamp': 10, 'tries': '3', 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '782', 'name': 'WordPeaks', 'stars': None, 'timestamp': 10, 'tries': 'X', 'user_id': 456481297, 'user_name': 'Trifase'},
+        {"day": "782", "name": "WordPeaks", "stars": None, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "782", "name": "WordPeaks", "stars": None, "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "782", "name": "WordPeaks", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2906,11 +2895,10 @@ class WordPeaks(Giochino):
         _can_handle_this = all(w in raw_text for w in wordlist)
         return _can_handle_this
 
-
     def parse(self):
         text = self.raw_text
 
-        matches = re.search(r'Word Peaks #(\d+) (\d+|X)/6', text)
+        matches = re.search(r"Word Peaks #(\d+) (\d+|X)/6", text)
         self.day = matches.group(1) if matches else None
         self.tries = matches.group(2) if matches else None
         self.stars = None
@@ -2929,7 +2917,7 @@ class Worldle(Giochino):
         "#Worldle #807 (07.04.2024) 1/6 (100%)\n🟩🟩🟩🟩🟩🎉\n🧭⭐\nhttps://worldle.teuteuf.fr",
         "#Worldle #808 (08.04.2024) 4/6 (100%)\n🟩🟩🟩🟨⬜↗️\n🟩🟩🟩🟩🟨↘️\n🟩🟩🟩🟩🟨⬇️\n🟩🟩🟩🟩🟩🎉\n\nhttps://worldle.teuteuf.fr",
         "#Worldle #808 (08.04.2024) X/6 (94%)\n🟩🟩🟩⬛️⬛️⬆️\n🟩🟩🟩🟩⬛️↖️\n🟩🟩🟩🟩🟨↖️\n🟩🟩🟨⬛️⬛️↗️\n🟩🟨⬛️⬛️⬛️↗️\n🟩🟩🟩🟩🟨➡️\n\nhttps://worldle.teuteuf.fr",
-        '#Worldle #1148 (14.03.2025) 1/6 (100%)\n🟩🟩🟩🟩🟩🎉\n🧭⭐📍🚩🗿📜🛡️🔤🗣️👫🪙🏙📦📐\nhttps://worldle.teuteuf.fr',
+        "#Worldle #1148 (14.03.2025) 1/6 (100%)\n🟩🟩🟩🟩🟩🎉\n🧭⭐📍🚩🗿📜🛡️🔤🗣️👫🪙🏙📦📐\nhttps://worldle.teuteuf.fr",
     ]
     expected = [
         {"day": "807", "name": "Worldle", "stars": 2, "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
@@ -2947,25 +2935,25 @@ class Worldle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        match_day = re.search(r'#(\d+)', text)
+        match_day = re.search(r"#(\d+)", text)
         self.day = match_day.group(1) if match_day else None
-        match_points = re.search(r'(\d+|X)/6', text)
+        match_points = re.search(r"(\d+|X)/6", text)
         self.tries = match_points.group(1) if match_points else None
 
-        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))       # 🧭
-        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))             # ⭐️
-        pinpoint = text.count(b"\xf0\x9f\x93\x8d".decode("utf-8"))      # 📍
-        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))          # 🚩
-        head = text.count(b"\xf0\x9f\x97\xbf".decode("utf-8"))          # 🗿
-        paper = text.count(b"\xf0\x9f\x93\x9c".decode("utf-8"))         # 📜
-        shield = text.count(b"\xf0\x9f\x9b\xa1".decode("utf-8"))        # 🛡️
-        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))           # 🔤
-        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))      # 🗣
-        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))    # 👫
-        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))          # 🪙
-        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))     # 🏙
-        box = text.count(b"\xf0\x9f\x93\xa6".decode("utf-8"))           # 📦
-        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))          # 📐
+        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))  # 🧭
+        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))  # ⭐️
+        pinpoint = text.count(b"\xf0\x9f\x93\x8d".decode("utf-8"))  # 📍
+        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))  # 🚩
+        head = text.count(b"\xf0\x9f\x97\xbf".decode("utf-8"))  # 🗿
+        paper = text.count(b"\xf0\x9f\x93\x9c".decode("utf-8"))  # 📜
+        shield = text.count(b"\xf0\x9f\x9b\xa1".decode("utf-8"))  # 🛡️
+        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))  # 🔤
+        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))  # 🗣
+        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))  # 👫
+        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))  # 🪙
+        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))  # 🏙
+        box = text.count(b"\xf0\x9f\x93\xa6".decode("utf-8"))  # 📦
+        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))  # 📐
         self.stars = bussola + stars + pinpoint + flag + head + paper + shield + abc + language + population + coin + cityscape + box + area
 
 
@@ -3043,7 +3031,7 @@ def test(print_debug, giochino=None):
 
 
 # Tests! you can pass None as second parameter to test all games
-if __name__ == '__main__':
+if __name__ == "__main__":
     giochino_da_testare = None
     # giochino_da_testare = Chrono
     test(True, giochino_da_testare)
