@@ -1027,6 +1027,53 @@ class Framed(Giochino):
                 # Find the position of the first green square
                 self.tries = str(punteggio.index("🟩") + 1)
 
+
+@dataclass
+class Flickle(Giochino):
+    _name = "Flickle"
+    _category = "Immagini, giochi e film"
+    _date = datetime.date(2025, 3, 14)
+    _day = "1067"
+    _emoji = "🎬"
+    _url = "https://flickle.app"
+
+    can_lose: True
+
+    examples = [
+        '#Flickle #1067\n\n    🎬⬛️⬛️⬛️🟩⬜️⬜️\n\n    📆 Daily Streak: 1 (Best 1)\n    🏆 Win Streak: 1 (Best 1)\n\n    https://flickle.app/',
+        '#Flickle #1067\n\n    🎬⬛️⬛️⬛️⬛️⬛️⬛️❌\n\n    📆 Daily Streak: 1 (Best 1)\n    💀 Loss Streak: 1 (Worst 1)\n\n    https://flickle.app/',
+        '#Flickle #1066\n\n🎬🟥🟥🟥⬛⬛⬛❌\n\n📆 Daily Streak: 1 (Best 1)\n💀 Loss Streak: 1 (Worst 1)\n\nhttps://flickle.app/'
+    ]
+    expected = [
+        {"day": "1067", "name": "Flickle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1067", "name": "Flickle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1066", "name": "Flickle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#Flickle", "https://flickle.app"]
+        _can_handle_this = all(c in raw_text for c in wordlist) and 'one-frame' not in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        # Extract day number using regex
+        day_match = re.search(r'Flickle #(\d+)', text)
+        self.day = day_match.group(1) if day_match else None
+
+        # Find the emoji line containing the results 
+        emoji_line = re.search(r'🎥\s+([🟥🟩⬛\s]+)', text)
+        if emoji_line:
+            # Remove spaces and get the results string
+            punteggio = emoji_line.group(1).replace(" ", "")
+            if "🟩" not in punteggio or "❌" in text:
+                self.tries = "X"
+            else:
+                # Find the position of the first green square
+                self.tries = str(punteggio.index("🟩") + 1)
+
 @dataclass
 class FramedOneFrame(Giochino):
     _name = "Framed One Frame"
