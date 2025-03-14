@@ -277,8 +277,8 @@ class Angle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "Angle" in lines[0]
+        wordlist = ["#Angle", "https://www.angle.wtf"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
@@ -361,8 +361,8 @@ class Bandle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "Bandle #" in lines[0] and "https://bandle.app/" in lines[-1]
+        wordlist = ["Bandle #", "https://bandle.app/"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
@@ -406,8 +406,10 @@ class Chrono(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        _can_handle_this = "CHRONO" in raw_text and "#" in raw_text and "🔥" in raw_text and "https://chrono.ques" in raw_text
+        wordlist = ["CHRONO", "https://chrono.quest", "🔥"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
+
 
     def parse(self):
         text = self.raw_text
@@ -462,8 +464,8 @@ class Chronophoto(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "I got a score of" in lines[0] and "chronophoto.app" in lines[-1]
+        wordlist = ["I got a score of", "chronophoto.app"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
@@ -527,8 +529,8 @@ class Cloudle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "Cloudle -" in lines[0]
+        wordlist = ["Cloudle -", "https://cloudle.app"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
@@ -568,8 +570,8 @@ class Colorfle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "Colorfle" in lines[0] and "accuracy" in lines[-1]
+        wordlist = ["Colorfle", "accuracy"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
@@ -613,8 +615,8 @@ class Connections(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "Connections" in lines[0] and "Puzzle #" in lines[1]
+        wordlist = ["Connections", "Puzzle #"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
@@ -663,8 +665,9 @@ class Contexto(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "contexto.me" in lines[0]
+        
+        wordlist = ["I played contexto.me"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
@@ -710,8 +713,8 @@ class Countryle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        lines = raw_text.splitlines()
-        _can_handle_this = "#Countryle" in lines[0]
+        wordlist = ["#Countryle", "Guessed in"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
