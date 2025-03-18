@@ -2485,13 +2485,17 @@ class Tradle(Giochino):
     _date = datetime.date(2023, 6, 23)
     _day = "474"
     _emoji = "🚢"
-    _url = "https://oec.world/en/tradle"
+    _url = "https://games.oec.world/en/tradle"
 
     examples = [
         "#Tradle #761 5/6\n🟩🟩🟨⬜⬜\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟩\nhttps://games.oec.world/en/tradle",
         "#Tradle #761 X/6\n🟩🟨⬜⬜⬜\n🟩🟩🟩🟨⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\nhttps://games.oec.world/en/tradle",
+        "#Tradle #761 5/6\n🟩🟩🟨⬜⬜\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟩\nhttps://oec.world/en/tradle",
+        "#Tradle #761 X/6\n🟩🟨⬜⬜⬜\n🟩🟩🟩🟨⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\nhttps://oec.world/en/tradle",
     ]
     expected = [
+        {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
@@ -2499,7 +2503,8 @@ class Tradle(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["#Tradle", "https://games.oec.world/en/tradle"]
-        _can_handle_this = all(w in raw_text for w in wordlist)
+        wordlist2 = ["#Tradle", "https://oec.world/en/tradle"]
+        _can_handle_this = all(w in raw_text for w in wordlist) or all(w in raw_text for w in wordlist2)
         return _can_handle_this
 
     def parse(self):
@@ -3033,5 +3038,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    # giochino_da_testare = Chrono
+    giochino_da_testare = Tradle
     test(True, giochino_da_testare)

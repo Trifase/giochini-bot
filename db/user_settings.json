@@ -1,16 +1,16 @@
 {
     "456481297": {
         "favs": [
-            "Parole",
             "Chrono",
             "Connections",
             "GuessTheGame",
-            "Spellcheck",
             "Waffle",
             "Queens",
             "Tango",
             "Pinpoint",
-            "Crossclimb"
+            "Flickle",
+            "Framed",
+            "Framed One Frame"
         ],
         "favs_extra_button": true
     },
@@ -180,7 +180,10 @@
             "Pinpoint",
             "Reversle",
             "Framed",
-            "Framed One Frame"
+            "Framed One Frame",
+            "Lyricle",
+            "FoodGuessr",
+            "Flickle"
         ],
         "favs_extra_button": true
     },
