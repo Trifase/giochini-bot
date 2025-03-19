@@ -1879,6 +1879,12 @@ class Pinpoint(Giochino):
         "Pinpoint #170 | 3 guesses\n1️⃣  | 64% match\n2️⃣  | 78% match\n3️⃣  | 100% match 📌\nlnkd.in/pinpoint.",
         "Pinpoint #181 | 1 guess\n1️⃣  | 100% match 📌\nlnkd.in/pinpoint.",
         "Pinpoint #195 | 1 tentativo\n1️⃣ | Corrispondenza: 100% 📌\nlnkd.in/pinpoint.",
+        'Pinpoint Nr. 323 | 3 Rateversuche\n1️⃣ | 24 % Treffer \n2️⃣ | 2 % Treffer \n3️⃣ | 100 % Treffer 📌\nlnkd.in/pinpoint.',
+        'Pinpoint #323 | 4 aciertos\n1️⃣ | 8 % de coincidencia\n2️⃣ | 2 % de coincidencia\n3️⃣ | 5 % de coincidencia\n4️⃣ | 100 % de coincidencia 📌\nlnkd.in/pinpoint.',
+        'Pinpoint Nr. 323 | 3 Rateversuche\n1️⃣ | 24 % Treffer \n2️⃣ | 2 % Treffer \n3️⃣ | 100 % Treffer 📌\nlnkd.in/pinpoint.',
+        # 'Pinpoint #323 | 推測3回\n1️⃣ | 3%件マッチ\n2️⃣ | 1%件マッチ\n3️⃣ | 100%件マッチ 📌\n🏅 今日、私は全プレーヤーの上位10%に入っています!',  # Does not work
+        'Pinpoint n. 323 | 3 risposte giuste\n1️⃣ | 24% di corrispondenza \n2️⃣ | 19% di corrispondenza \n3️⃣ | 100% di corrispondenza 📌\n🏅 Oggi sono più intelligente del 75% dei CEO!\nlnkd.in/pinpoint.',
+        'Pinpoint nr. 323 | 3 încercări\n1️⃣ | potrivire 8 % \n2️⃣ | potrivire 27 % \n3️⃣ | potrivire 100 % 📌\n🏅 Sunt mai deștept decât 90 % dintre directorii generali de astăzi\nlnkd.in/pinpoint.',
     ]
     expected = [
         {"day": "159", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
@@ -1890,6 +1896,11 @@ class Pinpoint(Giochino):
         {"day": "170", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "181", "name": "Pinpoint", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "195", "name": "Pinpoint", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1900,25 +1911,20 @@ class Pinpoint(Giochino):
 
     def parse(self):
         text = self.raw_text
-
-        # Extract day number using regex
-        day_match = re.search(r"Pinpoint (?:n\. |#)(\d+)", text)
-        self.day = day_match.group(1) if day_match else None
-
-        # Check if the user won or lost
-        if "X/" in text or "📌" not in text:
-            self.tries = "X"
+        if '|' in text:
+            matches = re.search(r"(\d+)\s\|\s(\d+)", text)
+            self.day = matches.group(1)
+            self.tries = matches.group(2)
         else:
+            matches = re.search(r"(?:n\. |#|Nr\. )(\d+)", text)
+            self.day = matches.group(1)
+            self.tries = "X"
+
             # Check for different result formats
-            if "📌" in text:
-                if "/5" in text:
-                    position_match = re.search(r"\((\d+)/5\)", text)
-                    self.tries = position_match.group(1) if position_match else None
-                else:
-                    if tries_match := re.search(r"(\d+) (?:guesses?|tentativi|tentativo)", text):
-                        self.tries = tries_match.group(1)
-                    elif tries_match := re.search(r"\| (\d+) ", text):
-                        self.tries = tries_match.group(1)
+            if "📌" in text and '/5' in text:
+                position_match = re.search(r"\((\d+)/5\)", text)
+                self.tries = position_match.group(1) if position_match else None
+
 
         self.stars = None
 
@@ -2024,12 +2030,14 @@ class Queens(Giochino):
         "Queens #161 | 2:56\nAi primi posti 👑: 🟥 🟧 ⬜️\nlnkd.in/queens.",
         "Queens #161 | 0:58 and flawless\nFirst 👑s: 🟫 🟥 🟧 \nlnkd.in/queens.",
         "Queens #161\n0:58 👑\nlnkd.in/queens.",
+        'Queens Nr. 323 | 0:58 und fehlerfrei\nErste 👑: ⬜ 🟥 🟦\nlnkd.in/queens.',
     ]
     expected = [
         {"day": "159", "name": "Queens", "timestamp": 10, "tries": "136", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "161", "name": "Queens", "timestamp": 10, "tries": "256", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "161", "name": "Queens", "timestamp": 10, "tries": "058", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "161", "name": "Queens", "timestamp": 10, "tries": "058", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "323", "name": "Queens", "timestamp": 10, "tries": "058", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2041,7 +2049,7 @@ class Queens(Giochino):
     def parse(self):
         text = self.raw_text
 
-        matches_day = re.search(r"Queens (?:n\. |#)(\d+)", text)
+        matches_day = re.search(r"Queens (?:n\. |#|Nr\. )(\d+)", text)
         matches_time = re.search(r"(\d+):(\d+)", text)
         self.day = matches_day.group(1) if matches_day else None
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
@@ -3045,5 +3053,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Countryle
+    giochino_da_testare = Pinpoint
     test(True, giochino_da_testare)
