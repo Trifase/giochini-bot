@@ -2924,6 +2924,7 @@ class WordPeaks(Giochino):
         self.stars = None
 
 
+
 @dataclass
 class Worldle(Giochino):
     _name = "Worldle"
@@ -2975,6 +2976,45 @@ class Worldle(Giochino):
         box = text.count(b"\xf0\x9f\x93\xa6".decode("utf-8"))  # 📦
         area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))  # 📐
         self.stars = bussola + stars + pinpoint + flag + head + paper + shield + abc + language + population + coin + cityscape + box + area
+
+
+@dataclass
+class Zip(Giochino):
+    _name = "Zip"
+    _category = "Logica"
+    _date = datetime.date(2025, 3, 19)
+    _day = "2"
+    _emoji = "⚡"
+    _url = "https://lnkd.in/zip"
+
+    examples = [
+        'Zip #2 | 0:19 🏁\nWith 1 backtrack 🛑\n🏅 I’m in the Top 10% of all players today!\nlnkd.in/zip.',
+        'Zip #1 | 0:09 and flawless 🏁\nWith no backtracks 🟢\nlnkd.in/zip.',
+        'Zip 第 2 | 0:49 和完美无瑕 🏁\n无撤销操作 🟢\n🏅 我今天在所有玩家中排名前 75%！\nlnkd.in/zip.',
+        'Zip no. 2 | 3:21 🏁\nAvec 30 retours en arrière 🛑\nlnkd.in/zip.',
+        'Zip n.º 2 | 0:20 🏁\nSin ningún retroceso 🟢\n🏅 ¡Hoy he estado más audaz que el 90 % de los consejeros delegados!\n#AreYouSmarterThanaCEO\nlnkd.in/zip.',
+
+    ]
+    expected = [
+        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "019", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "Zip", "timestamp": 10, "tries": "009", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "049", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "321", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "020", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Zip", "lnkd.in/zip."]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        matches = re.search(r'Zip.+(\d+)\s\|\s(\d+:\d+)', text)
+        self.day = matches.group(1) if matches else None
+        self.tries = matches.group(2).replace(":", "") if matches else None
+        self.stars = None
 
 
 #######
@@ -3053,5 +3093,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Pinpoint
+    giochino_da_testare = Zip
     test(True, giochino_da_testare)
