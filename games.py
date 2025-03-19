@@ -704,15 +704,22 @@ class Countryle(Giochino):
     examples = [
         "#Countryle 818\nGuessed in 1 tries.\n\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
         "#Countryle 818\nGuessed in 4 tries.\n\n🟢⚪️⚪️⚪️⚪️\n🟢🟢⚪️⚪️⚪️\n🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
+        "#Countryle 818\nEncertat en 4 intents.\n\n🟢⚪️⚪️⚪️⚪️\n🟢🟢⚪️⚪️⚪️\n🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
+        "#Countryle 818\nDeviné en 4 essais.\n\n🟢⚪️⚪️⚪️⚪️\n🟢🟢⚪️⚪️⚪️\n🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
+        "#Countryle 818\nErraten in 4 versuchen.\n\n🟢⚪️⚪️⚪️⚪️\n🟢🟢⚪️⚪️⚪️\n🟢🟢🟢⚪️⚪️\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
     ]
+
     expected = [
         {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "818", "name": "Countryle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["#Countryle", "Guessed in"]
+        wordlist = ["#Countryle", "https://countryle.com"]
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
@@ -724,7 +731,7 @@ class Countryle(Giochino):
         self.day = day_match.group(1) if day_match else None
 
         # Extract tries count using regex
-        tries_match = re.search(r"Guessed in (\d+) tries", text)
+        tries_match = re.search(r"(\d+)\s(?:[a-z]+).", text)
         self.tries = tries_match.group(1) if tries_match else None
 
         self.stars = None
@@ -3038,5 +3045,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Tradle
+    giochino_da_testare = Countryle
     test(True, giochino_da_testare)
