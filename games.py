@@ -1053,11 +1053,13 @@ class Flickle(Giochino):
         "#Flickle #1067\n\n    🎬⬛️⬛️⬛️🟩⬜️⬜️\n\n    📆 Daily Streak: 1 (Best 1)\n    🏆 Win Streak: 1 (Best 1)\n\n    https://flickle.app/",
         "#Flickle #1067\n\n    🎬⬛️⬛️⬛️⬛️⬛️⬛️❌\n\n    📆 Daily Streak: 1 (Best 1)\n    💀 Loss Streak: 1 (Worst 1)\n\n    https://flickle.app/",
         "#Flickle #1066\n\n🎬🟥🟥🟥⬛⬛⬛❌\n\n📆 Daily Streak: 1 (Best 1)\n💀 Loss Streak: 1 (Worst 1)\n\nhttps://flickle.app/",
+        '#Flickle #1074\n\n🎬⬛️⬛️⬛️⬛️⬛️🟩\n\n📆 Daily Streak: 2 (Best 2)\n🏆 Win Streak: 1 (Best 1)\n\nhttps://flickle.app/',
     ]
     expected = [
         {"day": "1067", "name": "Flickle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1067", "name": "Flickle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1066", "name": "Flickle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1074", "name": "Flickle", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1074,15 +1076,20 @@ class Flickle(Giochino):
         self.day = day_match.group(1) if day_match else None
 
         # Find the emoji line containing the results
-        emoji_line = re.search(r"🎬([🟥🟩⬛\s]+)", text)
+        emoji_line = re.search(r"🎬((?:[🟥🟩⬜️⬛️\s]+))", text)
+        print(f"emoji_line: {emoji_line.group(1)}")
         if emoji_line:
-            # Remove spaces and get the results string
-            punteggio = emoji_line.group(1).replace(" ", "")
-            if "🟩" not in punteggio or "❌" in text:
+            punteggio_bonificato = ""
+            # Flickle uses black-magic squares that inject empty invisible spaces fugging up the count. We remove them with a whitelisted chars list.
+            for char in emoji_line.group(1):
+                if char in ["⬛", "🟥", "🟩", "⬜"]:
+                    punteggio_bonificato += char
+            print(f"punteggio: {punteggio_bonificato}")
+            if "🟩" not in punteggio_bonificato or "❌" in text:
                 self.tries = "X"
             else:
                 # Find the position of the first green square
-                self.tries = str(punteggio.index("🟩") + 1)
+                self.tries = str(punteggio_bonificato.index("🟩") + 1)
 
 
 @dataclass
@@ -3093,5 +3100,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Zip
+    # giochino_da_testare = Flickle
     test(True, giochino_da_testare)
