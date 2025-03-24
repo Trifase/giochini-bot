@@ -285,6 +285,26 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     tb_string = "".join(tb_list)
     logging.info(f"È accaduto un errore!\n============\n{tb_list[-2]}{tb_list[-1]}============")
 
+    chat_id = update.effective_chat.id
+    link_chat_id = str(chat_id).replace("-100", "")
+
+    message_id = None
+
+    if update.effective_message and update.effective_message.message_id:
+        message_id = update.effective_message.message_id
+
+    emoji_link = ''
+    if link_chat_id and message_id:
+        emoji_link = f'<a href="t.me/c/{link_chat_id}/{message_id}">🔗</a> '
+    
+    await context.bot.send_message(
+        chat_id=ID_BOTCENTRAL,
+        text=f'{emoji_link}ERRORE!',
+        parse_mode="HTML",
+    )
+    await update.message.forward(ID_BOTCENTRAL)
+
+
     await context.bot.send_message(
         chat_id=ID_BOTCENTRAL,
         text=f'<pre><code class="language-python">{tb_string[:4000]}</code></pre>',
