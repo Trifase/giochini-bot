@@ -1922,6 +1922,7 @@ class Pinpoint(Giochino):
         {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "323", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "328", "name": "Pinpoint", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
