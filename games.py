@@ -1637,11 +1637,13 @@ class NerdleCross(Giochino):
         "cross nerdle #198\n⬛⬜⬜⬜🟩⬜⬜⬛⬛\n⬛⬛⬜⬛⬜⬛⬛⬛⬜\n🟩⬛⬜⬛🟩⬜⬜⬜🟩\n⬜⬛🟩⬛⬜⬛⬛⬛🟩\n⬜🟩🟩⬜⬜⬜🟩⬜⬜\n⬜⬛⬛⬛⬜⬛⬜⬛🟩\n🟩⬜⬜🟩⬜⬛⬜⬛⬜\n⬜⬛⬛⬛⬜⬛🟩⬛⬛\n⬛⬛⬜⬜⬜⬜🟩⬜⬛\nPerfect solve - no 🎁 or 👀.\n@nerdlegame points: 6/6",
         "cross nerdle #201\n⬛⬜🟩🟩🟩⬜🟩⬜⬛\n🟩⬛⬜⬛🟩⬛🟩⬛⬜\n🟩🟩🟩⬛🟩⬜🟩🟩🟩\n⬜⬛🟩⬛⬜⬛⬛⬛🟩\n⬜⬜🟩🟩⬜🟩🟩⬜🟩\n🟩⬛⬛⬛🟩⬛🟩⬛🟩\n🟩⬜🟩🟩🟩⬛🟩🟩⬜\n⬜⬛🟩⬛🟩⬛🟩⬛⬜\n⬛⬜🟩⬜⬜🟩🟩⬜⬛\n🟩*37 + 🎁*0 + 👀* 2\n@nerdlegame points:4/6",
         "cross nerdle #198\n⬛️⬜️⬜️⬜️🎁⬜️⬜️⬛️⬛️\n⬛️⬛️⬜️⬛️⬜️⬛️⬛️⬛️⬜️\n🎁⬛️⬜️⬛️🎁⬜️⬜️⬜️🎁\n⬜️⬛️🎁⬛️⬜️⬛️⬛️⬛️🎁\n⬜️🎁🎁⬜️⬜️⬜️🎁⬜️⬜️\n⬜️⬛️⬛️⬛️⬜️⬛️⬜️⬛️🎁\n🎁⬜️⬜️🎁⬜️⬛️⬜️⬛️⬜️\n⬜️⬛️⬛️⬛️⬜️⬛️🎁⬛️⬛️\n⬛️⬛️⬜️⬜️⬜️⬜️🎁⬜️⬛️\n🟩*0 + 🎁*14 + 👀* 1\n@nerdlegame points:0/6",
+        'cross nerdle #665\n⬛🔲🔲🔲🔲🔲🟩🟩🔲🟩\n🔲⬛⬛🟩⬛⬛⬛🟩⬛🟩\n🟩🟩🔲🟩🟩🟩🟩🟩⬛🟩\n🟩⬛⬛🟩⬛⬛🔲⬛⬛🟩\n🔲🟩🟩🟩🔲⬛🟩⬛⬛🔲\n🔲⬛⬛🔲⬛🔲🟩🔲🔲🟩\n🟩⬛⬛🟩⬛⬛🟩⬛⬛🟩\n🟩⬛🟩🔲🔲🔲🔲🟩🔲🟩\n🔲⬛🟩⬛⬛⬛🟩⬛⬛🔲\n🟩🟩🟩🔲🔲🔲🔲🟩🟩⬛\nPerfect solve - no 🎁 or 👀.\n@nerdlegame points: 6/6',
     ]
     expected = [
         {"day": "198", "name": "NerdleCross", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "201", "name": "NerdleCross", "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "198", "name": "NerdleCross", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "665", "name": "NerdleCross", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1892,6 +1894,7 @@ class Pinpoint(Giochino):
         # 'Pinpoint #323 | 推測3回\n1️⃣ | 3%件マッチ\n2️⃣ | 1%件マッチ\n3️⃣ | 100%件マッチ 📌\n🏅 今日、私は全プレーヤーの上位10%に入っています!',  # Does not work
         'Pinpoint n. 323 | 3 risposte giuste\n1️⃣ | 24% di corrispondenza \n2️⃣ | 19% di corrispondenza \n3️⃣ | 100% di corrispondenza 📌\n🏅 Oggi sono più intelligente del 75% dei CEO!\nlnkd.in/pinpoint.',
         'Pinpoint nr. 323 | 3 încercări\n1️⃣ | potrivire 8 % \n2️⃣ | potrivire 27 % \n3️⃣ | potrivire 100 % 📌\n🏅 Sunt mai deștept decât 90 % dintre directorii generali de astăzi\nlnkd.in/pinpoint.',
+        'Pinpoint #328\n1️⃣ | 6% match\n2️⃣ | 3% match\n3️⃣ | 5% match\n4️⃣ | 1% match\n5️⃣ | 5% match\nlnkd.in/pinpoint.'
     ]
     expected = [
         {"day": "159", "name": "Pinpoint", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
@@ -1914,11 +1917,12 @@ class Pinpoint(Giochino):
     def can_handle_this(raw_text):
         wordlist = ["Pinpoint", "lnkd.in/pinpoint"]
         _can_handle_this = all(w in raw_text for w in wordlist)
+        # print(f"Pinpoint can_handle_this: {_can_handle_this}")
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
-        if '|' in text:
+        if '|' in text and "📌" in text:
             matches = re.search(r"(\d+)\s\|\s(\d+)", text)
             self.day = matches.group(1)
             self.tries = matches.group(2)
@@ -3100,5 +3104,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    # giochino_da_testare = Flickle
+    giochino_da_testare = NerdleCross
     test(True, giochino_da_testare)

@@ -179,12 +179,12 @@
             "Queens",
             "Crossclimb",
             "Pinpoint",
-            "Reversle",
             "Framed",
             "Framed One Frame",
             "Lyricle",
             "FoodGuessr",
-            "Flickle"
+            "Flickle",
+            "Zip"
         ],
         "favs_extra_button": true
     },
