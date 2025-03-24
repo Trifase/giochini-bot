@@ -9,6 +9,10 @@ from dataclassy import dataclass
 from telegram import Bot, Update
 from telegram.ext.filters import MessageFilter
 
+FLAG_DEBUG = False
+FLAG_DEBUG = True
+
+
 
 def generate_sample_update(text):
     updict = {
@@ -1611,7 +1615,7 @@ class Nerdle(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["nerdlegame ", "/6"]
-        _can_handle_this = all(c in raw_text for c in wordlist)
+        _can_handle_this = all(c in raw_text for c in wordlist) and 'cross nerdle' not in raw_text
         return _can_handle_this
 
     def parse(self):
@@ -1726,11 +1730,13 @@ class Numble(Giochino):
         "Numble #832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf",
         "Numble #832\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 900\n50.538s\nhttps://numble.wtf",
         "Numble #834\nSOLVED: ✅\nNumbers used: 3/6\nFinal answer: 48\n1m 28.660s\nhttps://numble.wtf",
+        'Numble #1134\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 640\n2m .644s\nhttps://numble.wtf'
     ]
     expected = [
         {"day": "832", "name": "Numble", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "832", "name": "Numble", "timestamp": 10, "tries": "50", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "834", "name": "Numble", "timestamp": 10, "tries": "88", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "834", "name": "Numble", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1749,7 +1755,7 @@ class Numble(Giochino):
         if not solved:
             self.tries = "X"
         else:
-            time_match = re.search(r"(\d+m\s+)?(\d+\.\d+)s", text)
+            time_match = re.search(r"(\d+m\s+)?((:?\d+)?\.\d+)s", text)
             self.tries = str(self.duration(time_match.group(0)))
             numbers_match = re.search(r"Numbers used: (\d+)/(\d+)", text)
             if numbers_match:
