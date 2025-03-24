@@ -1736,7 +1736,7 @@ class Numble(Giochino):
         {"day": "832", "name": "Numble", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "832", "name": "Numble", "timestamp": 10, "tries": "50", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "834", "name": "Numble", "timestamp": 10, "tries": "88", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "834", "name": "Numble", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1134", "name": "Numble", "timestamp": 10, "tries": "120", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1756,6 +1756,7 @@ class Numble(Giochino):
             self.tries = "X"
         else:
             time_match = re.search(r"(\d+m\s+)?((:?\d+)?\.\d+)s", text)
+            # print('time match 0', time_match.group(0),'time match 1',time_match.group(1),'time match 2',time_match.group(2) )
             self.tries = str(self.duration(time_match.group(0)))
             numbers_match = re.search(r"Numbers used: (\d+)/(\d+)", text)
             if numbers_match:
@@ -1764,8 +1765,12 @@ class Numble(Giochino):
                 self.stars = str(int(maximum) - int(used))
 
     def duration(self, string):
+        string = string.replace(" .", "0.")
+        # print("string", string)
+
         mult = {"s": 1, "m": 60, "h": 60 * 60, "d": 60 * 60 * 24}
         parts = re.findall(r"(\d+(?:\.\d+)?)([smhd])", string)
+        # print("parts", parts)
         total_seconds = sum(float(x) * mult[m] for x, m in parts)
         return int(total_seconds)
 
@@ -3110,5 +3115,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = NerdleCross
+    # giochino_da_testare = Numble
     test(True, giochino_da_testare)
