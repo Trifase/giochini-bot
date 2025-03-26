@@ -3016,6 +3016,7 @@ class Zip(Giochino):
         'Zip 第 2 | 0:49 和完美无瑕 🏁\n无撤销操作 🟢\n🏅 我今天在所有玩家中排名前 75%！\nlnkd.in/zip.',
         'Zip no. 2 | 3:21 🏁\nAvec 30 retours en arrière 🛑\nlnkd.in/zip.',
         'Zip n.º 2 | 0:20 🏁\nSin ningún retroceso 🟢\n🏅 ¡Hoy he estado más audaz que el 90 % de los consejeros delegados!\n#AreYouSmarterThanaCEO\nlnkd.in/zip.',
+        'Zip #9\n0:07 🏁\nlnkd.in/zip.',
 
     ]
     expected = [
@@ -3024,6 +3025,7 @@ class Zip(Giochino):
         {"day": "2", "name": "Zip", "timestamp": 10, "tries": "049", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "2", "name": "Zip", "timestamp": 10, "tries": "321", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "2", "name": "Zip", "timestamp": 10, "tries": "020", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "9", "name": "Zip", "timestamp": 10, "tries": "007", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -3034,7 +3036,7 @@ class Zip(Giochino):
 
     def parse(self):
         text = self.raw_text
-        matches = re.search(r'Zip.+(\d+)\s\|\s(\d+:\d+)', text)
+        matches = re.search(r'Zip.*?(\d+)(?:\s*\|\s*|\n)?(\d+:\d+)', text)
         self.day = matches.group(1) if matches else None
         self.tries = matches.group(2).replace(":", "") if matches else None
         self.stars = None
