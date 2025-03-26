@@ -251,7 +251,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
         tries = 100 - tries
 
     # So, murdle/Queens points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
-    if game == "Murdle" or game == "Queens" or game == "Tango" or game == "Crossclimb":
+    if game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip"]:
         tries = str(tries)[:-2] + ":" + str(tries)[-2:]
         if len(tries) == 2: # this fixes the bug where the time is '7' and is displayed as '0:7' instead of '0:07'
             tries = ':0' + tries[-1]
