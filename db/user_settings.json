@@ -282,5 +282,11 @@
             "HighFive"
         ],
         "favs_extra_button": false
+    },
+    "923114160": {
+        "favs": [
+            "Parole"
+        ],
+        "favs_extra_button": true
     }
 }

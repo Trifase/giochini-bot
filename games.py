@@ -367,7 +367,7 @@ class Bandle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Bandle #", "https://bandle.app/"]
+        wordlist = ["Bandle #", "https://bandle.app"]
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
