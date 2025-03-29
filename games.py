@@ -1352,7 +1352,7 @@ class GuessTheMovie(Giochino):
         self.day = day_match.group(1) if day_match else None
 
         # Find emoji pattern and evaluate results
-        emoji_line = re.search(r"🎮\s+((?:[🟥🟩🟨⬜\s]+))", text)
+        emoji_line = re.search(r"🎥\s+((?:[🟥🟩🟨⬜\s]+))", text)
         if emoji_line:
             punteggio = emoji_line.group(1).replace(" ", "")
             if "🟩" not in punteggio:
