@@ -307,7 +307,7 @@ class Angle(Giochino):
 # @dataclass
 # class Apparle(Giochino):
 #     _name = "Apparle"
-#     _category = "Immagini, giochi e film"
+#     _category = "Immagini, giochi e musica"
 #     _date = datetime.date(2024, 4, 14)
 #     _day = "45"
 #     _emoji = "💵"
@@ -350,7 +350,7 @@ class Angle(Giochino):
 @dataclass
 class Bandle(Giochino):
     _name = "Bandle"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2024, 3, 3)
     _day = "564"
     _emoji = "🎸"
@@ -450,7 +450,7 @@ class Chrono(Giochino):
 @dataclass
 class Chronophoto(Giochino):
     _name = "Chronophoto"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2024, 3, 6)
     _day = "100"
     _emoji = "⏳"
@@ -555,7 +555,7 @@ class Cloudle(Giochino):
 @dataclass
 class Colorfle(Giochino):
     _name = "Colorfle"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2024, 3, 5)
     _day = "679"
     _emoji = "🎨"
@@ -1002,7 +1002,7 @@ class FoodGuessr(Giochino):
 @dataclass
 class Framed(Giochino):
     _name = "Framed"
-    _category = "Immagini, giochi e film"
+    _category = "Cinema e Serie TV"
     _date = datetime.date(2023, 6, 23)
     _day = "469"
     _emoji = "🎞"
@@ -1045,7 +1045,7 @@ class Framed(Giochino):
 @dataclass
 class Flickle(Giochino):
     _name = "Flickle"
-    _category = "Immagini, giochi e film"
+    _category = "Cinema e Serie TV"
     _date = datetime.date(2025, 3, 14)
     _day = "1067"
     _emoji = "🎬"
@@ -1099,7 +1099,7 @@ class Flickle(Giochino):
 @dataclass
 class FramedOneFrame(Giochino):
     _name = "Framed One Frame"
-    _category = "Immagini, giochi e film"
+    _category = "Cinema e Serie TV"
     _date = datetime.date(2024, 12, 11)
     _day = "9"
     _emoji = "🎞"
@@ -1279,7 +1279,7 @@ class Globle(Giochino):
 @dataclass
 class GuessTheGame(Giochino):
     _name = "GuessTheGame"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2023, 6, 23)
     _day = "405"
     _emoji = "🎮"
@@ -1308,6 +1308,47 @@ class GuessTheGame(Giochino):
         text = self.raw_text
 
         day_match = re.search(r"#GuessTheGame #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        # Find emoji pattern and evaluate results
+        emoji_line = re.search(r"🎮\s+((?:[🟥🟩🟨⬜\s]+))", text)
+        if emoji_line:
+            punteggio = emoji_line.group(1).replace(" ", "")
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
+                # Find position of first green square (1-indexed)
+                green_index = punteggio.find("🟩")
+                self.tries = str(green_index + 1) if green_index >= 0 else "X"
+
+@dataclass
+class GuessTheMovie(Giochino):
+    _name = "GuessTheMovie"
+    _category = "Cinema e Serie TV"
+    _date = datetime.date(2025, 3, 29)
+    _day = "178"
+    _emoji = "📽"
+    _url = "https://GuessTheMovie.Name"
+
+    examples = [
+        '#GuessTheMovie #178\n\n🎥 🟩 ⬜ ⬜ ⬜ ⬜ ⬜\n\n#RookieReeler\nhttps://GuessTheMovie.Name/p/178',
+        '#GuessTheMovie #178\n\n🎥 🟥 🟥 🟥 🟥 🟥 🟥\n\n#RookieReeler\nhttps://GuessTheMovie.Name/p/178',
+    ]
+    expected = [
+        {"day": "178", "name": "GuessTheMovie", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "178", "name": "GuessTheMovie", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#GuessTheMovie", "https://GuessTheMovie.Name/p"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        day_match = re.search(r"#GuessTheMovie #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
         # Find emoji pattern and evaluate results
@@ -1364,7 +1405,7 @@ class HighFive(Giochino):
 @dataclass
 class Lyricle(Giochino):
     _name = "Lyricle"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2025, 3, 12)
     _day = "1053"
     _emoji = "📜"
@@ -1497,7 +1538,7 @@ class Metazooa(Giochino):
 @dataclass
 class Moviedle(Giochino):
     _name = "Moviedle"
-    _category = "Immagini, giochi e film"
+    _category = "Cinema e Serie TV"
     _date = datetime.date(2023, 6, 23)
     _day = "200"
     _emoji = "🎥"
@@ -1676,7 +1717,7 @@ class NerdleCross(Giochino):
 @dataclass
 class NFLXdle(Giochino):
     _name = "NFLXdle"
-    _category = "Immagini, giochi e film"
+    _category = "Cinema e Serie TV"
     _date = datetime.date(2024, 9, 4)
     _day = "100"
     _emoji = "📺"
@@ -1840,7 +1881,7 @@ class Pedantle(Giochino):
 @dataclass
 class Picsey(Giochino):
     _name = "Picsey"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2023, 9, 25)
     _day = "100"
     _emoji = "🪟"
@@ -1996,7 +2037,7 @@ class Polygonle(Giochino):
 @dataclass
 class Posterdle(Giochino):
     _name = "Posterdle"
-    _category = "Immagini, giochi e film"
+    _category = "Cinema e Serie TV"
     _date = datetime.date(2024, 9, 4)
     _day = "100"
     _emoji = "🍿"
@@ -2185,7 +2226,7 @@ class Spellcheck(Giochino):
 @dataclass
 class Spotle(Giochino):
     _name = "Spotle"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2024, 7, 8)
     _day = "802"
     _emoji = "🎧"
@@ -2407,7 +2448,7 @@ class Tango(Giochino):
 @dataclass
 class TempoIndovinr(Giochino):
     _name = "TempoIndovinr"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2023, 11, 17)
     _day = "5"
     _emoji = "🗺️"
@@ -2483,7 +2524,7 @@ class Thirdle(Giochino):
 @dataclass
 class TimeGuessr(Giochino):
     _name = "TimeGuessr"
-    _category = "Immagini, giochi e film"
+    _category = "Immagini, giochi e musica"
     _date = datetime.date(2023, 11, 27)
     _day = "179"
     _emoji = "📅"
