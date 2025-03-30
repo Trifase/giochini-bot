@@ -357,12 +357,14 @@ class Bandle(Giochino):
     _url = "https://bandle.app/"
 
     examples = [
-        "Bandle #597 4/6\n⬛️⬛️⬛️🟩⬜️⬜️\nFound: 10/14 (71.4%)\nCurrent Streak: 1 (max 2)\n#Bandle #Heardle #Wordle \n https://bandle.app/"
-        "Bandle #579 x/6\n⬛️⬛️⬛️⬛️⬛️⬛️\nFound: 3/5 (60%)\n#Bandle #Heardle #Wordle \n https://bandle.app/"
+        "Bandle #597 4/6\n⬛️⬛️⬛️🟩⬜️⬜️\nFound: 10/14 (71.4%)\nCurrent Streak: 1 (max 2)\n#Bandle #Heardle #Wordle \n https://bandle.app/",
+        "Bandle #579 x/6\n⬛️⬛️⬛️⬛️⬛️⬛️\nFound: 3/5 (60%)\n#Bandle #Heardle #Wordle \n https://bandle.app/",
+        'Bandle #956 2/5\n🟨🟩⬜⬜⬜\nFound: 102/116 (87.9%)\nCurrent Daily Streak: 1 (max 5)\n#Bandle #Heardle \nhttps://bandle.app'
     ]
     expected = [
         {"day": "597", "name": "Bandle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "579", "name": "Bandle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "956", "name": "Bandle", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -374,11 +376,10 @@ class Bandle(Giochino):
     def parse(self):
         text = self.raw_text
         self.tries = "X"
+        matches = re.search(r"Bandle\s#(\d+)\s(\d+|x|X)\/", text)
+        self.day = matches.group(1)
 
-        self.day = re.search(r"Bandle #(\d+)", text).group(1)
-
-        punti = re.search(r"(\S)\/6", text).group(1)
-        print(punti)
+        punti = matches.group(2)
 
         if punti.lower() != "x":
             self.tries = punti
@@ -3159,5 +3160,5 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    # giochino_da_testare = Numble
+    giochino_da_testare = Bandle
     test(True, giochino_da_testare)
