@@ -103,7 +103,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
             # https://github.com/coleifer/peewee/issues/612#issuecomment-468029502
             Punteggio.lost == False,
         )
-        .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+        .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
         .limit(limit)
     )
     # print(query.sql())
@@ -138,7 +138,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
                 Punteggio.chat_id == chat_id,
                 Punteggio.lost == False,
             )
-            .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+            .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
         )
 
         for posto, punteggio in enumerate(deep_query, start=1):
