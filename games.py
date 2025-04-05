@@ -3068,10 +3068,10 @@ class Zip(Giochino):
     ]
     expected = [
         {"day": "2", "name": "Zip", "timestamp": 10, "tries": "019", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "1", "name": "Zip", "timestamp": 10, "tries": "009", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "049", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "Zip", "timestamp": 10, "tries": "009", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
+        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "049", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
         {"day": "2", "name": "Zip", "timestamp": 10, "tries": "321", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "020", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "Zip", "timestamp": 10, "tries": "020", "user_id": 456481297, "user_name": "Trifase", "stars": 1},
         {"day": "9", "name": "Zip", "timestamp": 10, "tries": "007", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
@@ -3087,6 +3087,8 @@ class Zip(Giochino):
         self.day = matches.group(1) if matches else None
         self.tries = matches.group(2).replace(":", "") if matches else None
         self.stars = None
+        if '🟢' in text:
+            self.stars = 1
 
 
 #######
@@ -3165,6 +3167,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Lyricle
+    giochino_da_testare = Zip
 
     test(True, giochino_da_testare)
