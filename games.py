@@ -2577,19 +2577,22 @@ class Tradle(Giochino):
         "#Tradle #761 X/6\n🟩🟨⬜⬜⬜\n🟩🟩🟩🟨⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\nhttps://games.oec.world/en/tradle",
         "#Tradle #761 5/6\n🟩🟩🟨⬜⬜\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟩\nhttps://oec.world/en/tradle",
         "#Tradle #761 X/6\n🟩🟨⬜⬜⬜\n🟩🟩🟩🟨⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\nhttps://oec.world/en/tradle",
+        '#Tradle #1128 2/6\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟩\nhttps://oec.world/en/games/tradle',
     ]
     expected = [
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "761", "name": "Tradle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1128", "name": "Tradle", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["#Tradle", "https://games.oec.world/en/tradle"]
         wordlist2 = ["#Tradle", "https://oec.world/en/tradle"]
-        _can_handle_this = all(w in raw_text for w in wordlist) or all(w in raw_text for w in wordlist2)
+        wordlist3 = ["#Tradle", "https://oec.world/en/games/tradle"]
+        _can_handle_this = any(all(w in raw_text for w in wl) for wl in [wordlist, wordlist2, wordlist3])
         return _can_handle_this
 
     def parse(self):
@@ -3167,6 +3170,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Zip
+    # giochino_da_testare = Zip
 
     test(True, giochino_da_testare)
