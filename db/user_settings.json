@@ -122,7 +122,8 @@
             "Squareword",
             "Travle",
             "Waffle",
-            "Wordle"
+            "Wordle",
+            "Colorfle"
         ],
         "favs_extra_button": false
     },
@@ -166,7 +167,6 @@
             "Connections",
             "Flagle",
             "Globle",
-            "Nerdle",
             "Parole",
             "Picsey",
             "Squareword",
