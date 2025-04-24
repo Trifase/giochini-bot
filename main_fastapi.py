@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import date, datetime, timedelta
 from config import ID_GIOCHINI as CHAT_ID
 from games import ALL_GAMES as GAMES
+from games import get_day_from_date
 from config import Punteggio
 import peewee
 
@@ -29,10 +30,12 @@ for k,v in GAMES.items():
 
 async def classifica_for_game(day, game_name) -> list:
     klassifica = []
+    game_day = get_day_from_date(GAMES[game_name]["date"], GAMES[game_name]["day"], game_name, date.today())
     query = (
         Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id, Punteggio.lost, Punteggio.extra, Punteggio.lost)
         .where(
-            Punteggio.date == day,
+            # Punteggio.date == day,
+            Punteggio.day == game_day,
             Punteggio.game == game_name,
             Punteggio.chat_id == CHAT_ID,
             Punteggio.lost == False,
@@ -69,11 +72,13 @@ async def classifica(day: str | None = None, game: str | None = 'all'):
     if not day:
         # new datetime in format yyyy-mm-dd with today date
         day = date.today().strftime("%Y-%m-%d")
+        
     if game == 'all':
         for k,v in games.items():
             return_obj = dict()
             return_obj['game'] = v['game']
             return_obj['date'] = day
+            return_obj['game_day'] = get_day_from_date(v['date'], v['day'], v['game'], date.today())
             return_obj['emoji'] = v['emoji']
             return_obj['category'] = v['category']
             return_obj['posizioni'] = await classifica_for_game(day, v['game'])

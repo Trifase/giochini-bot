@@ -174,7 +174,6 @@
             "Bandle",
             "Chrono",
             "Strands",
-            "Stepdle",
             "Tango",
             "Queens",
             "Crossclimb",
@@ -183,8 +182,9 @@
             "Framed One Frame",
             "Lyricle",
             "FoodGuessr",
-            "Flickle",
-            "Zip"
+            "Zip",
+            "GuessTheFootballClub",
+            "Hexcodle"
         ],
         "favs_extra_button": true
     },
