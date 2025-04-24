@@ -875,6 +875,9 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     medaglie_str = medaglie_count()
 
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode="HTML", disable_web_page_preview=True)
+
+    message2 = '<a href="https://trifase.online/giochini">★ Classifiche online! ★</a>'
+    await context.bot.send_message(chat_id=ID_GIOCHINI, text=message2, disable_web_page_preview=True, parse_mode="HTML")
     context.bot_data["manual_riassunto"] = False
 
 
@@ -919,8 +922,9 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
     # for game in GAMES.keys():
     #     day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
     #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
-    message += '<a href="https://trifase.online/giochini">★ Classifiche online! ★</a>'
     mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode="HTML")
+    message2 = '<a href="https://trifase.online/giochini">★ Classifiche online! ★</a>'
+    await context.bot.send_message(chat_id=ID_GIOCHINI, text=message2, disable_web_page_preview=True, parse_mode="HTML")
     if pin:
         await mypost.pin(disable_notification=True)
 
