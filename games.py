@@ -2503,23 +2503,26 @@ class Tango(Giochino):
         "Tango #3 | 1:24 and flawless\nFirst 5 placements:\n🟨 🟨 🟨 🟨 🟨 🟨 \n2️⃣ 🟨 🟨 🟨 🟨 1️⃣ \n3️⃣ 4️⃣ 🟨 🟨 🟨 🟨 \n🟨 5️⃣ 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \n🟨 🟨 🟨 🟨 🟨 🟨 \nlnkd.in/tango.",
         "Tango #3\n2:44 🌗\nlnkd.in/tango.",
         "Tango #3 | 0:55 e impeccabilePrimi 5 posizionamenti:\n🟨🟨🟨🟨🟨🟨\n1️⃣🟨🟨🟨🟨🟨\n2️⃣3️⃣🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨5️⃣4️⃣🟨🟨\nlnkd.in/tango.",
+        'Tango n. 199 | 1:35 e impeccabile\nPrimi 5 posti in classifica:\n🟨🟨🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨🟨🟨🟨🟨🟨\n🟨1️⃣2️⃣5️⃣🟨🟨\n🟨🟨3️⃣4️⃣🟨🟨\nlnkd.in/tango.'
     ]
     expected = [
         {"day": "3", "name": "Tango", "timestamp": 10, "tries": "124", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "3", "name": "Tango", "timestamp": 10, "tries": "244", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "3", "name": "Tango", "timestamp": 10, "tries": "055", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "199", "name": "Tango", "timestamp": 10, "tries": "135", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Tango #", "lnkd.in/tango."]
+        wordlist = ["Tango", "lnkd.in/tango."]
         _can_handle_this = all(w in raw_text for w in wordlist)
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
 
-        matches_day = re.search(r"Tango #(\d+)", text)
+        # matches_day = re.search(r"Tango #(\d+)", text)
+        matches_day = re.search(r"Tango (?:n\. |#|Nr\. )(\d+)", text)
         matches_time = re.search(r"(\d+):(\d+)", text)
         self.day = matches_day.group(1) if matches_day else None
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
