@@ -505,6 +505,8 @@ class Cloudle(Giochino):
     _emoji = "🌦️"
     _url = "https://cloudle.app"
 
+    hidden_game = True
+
     examples = [
         "Cloudle - Bujumbura, Burundi: 4/6\n\n⚫⚫⚫⚫🟢\n⚫⚫🟢🟢🟢\n⚫🟢🟢🟢🟢\n🟢🟢🟢🟢🟢\n https://cloudle.app/",
         "Cloudle - Milan, Italy: X/6\n\n🟢⚫⚫🟢🟢\n🟢⚫⚫🟢🟢\n🟢⚫🟢🟢🟢\n🟢⚫🟢🟢🟢\n🟢⚫🟢🟢🟢\n🟢⚫🟢🟢🟢\n https://cloudle.app/",
@@ -2528,39 +2530,40 @@ class Tango(Giochino):
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
 
 
-# @dataclass
-# class TempoIndovinr(Giochino):
-#     _name = "TempoIndovinr"
-#     _category = "Immagini, giochi e musica"
-#     _date = datetime.date(2023, 11, 17)
-#     _day = "5"
-#     _emoji = "🗺️"
-#     _url = "https://jacopofarina.eu/experiments/tempoindovinr"
+@dataclass
+class TempoIndovinr(Giochino):
+    _name = "TempoIndovinr"
+    _category = "Immagini, giochi e musica"
+    _date = datetime.date(2023, 11, 17)
+    _day = "5"
+    _emoji = "🗺️"
+    _url = "https://jacopofarina.eu/experiments/tempoindovinr"
 
-#     can_lose: False
+    can_lose: False
+    hidden_game = True
 
-#     examples = [
-#         "TempoIndovinr day 146\nHo fatto 593/1000 punti a TempoIndovinr!\n\n🟩🟩🟩 (99%) 💀⬛️⬛️ (2%)\n🟧⬛️⬛️ (77%) 🟩🟩🟩 (99%)\n🟩🟩🟩 (97%) 💀⬛️⬛️ (17%)\n🟩🟩🟩 (99%) 💀⬛️⬛️ (3%)\n🟩🟩🟩 (100%) 💀⬛️⬛️ (0%)\n https://jacopofarina.eu/experiments/tempoindovinr/",
-#         "TempoIndovinr day 138\nHo fatto 727/1000 punti a TempoIndovinr!\n\n🟩🟩⬛️ (95%) 🟩🟩🟩 (100%)\n🟨⬛️⬛️ (84%) 🟨⬛️⬛️ (84%)\n🟩🟩🟩 (97%) 💀⬛️⬛️ (60%)\n🟩⬛️⬛️ (86%) 💀⬛️⬛️ (13%)\n🟩🟩⬛️ (95%) 💀⬛️⬛️ (13%)\n https://jacopofarina.eu/experiments/tempoindovinr/",
-#     ]
-#     expected = [
-#         {"day": "146", "name": "TempoIndovinr", "timestamp": 10, "tries": 407, "user_id": 456481297, "user_name": "Trifase"},
-#         {"day": "138", "name": "TempoIndovinr", "timestamp": 10, "tries": 273, "user_id": 456481297, "user_name": "Trifase"},
-#     ]
+    examples = [
+        "TempoIndovinr day 146\nHo fatto 593/1000 punti a TempoIndovinr!\n\n🟩🟩🟩 (99%) 💀⬛️⬛️ (2%)\n🟧⬛️⬛️ (77%) 🟩🟩🟩 (99%)\n🟩🟩🟩 (97%) 💀⬛️⬛️ (17%)\n🟩🟩🟩 (99%) 💀⬛️⬛️ (3%)\n🟩🟩🟩 (100%) 💀⬛️⬛️ (0%)\n https://jacopofarina.eu/experiments/tempoindovinr/",
+        "TempoIndovinr day 138\nHo fatto 727/1000 punti a TempoIndovinr!\n\n🟩🟩⬛️ (95%) 🟩🟩🟩 (100%)\n🟨⬛️⬛️ (84%) 🟨⬛️⬛️ (84%)\n🟩🟩🟩 (97%) 💀⬛️⬛️ (60%)\n🟩⬛️⬛️ (86%) 💀⬛️⬛️ (13%)\n🟩🟩⬛️ (95%) 💀⬛️⬛️ (13%)\n https://jacopofarina.eu/experiments/tempoindovinr/",
+    ]
+    expected = [
+        {"day": "146", "name": "TempoIndovinr", "timestamp": 10, "tries": 407, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "138", "name": "TempoIndovinr", "timestamp": 10, "tries": 273, "user_id": 456481297, "user_name": "Trifase"},
+    ]
 
-#     @staticmethod
-#     def can_handle_this(raw_text):
-#         wordlist = ["TempoIndovinr", "https://jacopofarina.eu/experiments/tempoindovinr/"]
-#         _can_handle_this = all(w in raw_text for w in wordlist)
-#         return _can_handle_this
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["TempoIndovinr", "https://jacopofarina.eu/experiments/tempoindovinr/"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
 
-#     def parse(self):
-#         text = self.raw_text
-#         day_match = re.search(r"day (\d+)", text)
-#         self.day = day_match.group(1) if day_match else None
-#         point_match = re.search(r"Ho fatto (\d+)/1000 punti", text)
-#         self.tries = 1000 - int(point_match.group(1)) if point_match else None
-#         self.stars = None
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"day (\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+        point_match = re.search(r"Ho fatto (\d+)/1000 punti", text)
+        self.tries = 1000 - int(point_match.group(1)) if point_match else None
+        self.stars = None
 
 
 @dataclass
