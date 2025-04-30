@@ -48,6 +48,11 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date, "%b %d, %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
+    if isinstance(date, str) and game == "BracketCity":
+        locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+        date = datetime.datetime.strptime(date, "%B %d, %Y").date()
+        locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
+
     if isinstance(date, str) and game == "HighFive":
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
@@ -380,6 +385,48 @@ class Bandle(Giochino):
 
         if punti.lower() != "x":
             self.tries = punti
+
+
+
+@dataclass
+class BracketCity(Giochino):
+    _name = "BracketCity"
+    _category = "Giochi di parole"
+    _date = datetime.date(2025, 5, 1)
+    _day = "100"
+    _emoji = "🈁"
+    _url = "https://www.theatlantic.com/games/bracket-city/"
+
+    can_lose: False
+
+    examples = [
+        '[Bracket City]\nApril 30, 2025\n\nhttps://www.theatlantic.com/games/bracket-city/\n\nRank: 📸 (Tourist)\n❌ Wrong guesses: 7\n👀 Peeks: 10\n🛟 Answers Revealed: 6\n\nTotal Score: 0.0\n⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️',
+        '[Bracket City]\nApril 30, 2025\n\nhttps://www.theatlantic.com/games/bracket-city/\n\nRank: 💼 (Power Broker)\n❌ Wrong guesses: 4\n\nTotal Score: 92.0\n🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜',
+        '[Bracket City]\nApril 28, 2025\n\nhttps://www.theatlantic.com/games/bracket-city/\n\nRank: 📸 (Tourist)\n❌ Wrong guesses: 4\n👀 Peeks: 5\n🛟 Answers Revealed: 4\n\nTotal Score: 7.0\n🟥⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️',
+    ]
+    expected = [
+        {"day": "99", "name": "BracketCity", "timestamp": 10, "tries": "100", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "99", "name": "BracketCity", "timestamp": 10, "tries": "8", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "97", "name": "BracketCity", "timestamp": 10, "tries": "93", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["[Bracket City]", "https://www.theatlantic.com/games/bracket-city/"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+
+        date_str = text.split('\n')[1]
+        print('date found', date_str)
+        self.day = get_day_from_date(self._date, self._day, "BracketCity", date_str)
+        point_match = re.search(r"Total Score: (\d+\.\d)", text)
+        if point_match:
+            points = float(point_match.group(1))
+            self.tries = str(int(100 - points))
 
 
 @dataclass
@@ -845,6 +892,66 @@ class Decipher(Giochino):
                 stars = text.count("⭐")
                 # 10 seconds penalty for each star lost
                 self.tries += (5 - stars) * 10
+
+
+@dataclass
+class Disorderly(Giochino):
+    _name = "Disorderly"
+    _category = "Logica"
+    _date = datetime.date(2025, 5, 1)
+    _day = "100"
+    _emoji = "📄"
+    _url = "https://playdisorderly.com/"
+
+    can_lose: False
+
+    examples = [
+        "I just played Disorderly! - Sort these video game consoles by how many units they've sold\nhttps://playdisorderly.com/\n\n1️⃣ 🟢 🟢\n2️⃣ 🔴 🟢\n3️⃣ 🟢 🟢\n4️⃣ 🔴 🟢\n5️⃣ 🔴 🟢\n6️⃣ 🔴 🟢",
+        "I just played Disorderly! - Sort these video game consoles by how many units they've sold\nhttps://playdisorderly.com/\n\n1️⃣ 🔴 🟢 🟢\n2️⃣ 🔴 🔴 🟢\n3️⃣ 🟢 🟢 🟢\n4️⃣ 🔴 🔴 🟢\n5️⃣ 🔴 🟢 🟢\n6️⃣ 🔴 🟢 🟢",
+        'I just played Disorderly! - Sort these amounts of money from most to least valuable (as of February 15\nhttps://playdisorderly.com/\n\n1️⃣ 🔴 🔴 🔴 🔴 🔴 🔴 🔴 🔴 🟢\n2️⃣ 🔴 🔴 🔴 🔴 🔴 🔴 🟢 🟢 🟢\n3️⃣ 🔴 🔴 🔴 🔴 🔴 🔴 🔴 🟢 🟢\n4️⃣ 🔴 🔴 🔴 🟢 🟢 🟢 🟢 🟢 🟢\n5️⃣ 🔴 🔴 🔴 🔴 🟢 🟢 🟢 🟢 🟢\n6️⃣ 🔴 🔴 🔴 🔴 🔴 🔴 🔴 🔴 🟢',
+    ]
+    expected = [
+        {
+            "day": f'{get_day_from_date(_date, _day, "Disorderly", datetime.date.today())}',
+            "name": "Disorderly",
+            "timestamp": 10,
+            "tries": 2,
+            "user_id": 456481297,
+            "user_name": "Trifase"
+        },
+        {
+            "day": f'{get_day_from_date(_date, _day, "Disorderly", datetime.date.today())}',
+            "name": "Disorderly",
+            "timestamp": 10,
+            "tries": 3,
+            "user_id": 456481297,
+            "user_name": "Trifase"
+        },
+        {
+            "day": f'{get_day_from_date(_date, _day, "Disorderly", datetime.date.today())}',
+            "name": "Disorderly",
+            "timestamp": 10,
+            "tries": 9,
+            "user_id": 456481297,
+            "user_name": "Trifase"
+        },
+
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["I just played Disorderly!", "https://playdisorderly.com/"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        # Disorderly doesn't have a day - we assume today
+        self.day = get_day_from_date(self._date, self._day, "Disorderly", datetime.date.today())
+        last_line = text.split('\n')[-1]
+
+        self.tries = last_line.count("🟢") + last_line.count("🔴")
 
 
 @dataclass
@@ -3250,6 +3357,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = GuessTheFootballClub
+    giochino_da_testare = BracketCity
 
     test(True, giochino_da_testare)

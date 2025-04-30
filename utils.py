@@ -272,6 +272,9 @@ def process_tries(game: str, tries: int | str) -> int | str:
 
     if game == 'Decipher':
         tries = seconds_to_time(tries)
+
+    if game == 'BracketCity':
+        tries = round(100 - tries, 1)
     return tries
 
 
