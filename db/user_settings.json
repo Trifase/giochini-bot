@@ -1,7 +1,6 @@
 {
     "456481297": {
         "favs": [
-            "Chrono",
             "Connections",
             "GuessTheGame",
             "Waffle",
@@ -11,7 +10,11 @@
             "Flickle",
             "Framed",
             "Framed One Frame",
-            "GuessTheMovie"
+            "GuessTheMovie",
+            "BracketCity",
+            "Disorderly",
+            "Zip",
+            "Crossclimb"
         ],
         "favs_extra_button": true
     },
@@ -76,15 +79,16 @@
             "Colorfle",
             "FoodGuessr",
             "Queens",
-            "Angle",
-            "Bandle",
             "Framed One Frame",
-            "Parole",
-            "Picsey",
-            "Pinpoint",
             "Worldle",
             "Wordle",
-            "Connections"
+            "Connections",
+            "Spots",
+            "Tango",
+            "Travle",
+            "Zip",
+            "BracketCity",
+            "Crossclimb"
         ],
         "favs_extra_button": true
     },
@@ -185,7 +189,8 @@
             "FoodGuessr",
             "Zip",
             "GuessTheFootballClub",
-            "Hexcodle"
+            "Hexcodle",
+            "BracketCity"
         ],
         "favs_extra_button": true
     },

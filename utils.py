@@ -257,6 +257,15 @@ def process_tries(game: str, tries: int | str) -> int | str:
             tries = ':0' + tries[-1]
         if tries.startswith(':'):
             tries = '0' + tries
+    
+    if game == 'Snoop': 
+        # from 023383 to 02:23.83
+        # zfill on the left, so it can be 0:00.00
+        tries = str(tries).zfill(6)
+        hours = tries[0:2]
+        minutes = tries[2:4]
+        seconds = tries[4:6]
+        tries = f"{hours}:{minutes}.{seconds}"
 
     # For NerdleCross, scores are points, the more the better. Max points is 6 so we save them as differences from max.
     if game == "NerdleCross":

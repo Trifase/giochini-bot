@@ -74,6 +74,9 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
     if isinstance(date, str) and game == "Chronophoto":
         date = datetime.datetime.strptime(date, "%d/%m/%Y").date()
 
+    if isinstance(date, str) and game == "Snoop":
+        date = datetime.datetime.strptime(date, "%y/%m/%d").date()
+
     if date is None:
         date = datetime.date.today()
 
@@ -420,8 +423,14 @@ class BracketCity(Giochino):
         text = self.raw_text
 
 
-        date_str = text.split('\n')[1]
-        print('date found', date_str)
+        
+        match_date = re.search(r"(\w+ \d{1,2}, \d{4})", text)
+        if match_date:
+            date_str = match_date.group(1)
+            print('regex date: ', date_str)
+        else:
+            date_str = text.split('\n')[1]
+            print('string date', date_str)
         self.day = get_day_from_date(self._date, self._day, "BracketCity", date_str)
         point_match = re.search(r"Total Score: (\d+\.\d)", text)
         if point_match:
@@ -2376,6 +2385,45 @@ class Rotaboxes(Giochino):
 
 
 @dataclass
+class Snoop(Giochino):
+    _name = "Snoop"
+    _category = "Immagini, giochi e musica"
+    _date = datetime.date(2025, 5, 17)
+    _day = "100"
+    _emoji = "🔍"
+    _url = "https://www.shockwave.com/gamelanding/the-daily-snoop-a-hidden-object-game"
+
+    can_lose: False
+
+    examples = [
+        'Daily SNOOP 25/05/17 completed in 01:58.10.\n\n🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨🟩🟩🟩🔍🟩\n\nCan you beat my time? Try here: https://shockwave.com/gamelanding/the-daily-snoop-a-hidden-object-game',
+        'Daily SNOOP 25/05/17 completed in 00:24.24.\n\n🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩\n\nCan you beat my time? Try here: https://shockwave.com/gamelanding/the-daily-snoop-a-hidden-object-game',
+        'Daily SNOOP 25/05/17 completed in 02:33.83.\n\n🔍🟨🟩🟨🟨🟨🟨🟨🟩🟨🟨🟨🟨🟨🟩🟨🟩🟨🟩🟩🟩🟩🟩🟩🟨🟨🟨🟩🟩🟩🟩🟨🟨🟨🟨🟩\n\nCan you beat my time? Try here: https://shockwave.com/gamelanding/the-daily-snoop-a-hidden-object-game',
+    ]
+    expected = [
+        {"day": "100", "name": "Snoop", "timestamp": 10, "tries": "015810", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "Snoop", "timestamp": 10, "tries": "002424", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "Snoop", "timestamp": 10, "tries": "023383", "user_id": 456481297, "user_name": "Trifase"},
+        
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Daily SNOOP", "https://shockwave.com/gamelanding/the-daily-snoop-a-hidden-object-game"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"(\d+\/\d+\/\d+)", text)
+        time_match = re.search(r"(\d+:\d+.\d+)", text)
+
+        self.day = get_day_from_date(self._date, self._day, "Snoop", day_match.group(1)) if day_match else None
+        self.tries = time_match.group(1).replace(':', '').replace('.','')
+        self.stars = None
+
+
+@dataclass
 class Spellcheck(Giochino):
     _name = "Spellcheck"
     _category = "Logica"
@@ -3221,20 +3269,20 @@ class Worldle(Giochino):
         match_points = re.search(r"(\d+|X)/6", text)
         self.tries = match_points.group(1) if match_points else None
 
-        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))  # 🧭
-        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))  # ⭐️
-        pinpoint = text.count(b"\xf0\x9f\x93\x8d".decode("utf-8"))  # 📍
-        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))  # 🚩
-        head = text.count(b"\xf0\x9f\x97\xbf".decode("utf-8"))  # 🗿
-        paper = text.count(b"\xf0\x9f\x93\x9c".decode("utf-8"))  # 📜
-        shield = text.count(b"\xf0\x9f\x9b\xa1".decode("utf-8"))  # 🛡️
-        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))  # 🔤
-        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))  # 🗣
-        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))  # 👫
-        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))  # 🪙
-        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))  # 🏙
-        box = text.count(b"\xf0\x9f\x93\xa6".decode("utf-8"))  # 📦
-        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))  # 📐
+        bussola = text.count(b"\xf0\x9f\xa7\xad".decode("utf-8"))       # 🧭
+        stars = text.count(b"\xe2\xad\x90".decode("utf-8"))             # ⭐️
+        pinpoint = text.count(b"\xf0\x9f\x93\x8d".decode("utf-8"))      # 📍
+        flag = text.count(b"\xf0\x9f\x9a\xa9".decode("utf-8"))          # 🚩
+        head = text.count(b"\xf0\x9f\x97\xbf".decode("utf-8"))          # 🗿
+        paper = text.count(b"\xf0\x9f\x93\x9c".decode("utf-8"))         # 📜
+        shield = text.count(b"\xf0\x9f\x9b\xa1".decode("utf-8"))        # 🛡️
+        abc = text.count(b"\xf0\x9f\x94\xa4".decode("utf-8"))           # 🔤
+        language = text.count(b"\xf0\x9f\x97\xa3".decode("utf-8"))      # 🗣
+        population = text.count(b"\xf0\x9f\x91\xab".decode("utf-8"))    # 👫
+        coin = text.count(b"\xf0\x9f\xaa\x99".decode("utf-8"))          # 🪙
+        cityscape = text.count(b"\xf0\x9f\x8f\x99".decode("utf-8"))     # 🏙
+        box = text.count(b"\xf0\x9f\x93\xa6".decode("utf-8"))           # 📦
+        area = text.count(b"\xf0\x9f\x93\x90".decode("utf-8"))          # 📐
         self.stars = bussola + stars + pinpoint + flag + head + paper + shield + abc + language + population + coin + cityscape + box + area
 
 
@@ -3357,6 +3405,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = BracketCity
+    giochino_da_testare = Snoop
 
     test(True, giochino_da_testare)
