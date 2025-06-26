@@ -3509,6 +3509,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Snoop
+    # giochino_da_testare = Snoop
 
     test(True, giochino_da_testare)
