@@ -43,6 +43,7 @@ def time_from_emoji(input_string: str) -> str:
 
 
 def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
+
     if isinstance(date, str) and game == "Globle":
         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
         date = datetime.datetime.strptime(date, "%b %d, %Y").date()
@@ -51,6 +52,11 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
     if isinstance(date, str) and game == "BracketCity":
         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
         date = datetime.datetime.strptime(date, "%B %d, %Y").date()
+        locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
+
+    if isinstance(date, str) and game == "Timdle":
+        locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+        date = datetime.datetime.strptime(date, "%b %d %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
     if isinstance(date, str) and game == "HighFive":
@@ -72,6 +78,9 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date, "%m.%d.%y").date()
 
     if isinstance(date, str) and game == "Chronophoto":
+        date = datetime.datetime.strptime(date, "%d/%m/%Y").date()
+
+    if isinstance(date, str) and game == "Heardle":
         date = datetime.datetime.strptime(date, "%d/%m/%Y").date()
 
     if isinstance(date, str) and game == "Snoop":
@@ -1512,6 +1521,58 @@ class GuessTheMovie(Giochino):
 
 
 @dataclass
+class Heardle(Giochino):
+    _name = "Heardle"
+    _category = "Immagini, giochi e musica"
+    _date = datetime.date(2025, 6, 19)
+    _day = "100"
+    _emoji = "🔊"
+    _url = "https://heardle.it"
+
+    can_lose: True
+
+    examples = [
+        '🔊🟩⬜️⬜️⬜️⬜️⬜️\n#HeardleItalia 19/06/2025\n\nhttps://heardle.it',
+        '🔇🟥🟥🟥🟥🟥🟥 \n #HeardleItalia 26/06/2025 \n \n https://heardle.it',
+    ]
+    expected = [
+        {"day": "100", "name": "Heardle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "107", "name": "Heardle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#HeardleItalia", "https://heardle.it"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        # Extract day from the URL in the last line - search for dd/mm/yyyy
+        date_match = re.search(r" (\d+/\d+/\d+)", text)
+        if date_match:
+            date_str = date_match.group(1)
+            self.day = get_day_from_date(self._date, self._day, "Heardle", date_str)
+
+        self.tries = "X"
+        self.stars = None
+        # Find emoji pattern and evaluate results
+        emoji_line = None
+        lines = text.strip().split("\n")
+        # Cerca la linea che contiene gli emoji dei quadrati
+        for line in lines:
+            if any(emoji in line for emoji in ["🟩", "🟥", "⬜"]):
+                emoji_line = line.strip()
+
+                green_index = emoji_line.find("🟩")
+                if green_index != -1:
+                    # Calculate position by counting squares before green
+                    self.tries = str(emoji_line[:green_index].count("🟥") + emoji_line[:green_index].count("⬜") + 1)
+                break
+
+
+@dataclass
 class Hexcodle(Giochino):
     _name = "Hexcodle"
     _category = "Immagini, giochi e musica"
@@ -2760,6 +2821,49 @@ class Thirdle(Giochino):
         else:
             self.tries = int(match_points.group(1))
             self.stars = None
+
+
+@dataclass
+class Timdle(Giochino):
+    _name = "Timdle"
+    _category = "Logica"
+    _date = datetime.date(2025, 6, 24)
+    _day = "100"
+    _emoji = "⏳"
+    _url = "https://www.timdle.com/"
+
+    can_lose: False
+
+    examples = [
+        'TIMDLE Jun 24\n🌟 34/36\n1: 1p     5: 5p\n2: 2p     6: 5p\n3: 3p     7: 7p\n4: 4p     8: 7p\nPlay at https://timdle.com',
+        'TIMDLE Jun 27\n😌 31/36\n1: 1p     5: 5p\n2: 1p     6: 4p\n3: 3p     7: 6p\n4: 4p     8: 7p\nPlay at https://timdle.com',
+    ]
+    expected = [
+        {"day": "100", "name": "Timdle", "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "103", "name": "Timdle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["TIMDLE", "Play at https://timdle.com"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        match_date = re.search(r"TIMDLE (\w+ \d{1,2})", text)
+        current_year = datetime.datetime.now().year
+    
+        if match_date:
+            date_str = match_date.group(1)
+        current_day = f"{date_str} {current_year}"
+        self.day = get_day_from_date(self._date, self._day, "Timdle", current_day)
+
+        match_points = re.search(r"(\d+)/36", text)
+
+        self.tries = 36 - int(match_points.group(1)) if match_points else None
+        self.stars = None
 
 
 @dataclass

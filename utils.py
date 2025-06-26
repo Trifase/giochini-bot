@@ -284,6 +284,9 @@ def process_tries(game: str, tries: int | str) -> int | str:
 
     if game == 'BracketCity':
         tries = round(100 - tries, 1)
+
+    if game == 'Timdle':
+        tries = 36 - tries
     return tries
 
 

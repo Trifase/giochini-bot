@@ -171,7 +171,6 @@
             "Angle",
             "Connections",
             "Flagle",
-            "Globle",
             "Parole",
             "Picsey",
             "Squareword",
@@ -183,14 +182,13 @@
             "Queens",
             "Crossclimb",
             "Pinpoint",
-            "Framed",
-            "Framed One Frame",
             "Lyricle",
             "FoodGuessr",
             "Zip",
             "GuessTheFootballClub",
             "Hexcodle",
-            "BracketCity"
+            "BracketCity",
+            "Disorderly"
         ],
         "favs_extra_button": true
     },
@@ -294,5 +292,11 @@
             "Parole"
         ],
         "favs_extra_button": true
+    },
+    "146951227": {
+        "favs": [
+            "Spellcheck"
+        ],
+        "favs_extra_button": false
     }
 }
