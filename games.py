@@ -999,7 +999,7 @@ class DominoFit(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["DOMINO FIT #"]
-        _can_handle_this = all(c in raw_text for c in wordlist) and not '7x7' in raw_text and not '8x8' in raw_text
+        _can_handle_this = all(c in raw_text for c in wordlist) and '7x7' not in raw_text and '8x8' not in raw_text
         return _can_handle_this
 
     def parse(self):
