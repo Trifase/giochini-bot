@@ -86,9 +86,11 @@
             "Spots",
             "Tango",
             "Travle",
-            "Zip",
             "BracketCity",
-            "Crossclimb"
+            "Disorderly",
+            "DominoFit",
+            "GuessTheMovie",
+            "Lyricle"
         ],
         "favs_extra_button": true
     },
@@ -186,9 +188,9 @@
             "FoodGuessr",
             "Zip",
             "GuessTheFootballClub",
-            "Hexcodle",
             "BracketCity",
-            "Disorderly"
+            "Disorderly",
+            "Timdle"
         ],
         "favs_extra_button": true
     },
