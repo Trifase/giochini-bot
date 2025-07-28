@@ -1084,6 +1084,49 @@ class Flagle(Giochino):
 
 
 @dataclass
+class Flags(Giochino):
+    _name = "Flags"
+    _category = "Geografia e Mappe"
+    _date = datetime.date(2025, 7, 28)
+    _day = "8"
+    _emoji = "🏳️‍🌈"
+    _url = "https://flagsgame.net"
+
+    examples = [
+        'Flag #4\n🟥 🟩 ⬛️ ⬛️ ⬛️ ⬛️\nhttps://flagsgame.net',
+        'Flag #8\n🟥 🟥 🟥 🟥 🟥 🟥\nhttps://flagsgame.net',
+    ]
+    expected = [
+        {"day": "4", "name": "Flags", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "8", "name": "Flags", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Flag", "https://flagsgame.net"]
+        _can_handle_this = all(c in raw_text for c in wordlist) and "one-frame" not in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        # Extract day number using regex
+        day_match = re.search(r"Flag #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+        self.tries = 'X'
+        for line in text.splitlines():
+            if any(emoji in line for emoji in ["🟩", "🟥", "⬛"]):
+                emoji_line = line.strip()
+
+                green_index = emoji_line.find("🟩")
+                if green_index != -1:
+                    # Calculate position by counting squares before green
+                    self.tries = str(emoji_line[:green_index].count("🟥") + emoji_line[:green_index].count("⬜") + 1)
+                break
+
+
+
+@dataclass
 class FoodGuessr(Giochino):
     _name = "FoodGuessr"
     _category = "Geografia e Mappe"
@@ -3551,6 +3594,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Titleshot
+    giochino_da_testare = Flags
 
     test(True, giochino_da_testare)
