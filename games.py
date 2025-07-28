@@ -1614,43 +1614,43 @@ class Hexcodle(Giochino):
         self.stars = None
 
 
-@dataclass
-class HighFive(Giochino):
-    _name = "HighFive"
-    _category = "Giochi di parole"
-    _date = datetime.date(2023, 6, 23)
-    _day = "100"
-    _emoji = "🖐️"
-    _url = "https://highfivegame.app"
+# @dataclass
+# class HighFive(Giochino):
+#     _name = "HighFive"
+#     _category = "Giochi di parole"
+#     _date = datetime.date(2023, 6, 23)
+#     _day = "100"
+#     _emoji = "🖐️"
+#     _url = "https://highfivegame.app"
 
-    examples = ["🖐 I scored 27 points on today's HighFive! Can you beat me?\n\n🟠🟠\n🟢🟢🟢🟢\n🔵\n🟣🟣🟣🟣🟣\n\nhttps://highfivegame.app/2024-02-28"]
-    expected = [{"day": "350", "name": "HighFive", "timestamp": 10, "tries": "-27", "user_id": 456481297, "user_name": "Trifase"}]
+#     examples = ["🖐 I scored 27 points on today's HighFive! Can you beat me?\n\n🟠🟠\n🟢🟢🟢🟢\n🔵\n🟣🟣🟣🟣🟣\n\nhttps://highfivegame.app/2024-02-28"]
+#     expected = [{"day": "350", "name": "HighFive", "timestamp": 10, "tries": "-27", "user_id": 456481297, "user_name": "Trifase"}]
 
-    can_lose: False
+#     can_lose: False
 
-    @staticmethod
-    def can_handle_this(raw_text):
-        wordlist = ["HighFive! ", "https://highfivegame.app"]
-        _can_handle_this = all(c in raw_text for c in wordlist)
-        return _can_handle_this
+#     @staticmethod
+#     def can_handle_this(raw_text):
+#         wordlist = ["HighFive! ", "https://highfivegame.app"]
+#         _can_handle_this = all(c in raw_text for c in wordlist)
+#         return _can_handle_this
 
-    def parse(self):
-        text = self.raw_text
+#     def parse(self):
+#         text = self.raw_text
 
-        # Extract day from the URL in the last line
-        url_match = re.search(r"(\d{4}-\d{2}-\d{2})", text)
-        if url_match:
-            date_str = url_match.group(1)
-            self.day = get_day_from_date(self._date, self._day, "HighFive", date_str)
+#         # Extract day from the URL in the last line
+#         url_match = re.search(r"(\d{4}-\d{2}-\d{2})", text)
+#         if url_match:
+#             date_str = url_match.group(1)
+#             self.day = get_day_from_date(self._date, self._day, "HighFive", date_str)
 
-        # Extract score from first line with regex
-        score_match = re.search(r"I scored (\d+) points", text)
-        if score_match:
-            score = int(score_match.group(1))
-            # Store as negative since that's the format used in the system
-            self.tries = str(0 - score)
+#         # Extract score from first line with regex
+#         score_match = re.search(r"I scored (\d+) points", text)
+#         if score_match:
+#             score = int(score_match.group(1))
+#             # Store as negative since that's the format used in the system
+#             self.tries = str(0 - score)
 
-        self.stars = None
+#         self.stars = None
 
 
 @dataclass
@@ -2901,6 +2901,48 @@ class TimeGuessr(Giochino):
         self.tries = 50_000 - int(match_points.group(1) + match_points.group(2)) if match_points else None
         self.stars = None
 
+@dataclass
+class Titleshot(Giochino):
+    _name = "Titleshot"
+    _category = "Cinema e Serie TV"
+    _date = datetime.date(2025, 7, 28)
+    _day = "54"
+    _emoji = "🎦"
+    _url = "https://framed.wtf/titleshot"
+
+    examples = [
+        'Framed - Title Shot Challenge #54\n🎥 🟥 🟥 🟥 🟥 🟥 🟥\n\nhttps://framed.wtf/titleshot',
+        'Framed - Title Shot Challenge #42\n    🎥 🟥 🟩 ⬛️ ⬛️ ⬛️ ⬛️\n\n    https://framed.wtf/titleshot',
+    ]
+    expected = [
+        {"day": "54", "name": "Titleshot", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "42", "name": "Titleshot", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Framed", 'Title Shot Challenge', 'https://framed.wtf/titleshot']
+        _can_handle_this = all(c in raw_text for c in wordlist) and "one-frame" not in raw_text
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        # Extract day number using regex
+        day_match = re.search(r"Challenge #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        # Find the emoji line containing the results
+        emoji_line = re.search(r"🎥\s+([🟥🟩⬛\s]+)", text)
+        if emoji_line:
+            # Remove spaces and get the results string
+            punteggio = emoji_line.group(1).replace(" ", "")
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
+                # Find the position of the first green square
+                self.tries = str(punteggio.index("🟩") + 1)
+
 
 @dataclass
 class Tradle(Giochino):
@@ -3509,6 +3551,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    # giochino_da_testare = Snoop
+    giochino_da_testare = Titleshot
 
     test(True, giochino_da_testare)

@@ -190,7 +190,8 @@
             "GuessTheFootballClub",
             "BracketCity",
             "Disorderly",
-            "Timdle"
+            "Timdle",
+            "Spellcheck"
         ],
         "favs_extra_button": true
     },
@@ -298,6 +299,12 @@
     "146951227": {
         "favs": [
             "Spellcheck"
+        ],
+        "favs_extra_button": false
+    },
+    "102889983": {
+        "favs": [
+            "Wordle"
         ],
         "favs_extra_button": false
     }
