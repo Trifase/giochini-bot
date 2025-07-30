@@ -7,6 +7,7 @@ import time
 import traceback
 import zipfile
 
+import httpx
 import peewee
 import pytz
 from telegram import (
@@ -38,9 +39,11 @@ from config import (
     ID_TESTING,
     MEDALS,
     TOKEN,
+    HEARTBEAT_ID,
     Medaglia,
     Punteggio,
     Punti,
+
 )
 from games import ALL_GAMES as GAMES
 from games import GameFilter
@@ -479,6 +482,7 @@ async def top_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     messaggio = ""
+    print(f"ci sono in totale {len(GAMES.keys())} giochi")
     for game in GAMES.keys():
         classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3)
 
@@ -619,6 +623,21 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 await update.message.reply_text(f'Ho salvato il tuo punteggio di {days_ago} giorni fa.')
 
         logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
+
+        tot_games = len(GAMES.keys())
+        game_played_today = 0
+        # for each game, see if there is a result for the last day of the game, and if there is, count it
+        for game in GAMES.keys():
+            day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+            query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"])
+            if query:
+                game_played_today += 1
+        print(f"Totale giochi giocati oggi: {game_played_today} su {tot_games}")
+        if game_played_today == tot_games:
+            # if the user has played all the games today, send a message
+            await update.message.reply_text("Hai giocato a tutti i giochi oggi! Bravo! Esci un po' porca troia!")
+            await update.message.set_reaction(reaction="🎉")
+
 
     else:  # should never be the case
         print('wtf?')
@@ -881,6 +900,20 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     context.bot_data["manual_riassunto"] = False
 
 
+async def heartbeat(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Make a GET to betterstack
+    """
+    hb_id = HEARTBEAT_ID
+    url = f"https://uptime.betterstack.com/api/v1/heartbeat/{hb_id}"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        if response.status_code == 200:
+            print("[AUTO] Heartbeat sent successfully.")
+        else:
+            print("[AUTO] Failed to send heartbeat. Status code: {response.status_code}")
+
 async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     model = "alternate-with-lost"
     if "-skip-empty" in context.args:
@@ -1092,6 +1125,7 @@ def main():
     j.run_daily(daily_reminder, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(riassunto_serale, datetime.time(hour=0, minute=1, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_repeating(heartbeat, interval=60 * 15, first=10)
 
     app.add_handler(CommandHandler("classificona", classificona), 1)
     app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)

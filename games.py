@@ -1188,7 +1188,7 @@ class Framed(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["Framed", "https://framed.wtf"]
-        _can_handle_this = all(c in raw_text for c in wordlist) and "one-frame" not in raw_text
+        _can_handle_this = all(c in raw_text for c in wordlist) and "one-frame" not in raw_text and "titleshot" not in raw_text
         return _can_handle_this
 
     def parse(self):
@@ -3594,6 +3594,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Flags
+    giochino_da_testare = Titleshot
 
     test(True, giochino_da_testare)
