@@ -1521,6 +1521,52 @@ class GuessTheGame(Giochino):
                 green_index = punteggio.find("🟩")
                 self.tries = str(green_index + 1) if green_index >= 0 else "X"
 
+
+@dataclass
+class GuessTheHouse(Giochino):
+    _name = "GuessTheHouse"
+    _category = "Logica"
+    _date = datetime.date(2025, 7, 31)
+    _day = "310"
+    _emoji = "🏠"
+    _url = "https://guessthe.house"
+
+    examples = [
+        "#GuessTheHouse #310\n🏠 🟥 🟥 🟥 🟥 🟩 ⬜️\n#HomeHobbyist\nhttps://GuessThe.House/p/310",
+        "#GuessTheHouse #310\n🏠 🟥 🟥 🟥 🟥 🟥 🟩\n#HomeHobbyist\nhttps://GuessThe.House/p/310",
+    ]
+    expected = [
+        {"day": "310", "name": "GuessTheHouse", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "310", "name": "GuessTheHouse", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#GuessTheHouse", "https://GuessThe.House/p"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        day_match = re.search(r"#GuessTheHouse #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+        
+        # Find the line with the house emoji and the result squares
+        emoji_line = re.search(r"🏠\s*([\s🟥🟩⬜️]+)", text)
+        if emoji_line:
+            punteggio = emoji_line.group(1).replace(" ", "")
+
+            # If there's no green emoji, the user lost
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
+                # The number of tries is the position of the green square
+                self.tries = str(punteggio.index("🟩") + 1)
+        
+        self.stars = None
+
+
 @dataclass
 class GuessTheMovie(Giochino):
     _name = "GuessTheMovie"
@@ -3594,6 +3640,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Titleshot
+    giochino_da_testare = GuessTheHouse
 
     test(True, giochino_da_testare)
