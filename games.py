@@ -1445,6 +1445,47 @@ class Globle(Giochino):
 
 
 @dataclass
+class GuessTheAngle(Giochino):
+    _name = "GuessTheAngle"
+    _category = "Logica"
+    _date = datetime.date(2025, 7, 31)
+    _day = "173"
+    _emoji = "📐"
+    _url = "https://guesstheangle.wtf"
+
+    examples = [
+        "#GuessTheAngle #173\n\n📐 🟥 🟥 🟩 ⬜️\n\n#AngleAmateur\nhttps://GuessTheAngle.wtf/p/173",
+        "#GuessTheAngle #173\n\n📐 🟥 🟥 🟥 🟥\n\n#AngleAmateur\nhttps://GuessTheAngle.wtf/p/173",
+    ]
+    expected = [
+        {"day": "173", "name": "GuessTheAngle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "173", "name": "GuessTheAngle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#GuessTheAngle", "https://GuessTheAngle.wtf/p"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        day_match = re.search(r"#GuessTheAngle #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+        
+        emoji_line = re.search(r"📐\s*([\s🟥🟩⬜️]+)", text)
+        if emoji_line:
+            punteggio = emoji_line.group(1).replace(" ", "")
+
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
+                self.tries = str(punteggio.index("🟩") + 1)
+        
+        self.stars = None
+
+@dataclass
 class GuessTheFootballClub(Giochino):
     _name = "GuessTheFootballClub"
     _category = "Immagini, giochi e musica"
@@ -1552,7 +1593,7 @@ class GuessTheHouse(Giochino):
         day_match = re.search(r"#GuessTheHouse #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
         
-        # Find the line with the house emoji and the result squares
+        # Fi    nd the line with the house emoji and the result squares
         emoji_line = re.search(r"🏠\s*([\s🟥🟩⬜️]+)", text)
         if emoji_line:
             punteggio = emoji_line.group(1).replace(" ", "")
@@ -1562,6 +1603,48 @@ class GuessTheHouse(Giochino):
                 self.tries = "X"
             else:
                 # The number of tries is the position of the green square
+                self.tries = str(punteggio.index("🟩") + 1)
+        
+        self.stars = None
+
+
+@dataclass
+class GuessTheLogo(Giochino):
+    _name = "GuessTheLogo"
+    _category = "Immagini, giochi e musica"
+    _date = datetime.date(2025, 7, 31)
+    _day = "318"
+    _emoji = "®"
+    _url = "https://guessthelogo.wtf"
+
+    examples = [
+        "#GuessTheLogo #318\n\n® 🟥 🟥 🟥 🟥 🟥\n\n#LogoLearner\nhttps://GuessTheLogo.wtf/p/318",
+        "#GuessTheLogo #318\n\n® 🟥 🟩 ⬜️ ⬜️\n\n#LogoLearner\nhttps://GuessTheLogo.wtf/p/318",
+    ]
+    expected = [
+        {"day": "318", "name": "GuessTheLogo", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "318", "name": "GuessTheLogo", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+    
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#GuessTheLogo", "https://GuessTheLogo.wtf/p"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        day_match = re.search(r"#GuessTheLogo #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+        
+        emoji_line = re.search(r"®\s*([\s🟥🟩⬜️]+)", text)
+        if emoji_line:
+            punteggio = emoji_line.group(1).replace(" ", "")
+
+            if "🟩" not in punteggio:
+                self.tries = "X"
+            else:
                 self.tries = str(punteggio.index("🟩") + 1)
         
         self.stars = None
@@ -3640,6 +3723,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = GuessTheHouse
+    giochino_da_testare = GuessTheLogo
 
     test(True, giochino_da_testare)
