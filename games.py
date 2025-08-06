@@ -1136,32 +1136,74 @@ class FoodGuessr(Giochino):
     _url = "https://foodguessr.com"
 
     can_lose: False
+    
+    # examples = [
+    #     "FoodGuessr - 09 Mar 2024 GMT\n  Round 1 🌕🌕🌕🌖\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌗🌑\nTotal score: 12,500 / 15,000\n\nCan you beat my score? New game daily!\nPlay at https://foodguessr.com",
+    # ]
+    # expected = [{"day": "200", "name": "FoodGuessr", "stars": None, "timestamp": 10, "tries": 2500, "user_id": 456481297, "user_name": "Trifase"}]
+
+    # @staticmethod
+    # def can_handle_this(raw_text):
+    #     wordlist = ["FoodGuessr", "Play at https://foodguessr.com"]
+    #     _can_handle_this = all(c in raw_text for c in wordlist)
+    #     return _can_handle_this
+
+    # def parse(self):
+    #     text = self.raw_text
+
+    #     # Extract date with regex
+    #     date_match = re.search(r"FoodGuessr - ([\d]+ [A-Za-z]+ [\d]{4})", text)
+    #     if date_match:
+    #         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+    #         actual_day = datetime.datetime.strptime(date_match.group(1).replace(" GMT", ""), "%d %b %Y").date()
+    #         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
+    #         self.day = get_day_from_date(self._date, self._day, "FoodGuessr", actual_day)
+
+    #     # Extract score with regex
+    #     score_match = re.search(r"Total score: ([\d,\.]+)", text)
+    #     if score_match:
+    #         points = score_match.group(1).replace(",", "").replace(".", "")
+    #         self.tries = 15_000 - int(points)
+
+    #     self.stars = None
+
     examples = [
-        "FoodGuessr - 09 Mar 2024 GMT\n  Round 1 🌕🌕🌕🌖\n  Round 2 🌕🌕🌕🌕\n  Round 3 🌕🌕🌗🌑\nTotal score: 12,500 / 15,000\n\nCan you beat my score? New game daily!\nPlay at https://foodguessr.com",
+        "FoodGuessr - Wednesday, Aug 6, 2025 UTC\n🌕🌕🌕🌕 5000 ⋅ Round 1 💯\n🌕🌕🌕🌘 4000 ⋅ Round 2\n🌕🌕🌕🌖 4500 ⋅ Round 3\nTotal score: 13.500/15.000\n(+2094 above today's average!) 🎉\nPlay here: https://www.foodguessr.com/",
+        "I got 13.500 on the FoodGuessr Daily!\n\nThat's 2094 points above today's average! 🎉\n\n🌕🌕🌕🌕 5000 (Round 1) 💯\n🌕🌕🌕🌘 4000 (Round 2)\n🌕🌕🌕🌖 4500 (Round 3)\n\nWednesday, Aug 6, 2025\nPlay here: https://www.foodguessr.com/",
+        "I got 15,000 on the FoodGuessr Daily!\n\nThat's 3,595 points above today's average! 🎉\n\n🌕🌕🌕🌕 5,000 (Round 1) 💯\n🌕🌕🌕🌕 5,000 (Round 2) 💯\n🌕🌕🌕🌕 5,000 (Round 3) 💯\n\nWednesday, Aug 6, 2025\nPlay here: https://www.foodguessr.com/"
     ]
-    expected = [{"day": "200", "name": "FoodGuessr", "stars": None, "timestamp": 10, "tries": 2500, "user_id": 456481297, "user_name": "Trifase"}]
+    expected = [
+        {"day": "715", "name": "FoodGuessr", "timestamp": 10, "tries": 1500, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "715", "name": "FoodGuessr", "timestamp": 10, "tries": 1500, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "715", "name": "FoodGuessr", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"}
+    ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["FoodGuessr", "Play at https://foodguessr.com"]
+        wordlist = ["FoodGuessr", "Play here: https://www.foodguessr.com/"]
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
 
-        # Extract date with regex
-        date_match = re.search(r"FoodGuessr - ([\d]+ [A-Za-z]+ [\d]{4})", text)
+        # Extract date from the various formats
+        date_match = re.search(r"FoodGuessr - [\w\s]+, (\w+ \d+, \d{4})|([\w\s]+, (\w+ \d+, \d{4}))", text)
         if date_match:
+            date_str = date_match.group(1) or date_match.group(3)
+            # print(f'date_str: "{date_str}"')
             locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
-            actual_day = datetime.datetime.strptime(date_match.group(1).replace(" GMT", ""), "%d %b %Y").date()
+            actual_day = datetime.datetime.strptime(date_str.strip(), "%b %d, %Y").date()
             locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
             self.day = get_day_from_date(self._date, self._day, "FoodGuessr", actual_day)
 
-        # Extract score with regex
-        score_match = re.search(r"Total score: ([\d,\.]+)", text)
+        # Extract score from the various formats and clean it
+        score_match = re.search(r"(\d+[.,]?\d+)\/15\.000|I got (\d+[,.]?\d+) on the FoodGuessr", text)
         if score_match:
-            points = score_match.group(1).replace(",", "").replace(".", "")
+            points_str = score_match.group(1) or score_match.group(2)
+            # Normalize points string by removing thousands separators
+            points_str = points_str.replace(",", "").replace(".", "")
+            points = int(points_str)
             self.tries = 15_000 - int(points)
 
         self.stars = None
@@ -3723,6 +3765,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = GuessTheLogo
+    giochino_da_testare = FoodGuessr
 
     test(True, giochino_da_testare)
