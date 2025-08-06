@@ -89,15 +89,26 @@ locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 giochini_results_filter = GameFilter()
 
 
-def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True) -> str:
+def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True, show_lost=False) -> str:
     day = day or get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
     # print(f"Making classifica for {game} #{day}")
     emoji = GAMES[game]["emoji"]
     url = GAMES[game]["url"]
 
     user_id_found = False
-
-    query = (
+    if show_lost:
+        query = (
+            Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+            .where(
+                Punteggio.day == day,
+                Punteggio.game == game,
+                Punteggio.chat_id == chat_id
+            )
+            .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
+            .limit(limit)
+        )
+    else:
+        query = (
         Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
         .where(
             Punteggio.day == day,
@@ -108,7 +119,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
         )
         .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
         .limit(limit)
-    )
+        )
     # print(query.sql())
     if not query:
         return None
@@ -121,6 +132,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
     classifica.header = f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>'
 
     for posto, punteggio in enumerate(query, start=1):
+        # print(posto, punteggio)
         punteggio.tries = process_tries(game, punteggio.tries)
 
         if user_id and not user_id_found and punteggio.user_id == user_id:
@@ -403,7 +415,7 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
         game = correct_name(context.args[0])
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
 
-        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id)
+        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id, show_lost=True)
 
         if not classifica_text:
             classifica_text = "Non c'è niente da vedere qui."
@@ -914,6 +926,7 @@ async def heartbeat(context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             print("[AUTO] Failed to send heartbeat. Status code: {response.status_code}")
 
+
 async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     model = "alternate-with-lost"
     if "-skip-empty" in context.args:
@@ -924,6 +937,10 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
         model = "no-timestamp"
     elif "-alternate-with-lost" in context.args:
         model = "alternate-with-lost"
+    elif "-no-limit-of-3" in context.args:
+        model = "no-limit-of-3"
+    elif "-standard" in context.args:
+        model = "standard"
 
     cambiamenti = daily_ranking(model)
 

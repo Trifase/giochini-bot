@@ -37,7 +37,10 @@ class Classifica:
         classifica = ""
         classifica += self.header + "\n"
         for posto, username, tries in self.pos:
-            classifica += f'{MEDALS.get(posto, "")}{username} ({tries})\n'
+            if (tries == 9999999 or tries == "9999999"):
+                classifica += f"❌ {username}\n"
+            else:
+                classifica += f'{MEDALS.get(posto, "")}{username} ({tries})\n'
         if self.last:
             classifica += f"{self.last}"
         return classifica
@@ -57,12 +60,16 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
     # skip-empty: same as the standard, but games with less than limit plays (default: 3) are not counted at all
 
     # alternate: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
-    # It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
-    # BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
+    #   It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
+    #   BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
 
     # alternate-with-lost: same as alternate, but we count lost plays whe we calculate the score. We still don't assign points to lost plays.
 
+    # no-limit-of-3: same as alternate-with-lost, but we don't limit the number of players to 3. So if a game has 7 plays, the first gets 7 points, the second 6 and so on.
+
     # no-timestamp: same as alternate-with-lost, but it doesn't consider the timestamp of the play. Made for people who sleep a lot.
+
+    # only-gold: 1 point to the first of each game with at least 2 plays
 
     # GAMES = get_games()
     for game in GAMES.keys():
@@ -165,6 +172,24 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
                         points[name] += len(query_alternate) - i
                 except IndexError:
                     pass
+
+        if model == "no-limit-of-3":
+            # This include lost plays
+            query_alternate = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
+                .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+            )
+            for i, _ in enumerate(query_alternate):
+                # print(f"{game} {i} {query_alternate[i]} {query_alternate[i].lost}")
+                try:
+                    if not query_alternate[i].lost:
+                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+                        points[name] += len(query_alternate) - i
+                except IndexError:
+                    pass
+
+
 
     cambiamenti = dict(points)
     cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
@@ -878,8 +903,35 @@ def print_heatmap():
     plt.tight_layout()
     plt.savefig('00_combined_plot.png')
 
+def get_all_scoring():
+    # We will get all the daily ranking for every day using a specific model, from today all the way back.
+    # We will also get the highest scoring ever
+    import datetime
+
+    today = datetime.date.today()
+    max_points = 0
+    max_user = 0
+    max_date = today
+    model = "alternate-with-lost"
+    for day in range(0, 365): 
+        date = today - datetime.timedelta(days=day)
+        # Get the scores for this day
+        cambiamenti = daily_ranking(model, from_day=date)
+        for user, points in cambiamenti:
+            user_id, user_name = user.split("_|_")
+            user_id = int(user_id)
+            if points > max_points:
+                print(f'new highscore found! {user_name} with {points} points on {date}')
+                max_points = points
+                max_user = user_name
+                max_date = date
+    print(f"Highest scoring ever: {max_user} ({max_points}) on {max_date}.")
+
+
+
 # Heatmap!
 if __name__ == '__main__':
     print_heatmap()
+    # get_all_scoring()
 
 # sanitize_extra()

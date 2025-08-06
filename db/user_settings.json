@@ -188,7 +188,8 @@
             "Disorderly",
             "Timdle",
             "Spellcheck",
-            "Flags"
+            "Flags",
+            "GuessTheHouse"
         ],
         "favs_extra_button": true
     },
