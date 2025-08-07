@@ -1880,11 +1880,13 @@ class Lyricle(Giochino):
         "#Lyricle #1052\n\n⬛️⬛️⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app",
         "#Lyricle #1051\n\n🟩⬛⬛⬛⬛⬛\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app",
         '#Lyricle #1072\n\n⬛️🟩⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app',
+        '#Lyricle #1201\n\n🟨🟩⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app',
     ]
     expected = [
         {"day": "1052", "name": "Lyricle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1051", "name": "Lyricle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1072", "name": "Lyricle", "timestamp": 10, "tries": "2", "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '1201', 'name': 'Lyricle', 'timestamp': 10, 'tries': '2', 'user_id': 456481297, 'user_name': 'Trifase'},
 
     ]
 
@@ -1908,13 +1910,13 @@ class Lyricle(Giochino):
         lines = text.strip().split("\n")
         # Cerca la linea che contiene gli emoji dei quadrati
         for line in lines:
-            if any(emoji in line for emoji in ["⬛", "🟩", "🟨", "⬜"]):
+            if any(emoji in line for emoji in ["⬛", "🟩", "🟨", "⬜", "🟥"]):
                 emoji_line = line.strip()
 
                 green_index = emoji_line.find("🟩")
                 if green_index != -1:
                     # Calculate position by counting squares before green
-                    self.tries = str(emoji_line[:green_index].count("⬛") + emoji_line[:green_index].count("🟥") + emoji_line[:green_index].count("⬜") + 1)
+                    self.tries = str(emoji_line[:green_index].count("⬛") + emoji_line[:green_index].count("🟥") + emoji_line[:green_index].count("🟨") + emoji_line[:green_index].count("⬜") + 1)
                 break
 
 
@@ -3765,6 +3767,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = FoodGuessr
+    giochino_da_testare = Lyricle
 
     test(True, giochino_da_testare)
