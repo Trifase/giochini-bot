@@ -681,7 +681,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     else:
                         classifica += "\nLongest streak: current"
                 classifica += f"\n\nOggi hai giocato a {game_played_today} giochi su {tot_games}."
-                classifica += f"\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}"
+                classifica += f'\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}'
 
                 mymsg = await update.message.reply_html(classifica)
 
