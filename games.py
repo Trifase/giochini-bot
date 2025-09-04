@@ -763,8 +763,8 @@ class Contexto(Giochino):
 class Countryle(Giochino):
     _name = "Countryle"
     _category = "Geografia e Mappe"
-    _date = datetime.date(2024, 11, 23)
-    _day = "1010"
+    _date = datetime.date(2025, 8, 25)
+    _day = "1284"
     _emoji = "🌐"
     _url = "https://countryle.com"
 

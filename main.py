@@ -49,6 +49,7 @@ from games import ALL_GAMES as GAMES
 from games import GameFilter
 from utils import (
     Classifica,
+    Giocata,
     correct_name,
     daily_ranking,
     get_day_from_date,
@@ -89,38 +90,107 @@ locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 giochini_results_filter = GameFilter()
 
 
+# def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True, show_lost=False) -> str:
+#     day = day or get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+#     # print(f"Making classifica for {game} #{day}")
+#     emoji = GAMES[game]["emoji"]
+#     url = GAMES[game]["url"]
+
+#     user_id_found = False
+#     if show_lost:
+#         query = (
+#             Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+#             .where(
+#                 Punteggio.day == day,
+#                 Punteggio.game == game,
+#                 Punteggio.chat_id == chat_id
+#             )
+#             .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
+#             .limit(limit)
+#         )
+#     else:
+#         query = (
+#         Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+#         .where(
+#             Punteggio.day == day,
+#             Punteggio.game == game,
+#             Punteggio.chat_id == chat_id,
+#             # https://github.com/coleifer/peewee/issues/612#issuecomment-468029502
+#             Punteggio.lost == False,
+#         )
+#         .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
+#         .limit(limit)
+#         )
+#     # print(query.sql())
+#     if not query:
+#         return None
+
+#     classifica = Classifica()
+#     classifica.game = game
+#     classifica.day = day
+#     classifica.date = datetime.date.today()
+#     classifica.emoji = emoji
+#     classifica.header = f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>'
+
+#     for posto, punteggio in enumerate(query, start=1):
+#         # print(posto, punteggio)
+#         punteggio.tries = process_tries(game, punteggio.tries)
+
+#         if user_id and not user_id_found and punteggio.user_id == user_id:
+#             user_id_found = True
+
+#         posto = Posto(posizione=posto, user_id=punteggio.user_id, user_name=punteggio.user_name, tries=punteggio.tries)
+#         classifica.pos.append(posto)
+
+#     if len(classifica.pos) < 3:
+#         classifica.valid = False
+
+#     # At this point, if the user is not found in the first LIMIT positions, we search deeper in the db
+#     if user_id and not user_id_found:
+#         deep_query = (
+#             Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+#             .where(
+#                 Punteggio.day == day,
+#                 Punteggio.game == game,
+#                 Punteggio.chat_id == chat_id,
+#                 Punteggio.lost == False,
+#             )
+#             .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
+#         )
+
+#         for posto, punteggio in enumerate(deep_query, start=1):
+#             punteggio.tries = process_tries(game, punteggio.tries)
+
+#             if user_id and punteggio.user_id == user_id:
+#                 user_id_found = True
+#                 classifica.last = f"...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n"
+
+#     if to_string:
+#         return classifica.to_string()
+
+#     return classifica
+
+
+
 def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True, show_lost=False) -> str:
     day = day or get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
     # print(f"Making classifica for {game} #{day}")
     emoji = GAMES[game]["emoji"]
     url = GAMES[game]["url"]
 
-    user_id_found = False
-    if show_lost:
-        query = (
-            Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
+    # user_id_found = False
+    # if show_lost:
+    query = (
+            Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id, Punteggio.extra)
             .where(
                 Punteggio.day == day,
                 Punteggio.game == game,
                 Punteggio.chat_id == chat_id
             )
-            .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
-            .limit(limit)
+            .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc())
+            # .limit(limit)
         )
-    else:
-        query = (
-        Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
-        .where(
-            Punteggio.day == day,
-            Punteggio.game == game,
-            Punteggio.chat_id == chat_id,
-            # https://github.com/coleifer/peewee/issues/612#issuecomment-468029502
-            Punteggio.lost == False,
-        )
-        .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
-        .limit(limit)
-        )
-    # print(query.sql())
+    
     if not query:
         return None
 
@@ -130,43 +200,16 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
     classifica.date = datetime.date.today()
     classifica.emoji = emoji
     classifica.header = f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>'
+    classifica.giocate = [Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0) for g in query]
+    classifica.order_and_position()
 
-    for posto, punteggio in enumerate(query, start=1):
-        # print(posto, punteggio)
-        punteggio.tries = process_tries(game, punteggio.tries)
-
-        if user_id and not user_id_found and punteggio.user_id == user_id:
-            user_id_found = True
-
-        classifica.pos.append((posto, punteggio.user_name, punteggio.tries))
-
-    if len(classifica.pos) < 3:
-        classifica.valid = False
-
-    # At this point, if the user is not found in the first LIMIT positions, we search deeper in the db
-    if user_id and not user_id_found:
-        deep_query = (
-            Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
-            .where(
-                Punteggio.day == day,
-                Punteggio.game == game,
-                Punteggio.chat_id == chat_id,
-                Punteggio.lost == False,
-            )
-            .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
-        )
-
-        for posto, punteggio in enumerate(deep_query, start=1):
-            punteggio.tries = process_tries(game, punteggio.tries)
-
-            if user_id and punteggio.user_id == user_id:
-                user_id_found = True
-                classifica.last = f"...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n"
+    classifica.assign_stars('no_limit_with_lost')
 
     if to_string:
         return classifica.to_string()
 
     return classifica
+
 
 
 def make_games_classifica(days: int = 0) -> str:
@@ -496,7 +539,7 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     messaggio = ""
     print(f"ci sono in totale {len(GAMES.keys())} giochi")
     for game in GAMES.keys():
-        classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3)
+        classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, show_lost=True)
 
         # print(make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, data=True))
 
@@ -600,29 +643,51 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         if play_is_lost:
             logging.info(f"Aggiungo tentativo di {result['user_name']} per {result['name']} #{result['day']} (fallito)")
+            message = f'Classifica di {result["name"]} aggiornata.\n'
+            classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"], show_lost=True)
+            mymsg = await update.message.reply_html(classifica)
+            context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
             return
 
         today_game = int(get_day_from_date(GAMES[result["name"]]["date"], GAMES[result["name"]]["day"], result["name"], datetime.date.today()))
 
         if str_as_int(result["day"]) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
-            classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"])
+            classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"], show_lost=True)
+            tot_games = len(GAMES.keys())
+            game_played_today = 0
+
+            # for each game, see if there is a result for the last day of the game, and if there is, count it
+            for game in GAMES.keys():
+                day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+                query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"])
+
+                if query:
+                    game_played_today += 1
+
             if classifica:
                 classifica = f"{message}\n{classifica}"
                 streak = streak + 1
+
                 if streak:
                     classifica += f"\nCurrent streak: {streak}"
+
                 long_streak = longest_streak(user_id=result["user_id"], game=result["name"])
+
                 if long_streak:
                     if long_streak > streak:
                         classifica += f"\nLongest streak: {long_streak}"
                     else:
                         classifica += "\nLongest streak: current"
+                classifica += f"\n\nOggi hai giocato a {game_played_today} giochi su {tot_games}."
+
                 mymsg = await update.message.reply_html(classifica)
+
                 await mymsg.reply_to_message.set_reaction(reaction="✍")
                 if giochino.win_message:
                     await mymsg.reply_to_message.reply_html(giochino.win_message)
                 context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
+
             else:
                 mymsg = await update.message.reply_html("Ah, non l'ha ancora fatto nessuno, fico.")
                 context.job_queue.run_once(delete_post, 60, data=[mymsg], name=f"delete_post_{str(update.effective_message.id)}")
@@ -644,7 +709,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"])
             if query:
                 game_played_today += 1
-        print(f"Totale giochi giocati oggi: {game_played_today} su {tot_games}")
+        # print(f"Totale giochi giocati oggi: {game_played_today} su {tot_games}")
         if game_played_today == tot_games:
             # if the user has played all the games today, send a message
             await update.message.reply_text("Hai giocato a tutti i giochi oggi! Bravo! Esci un po' porca troia!")
@@ -847,7 +912,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
 
-    model = "alternate-with-lost"
+    model = "no_limit_with_lost"
     cambiamenti = daily_ranking(model, yesterday)
 
     message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
@@ -928,29 +993,35 @@ async def heartbeat(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    model = "alternate-with-lost"
-    if "-skip-empty" in context.args:
-        model = "skip-empty"
-    elif "-alternate" in context.args:
-        model = "alternate"
-    elif "-no-timestamp" in context.args:
-        model = "no-timestamp"
-    elif "-alternate-with-lost" in context.args:
-        model = "alternate-with-lost"
-    elif "-no-limit-of-3" in context.args:
-        model = "no-limit-of-3"
-    elif "-standard" in context.args:
-        model = "standard"
+    model = "no_limit_with_lost"
+
+    # if "-skip-empty" in context.args:
+    #     model = "skip-empty"
+    # elif "-alternate" in context.args:
+    #     model = "alternate"
+    # elif "-no-timestamp" in context.args:
+    #     model = "no-timestamp"
+    # elif "-alternate-with-lost" in context.args:
+    #     model = "alternate-with-lost"
+    # elif "-no-limit-of-3" in context.args:
+    #     model = "no-limit-of-3"
+    # elif "-standard" in context.args:
+    #     model = "standard"
+    # elif "-allow-ex-aequo" in context.args:
+    #     model = "allow-ex-aequo"
 
     cambiamenti = daily_ranking(model)
+    # print(cambiamenti)
 
-    message = "Ecco la classifica temporanea di oggi:\n"
+    message = "Ecco la classifica temporanea di oggi:\n\n"
 
-    for user, points in cambiamenti:
+    for user, stars in cambiamenti:
         user_id, user_name = user.split("_|_")
-        user_id = int(user_id)
+        # user_id = int(user_id)
+        if int(stars) < 10:
+            stars = f"  {stars  }"
 
-        message += f"+{points} {user_name}\n"
+        message += f"{stars}✮ {user_name}\n"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 

@@ -13,40 +13,419 @@ from games import ALL_GAMES as GAMES
 from games import get_day_from_date
 
 
+
+@dataclass
+class Giocata:
+    user_id: int
+    user_name: str
+    game: str
+
+    tries: int
+    extra: int = 0
+
+    posizione: int = 0
+    stelle: int = 0
+
+    @property
+    def emoji(self) -> str:
+        if self.posizione == 1:
+            return "🥇 "
+        if self.posizione == 2:
+            return "🥈 "
+        if self.posizione == 3:
+            return "🥉 "
+        return ""
+
+    @property
+    def processed_tries(self) -> str:
+        return process_tries(self.game, self.tries)
+    # lost is true if tries is 9999999
+    @property
+    def lost(self) -> bool:
+        return self.tries == 9999999 or self.tries == "9999999"
+    
+    def to_string(self, aggregate=False):
+        if self.lost:
+            return f"<s><i>{self.user_name}</i></s>"
+        else:
+            if aggregate:
+                return f"{self.emoji}{self.user_name} ({self.stelle}🔸)"
+            else:
+                stelle = f"{self.stelle}✮ " if self.stelle > 0 else ""
+                return f"{self.emoji}{stelle}{self.user_name} ({self.processed_tries})"
+
+
+
+
 @dataclass
 class Classifica:
     game: str = ""
     day: str = ""
     date: datetime.date = None
     emoji: str = ""
-    pos: list[tuple[str, str]] = []
+
+    giocate: list[Giocata] = []
+    aggregate: bool = False
+
     valid: bool = True
     header: str = ""
     last: str = ""
 
-    # def __repr__(self):
-    #     classifica = ''
-    #     classifica += self.header + '\n'
-    #     for posto, username, tries in self.pos:
-    #         classifica += f'{MEDALS.get(posto, "")}{username} ({tries})\n'
-    #     if self.last:
-    #         classifica += f'{self.last}'
-    #     return classifica
+    def order_and_position(self):
+        # Ordina per tries (crescente) e poi per extra (decrescente)
+        sorted_giocate = sorted(
+            [g for g in self.giocate if not g.lost],
+            key=lambda g: (g.tries, -int(g.extra))
+        )
+        
+        last_tries = None
+        last_extra = None
+        posizione_corrente = 0
+        
+        for i, g in enumerate(sorted_giocate):
+            if g.tries == last_tries and g.extra == last_extra:
+                pass
+            else:
+                posizione_corrente = i + 1
+            
+            g.posizione = posizione_corrente
+            
+            last_tries = g.tries
+            last_extra = g.extra
+        
+        lost_giocate = [g for g in self.giocate if g.lost]
+        self.giocate = sorted_giocate + lost_giocate
+
+    def assign_stars(self, model: str = 'no_limit_with_lost'):
+        scoring_models = {
+            "standard": self._score_standard,
+            "alternate": self._score_alternate,
+            "alternate-with-lost": self._score_alternate_with_lost,
+            "no_limit_with_lost": self._score_no_limit_with_lost,
+        }
+        
+        scoring_function = scoring_models.get(model)
+        # for gioc in self.giocate:
+        #     print(gioc.user_name, gioc.tries, gioc.extra)
+        if scoring_function:
+            scoring_function()
+        else:
+            raise ValueError(f"Modello di scoring '{model}' non valido.")
+
+    def _score_standard(self):
+        stelle_assegnate = {1: 3, 2: 2, 3: 1}
+        for g in self.giocate:
+            g.stelle = stelle_assegnate.get(g.posizione, 0)
+
+    def _score_alternate(self):
+        valid_players = [g for g in self.giocate if not g.lost]
+        num_players = len(valid_players)
+        
+        for g in valid_players:
+            g.stelle = max(0, min(3, num_players - g.posizione + 1))
+        
+        for g in self.giocate:
+            if g.lost:
+                g.stelle = 0
+
+    def _score_alternate_with_lost(self):
+        valid_players = [g for g in self.giocate if not g.lost]
+        num_players_with_lost = len(self.giocate)
+        
+        for g in valid_players:
+            g.stelle = max(0, min(3, num_players_with_lost - g.posizione+ 1))
+        
+        for g in self.giocate:
+            if g.lost:
+                g.stelle = 0
+
+    def _score_no_limit_with_lost(self):
+        """
+        Calcola le stelle per il modello NFLXdle. Il punteggio massimo è basato sul
+        numero totale di giocatori (validi e persi).
+        """
+        # Contiamo il numero totale di giocatori, inclusi quelli persi.
+        num_players = len(self.giocate)
+        
+        # Gruppa i giocatori validi per posizione per gestire il parimerito.
+        valid_giocate = [g for g in self.giocate if not g.lost]
+        positions = defaultdict(list)
+        for g in valid_giocate:
+            positions[g.posizione].append(g)
+        
+        # Assegna le stelle ai giocatori validi.
+        for pos, group in positions.items():
+            # Il punteggio è `num_players - posizione + 1`.
+            stelle_assegnate = max(0, num_players - pos + 1)
+            for g in group:
+                g.stelle = stelle_assegnate
+
+        # Le giocate perse hanno 0 stelle.
+        for g in self.giocate:
+            if g.lost:
+                g.stelle = 0
 
     def to_string(self) -> str:
         classifica = ""
-        classifica += self.header + "\n"
-        for posto, username, tries in self.pos:
-            if (tries == 9999999 or tries == "9999999"):
-                classifica += f"❌ {username}\n"
-            else:
-                classifica += f'{MEDALS.get(posto, "")}{username} ({tries})\n'
-        if self.last:
+        if not self.aggregate:
+            classifica += self.header + "\n"
+
+        for posiz in self.giocate:
+            classifica += posiz.to_string(self.aggregate) + "\n"
+
+        if self.last and not self.aggregate:
             classifica += f"{self.last}"
+
         return classifica
 
+    def get_stars(self):
+        """
+        Restituisce una nuova Classifica contenente solo le stelle per l'aggregazione.
+        """
+        stars_list = []
+        for giocata in self.giocate:
+            stars_list.append(Giocata(
+                user_id=giocata.user_id,
+                user_name=giocata.user_name,
+                stelle=giocata.stelle,
+                game='Aggregate',
+                tries=0,
+                extra=0
+            ))
+        
+        return Classifica(
+            game="Aggregate",
+            day=self.day,
+            date=self.date,
+            giocate=stars_list,
+            aggregate=True
+        )
 
-def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = None):
+    def __add__(self, other):
+        if not isinstance(other, Classifica):
+            raise TypeError("Si possono sommare solo oggetti di tipo Classifica.")
+
+        user_stars = defaultdict(lambda: {"user_name": "", "total_stars": 0})
+        all_giocate = self.giocate + other.giocate
+        
+        for giocata in all_giocate:
+            user_stars[giocata.user_id]["user_name"] = giocata.user_name
+            user_stars[giocata.user_id]["total_stars"] += giocata.stelle
+
+        aggregated_giocate = []
+        for user_id, data in user_stars.items():
+            aggregated_giocate.append(Giocata(
+                user_id=user_id,
+                user_name=data["user_name"],
+                tries=0, extra=0,
+                stelle=data["total_stars"],
+                game="Aggregate"
+            ))
+
+        aggregated_giocate.sort(key=lambda g: g.stelle, reverse=True)
+
+        # Assegna le posizioni finali, gestendo i parimerito
+        last_stelle = None
+        posizione_corrente = 0
+        for i, g in enumerate(aggregated_giocate):
+            if g.stelle == last_stelle:
+                pass  # Parimerito: mantiene la stessa posizione
+            else:
+                posizione_corrente = i + 1
+            g.posizione = posizione_corrente
+            last_stelle = g.stelle
+
+        return Classifica(
+            game="Generale",
+            day=f"{self.day} + {other.day}",
+            date=datetime.date.today(),
+            giocate=aggregated_giocate,
+            aggregate=True
+        )
+
+
+# def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = None):
+#     """Creates the daily ranking for all games."""
+#     points = defaultdict(int)
+#     today = datetime.date.today()
+#     if not from_day:
+#         from_day = today
+
+#     # Score Calculation models:
+
+#     # standard: 3 points to the first, 2 points to the second and 1 point to the third, no matter how many plays there are.
+
+#     # skip-empty: same as the standard, but games with less than limit plays (default: 3) are not counted at all
+
+#     # alternate: We give n points to the first, n-1 to the second and so on, where n is the number of players in the game.
+#     #   It's still capped at three, so if a game has 7 plays, the first gets 3 points, the second 2 and the third 1, same as standard;
+#     #   BUT if a game has only two plays,the first gets only two points, and the second 1. If it has only one play, the winner gets a single point.
+
+#     # alternate-with-lost: same as alternate, but we count lost plays whe we calculate the score. We still don't assign points to lost plays.
+
+#     # no-limit-of-3: same as alternate-with-lost, but we don't limit the number of players to 3. So if a game has 7 plays, the first gets 7 points, the second 6 and so on.
+
+#     # no-timestamp: same as alternate-with-lost, but it doesn't consider the timestamp of the play. Made for people who sleep a lot.
+
+#     # only-gold: 1 point to the first of each game with at least 2 plays
+
+#     # allow-ex-aequo: same as alternate-with-lost, but players with the same score get the same points. So if two players tie for first, they both get n points, and the next player gets n-2 points.
+
+#     # GAMES = get_games()
+    
+#     for game in GAMES.keys():
+#         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, from_day)
+
+
+
+#         # Score Processing
+#         if model == "standard":
+#             query = (
+#                 Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+#                 .where(
+#                     Punteggio.day == day,
+#                     Punteggio.game == game,
+#                     Punteggio.chat_id == ID_GIOCHINI,
+#                     Punteggio.lost == False,
+#                 )
+#                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+#                 .limit(3)
+#             )
+#             for i, _ in enumerate(query):
+#                 try:
+#                     name = f"{query[i].user_id}_|_{query[i].user_name}"
+#                     points[name] += 3 - i
+#                 except IndexError:
+#                     pass
+
+#         if model == "skip-empty":
+#             limit = 3
+#             query = (
+#                 Punteggio.select(Punteggio.user_name, Punteggio.user_id)
+#                 .where(
+#                     Punteggio.day == day,
+#                     Punteggio.game == game,
+#                     Punteggio.chat_id == ID_GIOCHINI,
+#                     Punteggio.lost == False,
+#                 )
+#                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+#                 .limit(3)
+#             )
+#             if len(query) < limit:
+#                 continue
+#             for i, _ in enumerate(query):
+#                 try:
+#                     name = f"{query[i].user_id}_|_{query[i].user_name}"
+#                     points[name] += 3 - i
+#                 except IndexError:
+#                     pass
+
+#         if model == "alternate":
+#             # This include lost plays, that we filter out when we assign points.
+#             query_alternate = (
+#                 Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
+#                 .where(
+#                     Punteggio.day == day,
+#                     Punteggio.game == game,
+#                     Punteggio.chat_id == ID_GIOCHINI,
+#                     Punteggio.lost == False,
+#                 )
+#                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+#                 .limit(3)
+#             )
+#             for i, _ in enumerate(query_alternate):
+#                 try:
+#                     if not query_alternate[i].lost:
+#                         name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+#                         points[name] += len(query_alternate) - i
+#                 except IndexError:
+#                     pass
+
+#         if model == "alternate-with-lost":
+#             # This include lost plays
+#             query_alternate = (
+#                 Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
+#                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+#                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+#                 .limit(3)
+#             )
+#             for i, _ in enumerate(query_alternate):
+#                 # print(f"{game} {i} {query_alternate[i]} {query_alternate[i].lost}")
+#                 try:
+#                     if not query_alternate[i].lost:
+#                         name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+#                         points[name] += len(query_alternate) - i
+#                 except IndexError:
+#                     pass
+
+#         if model == "no-timestamp":
+#             # This include lost plays, doesn't consider timestamps
+#             query_alternate = (
+#                 Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
+#                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+#                 .order_by(Punteggio.tries, Punteggio.extra.desc())
+#                 .limit(3)
+#             )
+#             for i, _ in enumerate(query_alternate):
+#                 try:
+#                     if not query_alternate[i].lost:
+#                         name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+#                         points[name] += len(query_alternate) - i
+#                 except IndexError:
+#                     pass
+
+#         if model == "no-limit-of-3":
+#             # This include lost plays
+#             query_alternate = (
+#                 Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
+#                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+#                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+#             )
+#             for i, _ in enumerate(query_alternate):
+#                 # print(f"{game} {i} {query_alternate[i]} {query_alternate[i].lost}")
+#                 try:
+#                     if not query_alternate[i].lost:
+#                         name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+#                         points[name] += len(query_alternate) - i
+#                 except IndexError:
+#                     pass
+
+#         if model == "allow-ex-aequo":
+#             prev_tries = None
+#             prev_extra = None
+#             joint_winners = 0
+#             # This include lost plays
+#             query_alternate = (
+#                 Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost, Punteggio.tries, Punteggio.extra)
+#                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+#                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+#                 .limit(3)
+#             )
+#             for i, _ in enumerate(query_alternate):
+#                 # print(f"{game} {i} {query_alternate[i]} {query_alternate[i].lost}")
+#                 # print(f"prev_tries: {prev_tries}, prev_extra: {prev_extra}, current tries: {query_alternate[i].tries}, current extra: {query_alternate[i].extra}")
+#                 try:
+
+#                     if not query_alternate[i].lost:
+#                         name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
+#                         if query_alternate[i].tries == prev_tries and query_alternate[i].extra == prev_extra:
+#                             joint_winners += 1
+#                             points[name] += len(query_alternate) - i + joint_winners
+#                         else:
+#                             joint_winners = 0
+#                             points[name] += len(query_alternate) - i
+#                     prev_tries = query_alternate[i].tries
+#                     prev_extra = query_alternate[i].extra
+#                 except IndexError:
+#                     pass
+
+
+#     cambiamenti = dict(points)
+#     cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
+#     return cambiamenti
+
+
+def daily_ranking(model: str = "no_limit_with_lost", from_day: datetime.date = None):
     """Creates the daily ranking for all games."""
     points = defaultdict(int)
     today = datetime.date.today()
@@ -71,124 +450,36 @@ def daily_ranking(model: str = "alternate-with-lost", from_day: datetime.date = 
 
     # only-gold: 1 point to the first of each game with at least 2 plays
 
+    # allow-ex-aequo: same as alternate-with-lost, but players with the same score get the same points. So if two players tie for first, they both get n points, and the next player gets n-2 points.
+
     # GAMES = get_games()
+    
     for game in GAMES.keys():
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, from_day)
 
-
-
-        # Score Processing
-        if model == "standard":
-            query = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-                .where(
-                    Punteggio.day == day,
-                    Punteggio.game == game,
-                    Punteggio.chat_id == ID_GIOCHINI,
-                    Punteggio.lost == False,
-                )
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-                .limit(3)
-            )
-            for i, _ in enumerate(query):
-                try:
-                    name = f"{query[i].user_id}_|_{query[i].user_name}"
-                    points[name] += 3 - i
-                except IndexError:
-                    pass
-
-        if model == "skip-empty":
-            limit = 3
-            query = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id)
-                .where(
-                    Punteggio.day == day,
-                    Punteggio.game == game,
-                    Punteggio.chat_id == ID_GIOCHINI,
-                    Punteggio.lost == False,
-                )
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-                .limit(3)
-            )
-            if len(query) < limit:
-                continue
-            for i, _ in enumerate(query):
-                try:
-                    name = f"{query[i].user_id}_|_{query[i].user_name}"
-                    points[name] += 3 - i
-                except IndexError:
-                    pass
-
-        if model == "alternate":
-            # This include lost plays, that we filter out when we assign points.
-            query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
-                .where(
-                    Punteggio.day == day,
-                    Punteggio.game == game,
-                    Punteggio.chat_id == ID_GIOCHINI,
-                    Punteggio.lost == False,
-                )
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-                .limit(3)
-            )
-            for i, _ in enumerate(query_alternate):
-                try:
-                    if not query_alternate[i].lost:
-                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
-                        points[name] += len(query_alternate) - i
-                except IndexError:
-                    pass
-
-        if model == "alternate-with-lost":
-            # This include lost plays
-            query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
-                .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-                .limit(3)
-            )
-            for i, _ in enumerate(query_alternate):
-                # print(f"{game} {i} {query_alternate[i]} {query_alternate[i].lost}")
-                try:
-                    if not query_alternate[i].lost:
-                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
-                        points[name] += len(query_alternate) - i
-                except IndexError:
-                    pass
-
-        if model == "no-timestamp":
-            # This include lost plays, doesn't consider timestamps
-            query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
-                .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
-                .order_by(Punteggio.tries, Punteggio.extra.desc())
-                .limit(3)
-            )
-            for i, _ in enumerate(query_alternate):
-                try:
-                    if not query_alternate[i].lost:
-                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
-                        points[name] += len(query_alternate) - i
-                except IndexError:
-                    pass
-
-        if model == "no-limit-of-3":
-            # This include lost plays
-            query_alternate = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.lost)
+        query = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             )
-            for i, _ in enumerate(query_alternate):
-                # print(f"{game} {i} {query_alternate[i]} {query_alternate[i].lost}")
-                try:
-                    if not query_alternate[i].lost:
-                        name = f"{query_alternate[i].user_id}_|_{query_alternate[i].user_name}"
-                        points[name] += len(query_alternate) - i
-                except IndexError:
-                    pass
 
+        model = 'no_limit_with_lost'
+
+        if not query:
+            continue
+
+        cl = Classifica()
+        cl.game = game
+        cl.day = day
+        cl.date = from_day
+        cl.emoji = GAMES[game]["emoji"]
+        cl.giocate = [Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0) for g in query]
+        cl.order_and_position()
+        cl.assign_stars(model)
+
+        for clg in cl.giocate:
+            name = f"{clg.user_id}_|_{clg.user_name}"
+            points[name] += clg.stelle
 
 
     cambiamenti = dict(points)

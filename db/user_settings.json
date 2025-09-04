@@ -69,7 +69,6 @@
     },
     "31866384": {
         "favs": [
-            "Framed",
             "Squareword",
             "TimeGuesser",
             "Waffle",
@@ -79,7 +78,6 @@
             "Colorfle",
             "FoodGuessr",
             "Queens",
-            "Framed One Frame",
             "Worldle",
             "Wordle",
             "Connections",
@@ -88,9 +86,9 @@
             "Travle",
             "BracketCity",
             "Disorderly",
-            "DominoFit",
             "GuessTheMovie",
-            "Lyricle"
+            "Lyricle",
+            "GuessTheHouse"
         ],
         "favs_extra_button": true
     },
@@ -140,7 +138,6 @@
             "Picsey",
             "Worldle",
             "Framed",
-            "Moviedle",
             "NerdleCross",
             "Bandle",
             "Globle",
@@ -148,8 +145,6 @@
             "Spotle",
             "Metazooa",
             "Countryle",
-            "NFLXdle",
-            "Posterdle",
             "Spots",
             "Pedantle",
             "Queens",
@@ -160,7 +155,10 @@
             "Flags",
             "Flickle",
             "Heardle",
-            "Lyricle"
+            "Lyricle",
+            "GuessTheMovie",
+            "GuessTheLogo",
+            "Zip"
         ],
         "favs_extra_button": true
     },
