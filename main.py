@@ -59,6 +59,7 @@ from utils import (
     medaglie_count,
     personal_stats,
     process_tries,
+    print_progressbar,
     str_as_int,
     streak_at_day,
 )
@@ -680,6 +681,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     else:
                         classifica += "\nLongest streak: current"
                 classifica += f"\n\nOggi hai giocato a {game_played_today} giochi su {tot_games}."
+                classifica += f"\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}"
 
                 mymsg = await update.message.reply_html(classifica)
 
@@ -913,37 +915,44 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     yesterday = today - datetime.timedelta(days=1)
 
     model = "no_limit_with_lost"
-    cambiamenti = daily_ranking(model, yesterday)
+    if not context.bot_data.get("manual_riassunto", None):
+        # il riassunto viene fatto per il giorno precedente, perché scatta a mezzanotte e qualcosa
+        classifica_stelle = daily_ranking(model, yesterday)
+    else:
+        classifica_stelle = daily_ranking(model)
 
     message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
 
-    for user, points in cambiamenti:
-        user_id, user_name = user.split("_|_")
+    for position, user_id, user_name, stelle in classifica_stelle:
         user_id = int(user_id)
+    # for user, stars in cambiamenti:
+    #     user_id, user_name = user.split("_|_")
+        if int(stelle) < 10:
+            stelle = f"  {stelle  }"
 
-        message += f"+{points} {user_name}\n"
-        if not context.bot_data.get("manual_riassunto", None):
-            Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=points)
-
-    # Medals
-    i = 0
-
-    for user, points in cambiamenti[:3]:
-        user_id, user_name = user.split("_|_")
-        user_id = int(user_id)
+        message += f"{stelle}✮ {user_name}\n"
 
         if not context.bot_data.get("manual_riassunto", None):
-            Medaglia.create(
-                date=yesterday,
-                timestamp=int(time.time()),
-                chat_id=int(ID_GIOCHINI),
-                user_id=int(user_id),
-                user_name=user_name,
-                gold=1 if i == 0 else None,
-                silver=1 if i == 1 else None,
-                bronze=1 if i == 2 else None,
-            )
-        i += 1
+            Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=stelle)
+
+            if position <= 3:
+                Medaglia.create(
+                    date=yesterday,
+                    timestamp=int(time.time()),
+                    chat_id=int(ID_GIOCHINI),
+                    user_id=int(user_id),
+                    user_name=user_name,
+                    gold=1 if position == 1 else None,
+                    silver=1 if position == 2 else None,
+                    bronze=1 if position == 3 else None,
+                )
+
+    # for position, user_id, user_name, stelle in classifica_stelle:
+        # user_id, user_name = user.split("_|_")
+        
+
+        # if not context.bot_data.get("manual_riassunto", None) and position <= 3:
+            
 
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode="HTML", disable_web_page_preview=True)
 
@@ -1010,16 +1019,17 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     # elif "-allow-ex-aequo" in context.args:
     #     model = "allow-ex-aequo"
 
-    cambiamenti = daily_ranking(model)
+    classifica_stelle = daily_ranking(model)
     # print(cambiamenti)
 
     message = "Ecco la classifica temporanea di oggi:\n\n"
 
-    for user, stars in cambiamenti:
-        user_id, user_name = user.split("_|_")
+    for position, user_id, user_name, stelle in classifica_stelle:
+    # for user, stars in cambiamenti:
+        # user_id, user_name = user.split("_|_")
         # user_id = int(user_id)
-        if int(stars) < 10:
-            stars = f"  {stars  }"
+        if int(stelle) < 10:
+            stars = f"  {stelle  }"
 
         message += f"{stars}✮ {user_name}\n"
 
@@ -1211,7 +1221,7 @@ def main():
 
     j = app.job_queue
     j.run_daily(daily_reminder, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
-    j.run_daily(riassunto_serale, datetime.time(hour=0, minute=1, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(riassunto_serale, datetime.time(hour=0, minute=10, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_repeating(heartbeat, interval=60 * 15, first=10)
 

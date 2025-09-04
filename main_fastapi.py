@@ -203,13 +203,14 @@ async def dailyranking(day: str | None = None):
         dates = date.today()
     else:
         dates = datetime.strptime(day, '%Y-%m-%d').date()
-    cambiamenti = daily_ranking(model, dates)
+    classifica_stelle = daily_ranking(model, dates)
     rankings = []
-    pos = 1
-    for user, points in cambiamenti:
-        _, user_name = user.split("_|_")
-        rankings.append({'name': user_name, 'points': points, 'pos': pos})
-        pos += 1
+    # pos = 1
+    for position, user_id, user_name, stelle in classifica_stelle:
+    # for user, points in cambiamenti:
+        # _, user_name = user.split("_|_")
+        rankings.append({'name': user_name, 'points': stelle, 'pos': position})
+        # pos += 1
     return {'date': dates.strftime("%Y-%m-%d"), 'rankings': rankings}
 
 

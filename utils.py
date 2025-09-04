@@ -34,7 +34,7 @@ class Giocata:
             return "🥈 "
         if self.posizione == 3:
             return "🥉 "
-        return ""
+        return "✔️ "
 
     @property
     def processed_tries(self) -> str:
@@ -75,7 +75,7 @@ class Classifica:
         # Ordina per tries (crescente) e poi per extra (decrescente)
         sorted_giocate = sorted(
             [g for g in self.giocate if not g.lost],
-            key=lambda g: (g.tries, -int(g.extra))
+            key=lambda g: (g.tries, -float(g.extra))
         )
         
         last_tries = None
@@ -190,7 +190,8 @@ class Classifica:
                 stelle=giocata.stelle,
                 game='Aggregate',
                 tries=0,
-                extra=0
+                extra=0,
+                posizione=giocata.posizione
             ))
         
         return Classifica(
@@ -200,6 +201,16 @@ class Classifica:
             giocate=stars_list,
             aggregate=True
         )
+
+    def get_stars_list(self):
+        """
+        Restituisce una lista di tuple (user_id, user_name, stelle) per l'aggregazione.
+        """
+        stars_list = []
+        for giocata in self.giocate:
+            stars_list.append((giocata.posizione, giocata.user_id, giocata.user_name, giocata.stelle))
+        
+        return stars_list
 
     def __add__(self, other):
         if not isinstance(other, Classifica):
@@ -454,6 +465,8 @@ def daily_ranking(model: str = "no_limit_with_lost", from_day: datetime.date = N
 
     # GAMES = get_games()
     
+    player_scores = {}
+
     for game in GAMES.keys():
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, from_day)
 
@@ -476,15 +489,40 @@ def daily_ranking(model: str = "no_limit_with_lost", from_day: datetime.date = N
         cl.giocate = [Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0) for g in query]
         cl.order_and_position()
         cl.assign_stars(model)
+        positions = cl.get_stars_list()
 
-        for clg in cl.giocate:
-            name = f"{clg.user_id}_|_{clg.user_name}"
-            points[name] += clg.stelle
+        # sum this games stars to the player_scores dict
+        for _position, user_id, user_name, stars in positions:
+            if user_id in player_scores:
+                player_scores[user_id]["stars"] += stars
+            else:
+                player_scores[user_id] = {"user_name": user_name, "stars": stars}
 
+        # for clg in cl.giocate:
+        #     name = f"{clg.user_id}_|_{clg.user_name}"
+        #     points[name] += clg.stelle
 
-    cambiamenti = dict(points)
-    cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
-    return cambiamenti
+    aggregated_list = [(uid, data['user_name'], data['stars']) for uid, data in player_scores.items()]
+    sorted_players = sorted(aggregated_list, key=lambda player: player[2], reverse=True)
+    final_ranking = []
+    last_score = -1
+    current_pos = 0
+    for i, (user_id, name, stars) in enumerate(sorted_players):
+
+        # If the score changes from the previous player, the rank is the new position (i + 1)
+        if stars != last_score:
+            current_pos = i + 1
+            current_pos = i + 1
+        
+        # Append the final tuple with the correct rank
+        final_ranking.append((current_pos, user_id, name, stars))
+        
+        last_score = stars
+
+    return final_ranking
+    # cambiamenti = dict(points)
+    # cambiamenti = sorted(cambiamenti.items(), key=lambda x: x[1], reverse=True)
+    # return cambiamenti
 
 
 def str_as_int(string: str) -> int:
@@ -1194,6 +1232,13 @@ def print_heatmap():
     plt.tight_layout()
     plt.savefig('00_combined_plot.png')
 
+
+def print_progressbar(current_percentage, complete=100, max_length=20, fill_char="█", empty_char="░", prefix="[", suffix="]"):
+    pct = int(current_percentage * max_length / complete)
+    bar = prefix + fill_char * pct + empty_char * (max_length - pct) + suffix
+    return bar
+
+    
 def get_all_scoring():
     # We will get all the daily ranking for every day using a specific model, from today all the way back.
     # We will also get the highest scoring ever
@@ -1207,13 +1252,15 @@ def get_all_scoring():
     for day in range(0, 365): 
         date = today - datetime.timedelta(days=day)
         # Get the scores for this day
-        cambiamenti = daily_ranking(model, from_day=date)
-        for user, points in cambiamenti:
-            user_id, user_name = user.split("_|_")
+        classifica_stelle = daily_ranking(model, from_day=date)
+
+        for position, user_id, user_name, stelle in classifica_stelle:
+        # for user, points in cambiamenti:
+        #     user_id, user_name = user.split("_|_")
             user_id = int(user_id)
-            if points > max_points:
-                print(f'new highscore found! {user_name} with {points} points on {date}')
-                max_points = points
+            if stelle > max_points:
+                print(f'new highscore found! {user_name} with {stelle} points on {date}')
+                max_points = stelle
                 max_user = user_name
                 max_date = date
     print(f"Highest scoring ever: {max_user} ({max_points}) on {max_date}.")
