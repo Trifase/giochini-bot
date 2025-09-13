@@ -40,6 +40,7 @@ from config import (
     MEDALS,
     TOKEN,
     HEARTBEAT_ID,
+    STAR_SYMBOL,
     Medaglia,
     Punteggio,
     Punti,
@@ -204,7 +205,7 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
     classifica.giocate = [Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0) for g in query]
     classifica.order_and_position()
 
-    classifica.assign_stars('no_limit_with_lost')
+    classifica.assign_stars('default')
 
     if to_string:
         return classifica.to_string()
@@ -410,8 +411,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = [
         "Questo bot parsa automaticamente i punteggi dei giochi giornalieri, fa una classifica giornaliera e una classifica dei migliori player.",
         "",
-        "Ogni giorno vengono assegnati punti ai primi tre giocatori di ogni gioco (3 punti al primo, 2 al secondo e 1 al terzo).",
-        "Se un gioco ha meno di tre giocatori, vengono assegnati punti solo ai giocatori presenti, in modo proporzionale.",
+        f"Alla fine di ogni giorno vengono assegnati dei punti {STAR_SYMBOL} in base ai risultati ottenuti in tutti i giochi, utilizzando l'algoritmo SWG4 Zip War Airganon.",
         "Alle tre persone con più punti vengono assegnate le medaglie d'oro, d'argento e di bronzo.",
         "",
         # f"I giochi disponibili sono:\n {giochi}",
@@ -914,7 +914,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
 
-    model = "no_limit_with_lost"
+    model = "default"
     if not context.bot_data.get("manual_riassunto", None):
         # il riassunto viene fatto per il giorno precedente, perché scatta a mezzanotte e qualcosa
         classifica_stelle = daily_ranking(model, yesterday)
@@ -930,7 +930,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
         if int(stelle) < 10:
             stelle = f"  {stelle  }"
 
-        message += f"{stelle}✮ {user_name}\n"
+        message += f"{stelle}{STAR_SYMBOL} {user_name}\n"
 
         if not context.bot_data.get("manual_riassunto", None):
             Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=stelle)
@@ -1002,7 +1002,7 @@ async def heartbeat(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    model = "no_limit_with_lost"
+    model = "default"
 
     # if "-skip-empty" in context.args:
     #     model = "skip-empty"
@@ -1029,9 +1029,9 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
         # user_id, user_name = user.split("_|_")
         # user_id = int(user_id)
         if int(stelle) < 10:
-            stars = f"  {stelle  }"
+            stelle = f"  {stelle  }"
 
-        message += f"{stars}✮ {user_name}\n"
+        message += f"{stelle}{STAR_SYMBOL} {user_name}\n"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 

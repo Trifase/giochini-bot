@@ -8,7 +8,7 @@ import timedelta
 from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import ID_GIOCHINI, MEDALS, TOKEN, Medaglia, Punteggio
+from config import ID_GIOCHINI, MEDALS, TOKEN, STAR_SYMBOL, ELSE_MEDAL, Medaglia, Punteggio
 from games import ALL_GAMES as GAMES
 from games import get_day_from_date
 
@@ -28,13 +28,14 @@ class Giocata:
 
     @property
     def emoji(self) -> str:
-        if self.posizione == 1:
-            return "🥇 "
-        if self.posizione == 2:
-            return "🥈 "
-        if self.posizione == 3:
-            return "🥉 "
-        return "✔️ "
+        return MEDALS.get(self.posizione, ELSE_MEDAL)
+        # if self.posizione == 1:
+        #     return "🥇 "
+        # if self.posizione == 2:
+        #     return "🥈 "
+        # if self.posizione == 3:
+        #     return "🥉 "
+        # return "✔️ "
 
     @property
     def processed_tries(self) -> str:
@@ -51,7 +52,7 @@ class Giocata:
             if aggregate:
                 return f"{self.emoji}{self.user_name} ({self.stelle}🔸)"
             else:
-                stelle = f"{self.stelle}✮ " if self.stelle > 0 else ""
+                stelle = f"{self.stelle}{STAR_SYMBOL}" if self.stelle > 0 else ""
                 return f"{self.emoji}{stelle}{self.user_name} ({self.processed_tries})"
 
 
@@ -96,12 +97,14 @@ class Classifica:
         lost_giocate = [g for g in self.giocate if g.lost]
         self.giocate = sorted_giocate + lost_giocate
 
-    def assign_stars(self, model: str = 'no_limit_with_lost'):
+    def assign_stars(self, model: str = 'default'):
         scoring_models = {
+            "default": self._score_no_limit_with_lost_rank_based,
             "standard": self._score_standard,
             "alternate": self._score_alternate,
             "alternate-with-lost": self._score_alternate_with_lost,
             "no_limit_with_lost": self._score_no_limit_with_lost,
+            "no_limit_with_lost_rank_based": self._score_no_limit_with_lost_rank_based,
         }
         
         scoring_function = scoring_models.get(model)
@@ -141,7 +144,7 @@ class Classifica:
 
     def _score_no_limit_with_lost(self):
         """
-        Calcola le stelle per il modello NFLXdle. Il punteggio massimo è basato sul
+        Calcola le stelle e la posizione. Il punteggio massimo è basato sul
         numero totale di giocatori (validi e persi).
         """
         # Contiamo il numero totale di giocatori, inclusi quelli persi.
@@ -161,6 +164,56 @@ class Classifica:
                 g.stelle = stelle_assegnate
 
         # Le giocate perse hanno 0 stelle.
+        for g in self.giocate:
+            if g.lost:
+                g.stelle = 0
+
+
+    def _score_no_limit_with_lost_rank_based(self):
+        """
+        Calcola le stelle e la posizione. Il punteggio è calcolato in base 
+        al rango effettivo dei giocatori validi, gestendo correttamente i parimeriti.
+        """
+        # Filtra solo i giocatori che hanno concluso la partita.
+        valid_giocate = [g for g in self.giocate if not g.lost]
+        num_valid_players = len(valid_giocate)
+        
+        # Se non ci sono giocatori validi, non c'è nulla da calcolare.
+        if num_valid_players == 0:
+            for g in self.giocate:
+                g.stelle = 0
+            return
+            
+        # Gruppa i giocatori per posizione per gestire il parimerito.
+        positions = defaultdict(list)
+        for g in valid_giocate:
+            positions[g.posizione].append(g)
+        
+        # --- NUOVA LOGICA DI ASSEGNAZIONE PUNTI ---
+        
+        # `current_rank` tiene traccia del primo rango disponibile per il prossimo gruppo.
+        current_rank = 1
+        
+        # Itera sui gruppi di posizione in ordine crescente (1°, 2°, 3°, ecc.).
+        for pos in sorted(positions.keys()):
+            group = positions[pos]
+            num_in_group = len(group)
+            
+            # Calcola il rango dell'ultimo giocatore in questo gruppo a parimerito.
+            # Es: se partiamo dal rango 1 e ci sono 4 giocatori, il loro rango peggiore è 4.
+            worst_rank_in_group = current_rank + num_in_group - 1
+            
+            # Calcola le stelle basandosi sul rango peggiore.
+            stelle_assegnate = max(0, num_valid_players - worst_rank_in_group + 1)
+            
+            # Assegna le stesse stelle a tutti i giocatori del gruppo.
+            for g in group:
+                g.stelle = stelle_assegnate
+                
+            # Aggiorna il rango di partenza per il prossimo gruppo.
+            current_rank += num_in_group
+
+        # Le giocate perse hanno sempre 0 stelle.
         for g in self.giocate:
             if g.lost:
                 g.stelle = 0
@@ -436,7 +489,7 @@ class Classifica:
 #     return cambiamenti
 
 
-def daily_ranking(model: str = "no_limit_with_lost", from_day: datetime.date = None):
+def daily_ranking(model: str = "default", from_day: datetime.date = None):
     """Creates the daily ranking for all games."""
     points = defaultdict(int)
     today = datetime.date.today()
@@ -476,7 +529,7 @@ def daily_ranking(model: str = "no_limit_with_lost", from_day: datetime.date = N
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
             )
 
-        model = 'no_limit_with_lost'
+        model = 'default'
 
         if not query:
             continue
@@ -571,6 +624,7 @@ def seconds_to_time(seconds: int) -> str:
 
 
 def process_tries(game: str, tries: int | str) -> int | str:
+    print(f"Processing tries for {game}: {tries} ({type(tries)})")
     # This is a little exception for HighFive scores, which are negative because in the game the more the better.
     # We want to show them as positive.
     if game == "HighFive":
@@ -641,6 +695,12 @@ def process_tries(game: str, tries: int | str) -> int | str:
 
     if game == 'Timdle':
         tries = 36 - tries
+
+    if game == 'CluesBySam':
+        seconds = int(tries)
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        tries =  f"{minutes:02d}:{remaining_seconds:02d}"
     return tries
 
 

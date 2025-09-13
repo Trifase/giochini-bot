@@ -618,6 +618,69 @@ class Cloudle(Giochino):
 
 
 @dataclass
+class CluesBySam(Giochino):
+    _name = "CluesBySam"
+    _category = "Logica"
+    _date = datetime.date(2025, 9, 9)
+    _day = "100"
+    _emoji = "🔎"
+    _url = "https://cluesbysam.com"
+    
+    examples = [
+        "Clues by Sam - Sep 13th 2025\nLess than 36 minutes\n🟩🟩🟠🟨\n🟨🟩🟠🟩\n🟩🟩🟩🟩\n🟠🟠🟡🟠\n🟩🟠🟠🟩",
+        "I solved the daily Clues by Sam (Sep 9th 2025) in 05:46\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com"
+    ]
+    expected = [
+        {"day": "104", "name": "Clues by Sam", "timestamp": 10, "tries": 2225, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "Clues by Sam", "timestamp": 10, "tries": 305, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Clues by Sam "]
+        return all(w in raw_text for w in wordlist)
+
+    def parse(self):
+        text = self.raw_text
+
+        # Extract date and calculate the day
+        date_match = re.search(r"(\w+) (\d+)(?:st|nd|rd|th)? (\d{4})", text)
+        if date_match:
+            month, day, year = date_match.groups()
+            date_str = f"{month} {day} {year}"
+            locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+            actual_date = datetime.datetime.strptime(date_str, "%b %d %Y").date()
+            locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
+            self.day = get_day_from_date(self._date, self._day, self._name, actual_date)
+
+        # Calculate base time
+        self.tries = 0
+        minutes_match = re.search(r"Less than (\d+) minutes", text)
+        solved_match = re.search(r"in (\d+):(\d+)", text)
+        
+        if minutes_match:
+            base_minutes = int(minutes_match.group(1)) - 1
+            self.tries += base_minutes * 60
+        elif solved_match:
+            base_minutes = int(solved_match.group(1))
+            base_seconds = int(solved_match.group(2))
+            self.tries += base_minutes * 60
+        
+        # Add penalties based on emojis
+        penalties = {
+            "🟨": 5,
+            "🟡": 10,
+            "🟠": 15,
+            "🟥": 15,
+        }
+        
+        for emoji, penalty in penalties.items():
+            self.tries += text.count(emoji) * penalty
+        
+        self.stars = None
+
+
+@dataclass
 class Colorfle(Giochino):
     _name = "Colorfle"
     _category = "Immagini, giochi e musica"
@@ -1410,19 +1473,22 @@ class Geogrid(Giochino):
     can_lose: False
 
     examples = [
-        "✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame",
-        "❌ ✅ ✅\n✅ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 629.3\nRank: 8,858 / 11,488\nhttps://geogridgame.com\n@geogridgame",
-        "❌ ❌ ❌\n❌ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 900\nRank: 9,082 / 11,501\nhttps://geogridgame.com\n@geogridgame",
+        # "✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame",
+        # "❌ ✅ ✅\n✅ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 629.3\nRank: 8,858 / 11,488\nhttps://geogridgame.com\n@geogridgame",
+        # "❌ ❌ ❌\n❌ ❌ ❌\n❌ ❌ ❌\n\n🌎Game Summary🌎\nBoard #45\nScore: 900\nRank: 9,082 / 11,501\nhttps://geogridgame.com\n@geogridgame",
+        '🟩🟩🟩\n🟩🟩🟩\n🟩🟩🟩\nScore: 80.7 | Rank: 882/5,869\nTop Brass 🎺 | ★★★★\nI scored better than 85% of #geogridgame players!\nBoard #524 | ♾️ Mode: Off\nhttps://geogridgame.com',
+        '🟩❌❌\n🟩❌❌\n❌❌❌\nScore: 722.2 | Rank: 4,718/4,882\nElite Among Mortals 🎖\nOrdinary among #geogridgame savants, extraordinary among mere mortals.\nBoard #447 | ♾️ Mode: Off\nhttps://geogridgame.com',
+        '🟩🟩🟩\n❌🟩🟩\n🟩❌❌\nScore: 399.7 | Rank: 2.124/2.949\nElite Among Mortals 🎖\nOrdinary among #geogridgame savants, extraordinary among mere mortals.\nBoard #475 | ♾️ Mode: Off\nhttps://geogridgame.com'
     ]
     expected = [
-        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "112", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "629", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "45", "name": "Geogrid", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "524", "name": "Geogrid", "timestamp": 10, "tries": "80", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "447", "name": "Geogrid", "timestamp": 10, "tries": "722", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "475", "name": "Geogrid", "timestamp": 10, "tries": "399", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["https://geogridgame.com", "@geogridgame"]
+        wordlist = ["https://geogridgame.com", "#geogridgame"]
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
@@ -2741,8 +2807,8 @@ class Spellcheck(Giochino):
 class Spotle(Giochino):
     _name = "Spotle"
     _category = "Immagini, giochi e musica"
-    _date = datetime.date(2024, 7, 8)
-    _day = "802"
+    _date = datetime.date(2025, 9, 13)
+    _day = "1233"
     _emoji = "🎧"
     _url = "https://spotle.io/"
 
@@ -3767,6 +3833,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Lyricle
+    giochino_da_testare = CluesBySam
 
     test(True, giochino_da_testare)
