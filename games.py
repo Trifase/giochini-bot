@@ -628,34 +628,43 @@ class CluesBySam(Giochino):
     
     examples = [
         "Clues by Sam - Sep 13th 2025\nLess than 36 minutes\n🟩🟩🟠🟨\n🟨🟩🟠🟩\n🟩🟩🟩🟩\n🟠🟠🟡🟠\n🟩🟠🟠🟩",
-        "I solved the daily Clues by Sam (Sep 9th 2025) in 05:46\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com"
+        "I solved the daily Clues by Sam (Sep 9th 2025) in 05:46\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com",
+        "I solved the daily Clues by Sam, Nov 15th 2025 (Hard), in 03:56\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟡🟩🟩🟩\nhttps://cluesbysam.com"
     ]
     expected = [
-        {"day": "104", "name": "Clues by Sam", "timestamp": 10, "tries": 2225, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "100", "name": "Clues by Sam", "timestamp": 10, "tries": 305, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "104", "name": "CluesBySam", "timestamp": 10, "tries": 2580, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "CluesBySam", "timestamp": 10, "tries": 361, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "167", "name": "CluesBySam", "timestamp": 10, "tries": 281, "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Clues by Sam "]
-        return all(w in raw_text for w in wordlist)
+        wordlist = ["Clues by Sam ", "Clues by Sam, "]
+        return any(w in raw_text for w in wordlist)
 
     def parse(self):
         text = self.raw_text
+        self.tries = 0 # Initialize tries to 0, which holds the total seconds
 
-        # Extract date and calculate the day
-        date_match = re.search(r"(\w+) (\d+)(?:st|nd|rd|th)? (\d{4})", text)
+        ## 📅 Extract Date and Calculate Day (Made robust)
+        # Handles "Sep 13th 2025" and "(Sep 9th 2025)" and ", Nov 15th 2025 (Hard),"
+        date_match = re.search(r"(\w+)\s*(\d+)(?:st|nd|rd|th)?\s*(\d{4})", text)
+        
         if date_match:
             month, day, year = date_match.groups()
             date_str = f"{month} {day} {year}"
+            
             locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
-            actual_date = datetime.datetime.strptime(date_str, "%b %d %Y").date()
-            locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
-            self.day = get_day_from_date(self._date, self._day, self._name, actual_date)
+            try:
+                actual_date = datetime.datetime.strptime(date_str, "%b %d %Y").date()
+                self.day = get_day_from_date(self._date, self._day, self._name, actual_date)
+            except ValueError:
+                self.day = None
+            finally:
+                locale.setlocale(locale.LC_TIME, "it_IT.UTF-8") 
 
-        # Calculate base time
-        self.tries = 0
-        minutes_match = re.search(r"ess than (\d+) minutes", text)
+        ## ⏱️ Calculate Base Time (Made robust)
+        minutes_match = re.search(r"Less than (\d+) minutes", text)
         solved_match = re.search(r"in (\d+):(\d+)", text)
         
         if minutes_match:
@@ -666,15 +675,17 @@ class CluesBySam(Giochino):
             base_seconds = int(solved_match.group(2))
             self.tries += base_minutes * 60 + base_seconds
         
-        # Add penalties based on emojis
+        ## ➕ Add Penalties
         penalties = {
             "🟨": 15,
             "🟡": 30,
             "🟠": 60,
         }
         
-        for emoji, penalty in penalties.items():
-            self.tries += text.count(emoji) * penalty
+        # Ensure self.tries is an integer before addition
+        if isinstance(self.tries, int):
+            for emoji, penalty in penalties.items():
+                self.tries += text.count(emoji) * penalty
         
         self.stars = None
 
@@ -3832,6 +3843,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Queens
+    giochino_da_testare = CluesBySam
 
     test(True, giochino_da_testare)

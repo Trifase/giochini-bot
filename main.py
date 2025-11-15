@@ -59,7 +59,6 @@ from utils import (
     make_buttons,
     medaglie_count,
     personal_stats,
-    process_tries,
     print_progressbar,
     str_as_int,
     streak_at_day,
