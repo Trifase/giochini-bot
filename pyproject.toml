@@ -1,0 +1,19 @@
+[project]
+name = "giochini-bot"
+version = "0.1.0"
+description = "A telegram bot to compete with your friends, daily!"
+readme = "README.md"
+requires-python = ">=3.11, <3.14"
+dependencies = [
+    "aiolimiter>=1.2.1",
+    "apscheduler>=3.11.0",
+    "dataclassy>=1.0.1",
+    "fastapi>=0.120.0",
+    "httpx>=0.28.1",
+    "matplotlib>=3.10.7",
+    "peewee>=3.18.2",
+    "python-telegram-bot>=22.5",
+    "pytz>=2025.2",
+    "timedelta>=2020.12.3",
+    "uvicorn>=0.38.0",
+]
