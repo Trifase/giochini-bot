@@ -629,12 +629,14 @@ class CluesBySam(Giochino):
     examples = [
         "Clues by Sam - Sep 13th 2025\nLess than 36 minutes\n🟩🟩🟠🟨\n🟨🟩🟠🟩\n🟩🟩🟩🟩\n🟠🟠🟡🟠\n🟩🟠🟠🟩",
         "I solved the daily Clues by Sam (Sep 9th 2025) in 05:46\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com",
-        "I solved the daily Clues by Sam, Nov 15th 2025 (Hard), in 03:56\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟡🟩🟩🟩\nhttps://cluesbysam.com"
+        "I solved the daily Clues by Sam, Nov 15th 2025 (Hard), in 03:56\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟡🟩🟩🟩\nhttps://cluesbysam.com",
+        "I solved the daily Clues by Sam, Nov 16th 2025 (Hard), in less than 12 minutes\n🟩🟩🟩🟩\n🟩🟩🟨🟩\n🟩🟩🟩🟩\n🟩🟡🟨🟩\n🟠🟨🟩🟩\nhttps://cluesbysam.com"
     ]
     expected = [
         {"day": "104", "name": "CluesBySam", "timestamp": 10, "tries": 2580, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "100", "name": "CluesBySam", "timestamp": 10, "tries": 361, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "167", "name": "CluesBySam", "timestamp": 10, "tries": 281, "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "167", "name": "CluesBySam", "timestamp": 10, "tries": 281, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "168", "name": "CluesBySam", "timestamp": 10, "tries": 795, "user_id": 456481297, "user_name": "Trifase"}, # New Expected (660 base + 255 penalty)
     ]
 
     @staticmethod
@@ -664,7 +666,7 @@ class CluesBySam(Giochino):
                 locale.setlocale(locale.LC_TIME, "it_IT.UTF-8") 
 
         ## ⏱️ Calculate Base Time (Made robust)
-        minutes_match = re.search(r"Less than (\d+) minutes", text)
+        minutes_match = re.search(r"less\s+than\s+(\d+)\s+minutes", text, re.IGNORECASE)
         solved_match = re.search(r"in (\d+):(\d+)", text)
         
         if minutes_match:
