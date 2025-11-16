@@ -163,7 +163,7 @@ sqlite.db
 config.py
 logs/
 backups/
-user_settings.json
+db/user_settings.json
 db/*
 .vscode/settings.json
 main.py
