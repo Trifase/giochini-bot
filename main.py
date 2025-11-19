@@ -646,6 +646,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             lost=play_is_lost,
         )
 
+        # Check if this is a disabled game and notify the user
+        if GAMES[result["name"]].get("disabled", False):
+            await update.message.reply_text("⚠️ Questo gioco è disabilitato. Il punteggio è stato salvato ma non contribuirà alla classifica.")
+
         if play_is_lost:
             logging.info(f"Aggiungo tentativo di {result['user_name']} per {result['name']} #{result['day']} (fallito)")
             message = f'Classifica di {result["name"]} aggiornata.\n'

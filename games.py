@@ -796,6 +796,8 @@ class Contexto(Giochino):
     _emoji = "🔄"
     _url = "https://contexto.me"
 
+    disabled: bool = True
+
     examples = [
         "I played contexto.me #556 and got it in 57 guesses.\n\n🟩🟩 11\n🟨🟨 10\n🟥🟥🟥🟥🟥🟥 36",
         "I played contexto.me #522 and got it in 39 guesses and 1 hints.\n\n🟩 9\n🟨 9\n🟥🟥🟥 22",
@@ -846,6 +848,7 @@ class Countryle(Giochino):
     _url = "https://countryle.com"
 
     can_lose: False
+    disabled: bool = True
 
     examples = [
         "#Countryle 818\nGuessed in 1 tries.\n\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
@@ -1059,6 +1062,7 @@ class DominoFit(Giochino):
     _url = "https://dominofit.isotropic.us"
 
     can_lose: False
+    disabled: bool = True
 
     examples = [
         "DOMINO FIT #42 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️✅\n⌚️0️⃣4️⃣5️⃣",
@@ -1485,6 +1489,7 @@ class Geogrid(Giochino):
     _url = "https://geogridgame.com"
 
     can_lose: False
+    disabled: bool = True
 
     examples = [
         # "✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame",
@@ -2046,6 +2051,8 @@ class Metaflora(Giochino):
     _emoji = "🌿"
     _url = "https://flora.metazooa.com/game"
 
+    disabled: bool = True
+
     examples = [
         "🌱 Plant #141 🌾\nI figured it out in 3 guesses!\n🟨🟩🟩\n🔥 1 | Avg. Guesses: 6.7\n\nhttps://flora.metazooa.com\n#metaflora",
         "🍁 Plant #163 🌳\nI figured it out in 9 guesses!\n🟫🟧🟧🟧🟨🟨🟨🟨🟩\n🔥 1 | Avg. Guesses: 7.8\n\nhttps://flora.metazooa.com\n#metaflora",
@@ -2359,6 +2366,8 @@ class Numble(Giochino):
     _emoji = "➗"
     _url = "https://numble.wtf"
 
+    disabled: bool = True
+
     examples = [
         "Numble #832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf",
         "Numble #832\nSOLVED: ✅\nNumbers used: 6/6\nFinal answer: 900\n50.538s\nhttps://numble.wtf",
@@ -2478,6 +2487,8 @@ class Picsey(Giochino):
     _day = "100"
     _emoji = "🪟"
     _url = "https://picsey.io"
+
+    disabled: bool = True
 
     examples = [
         "Picsey 04.08.24 \nNature : Phenomena \n0p/49t/3g \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟠🟠🟠",
@@ -2827,6 +2838,7 @@ class Spellcheck(Giochino):
     _url = "https://spellcheck.xyz"
 
     can_lose: False
+    disabled: bool = True
 
     examples = [
         "Spellcheck #75\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
@@ -2975,6 +2987,8 @@ class Stepdle(Giochino):
     _emoji = "🗼"
     _url = "https://www.stepdle.com"
 
+    disabled: bool = True
+
     examples = [
         "Stepdle #536\n16/20 4-4 5-3 6-4 7-5\n⬜️⬜️🟨⬜️\n🟩⬜️🟩⬜️\n🟩⬜️🟩🟩\n🟩🟩🟩🟩\n⬜️🟨⬜️⬜️🟨\n⬜️🟩🟩⬜️🟩\n🟩🟩🟩🟩🟩\n⬜️⬜️⬜️⬜️🟨🟨\n⬜️⬜️🟨🟩⬜️⬜️\n🟩🟩⬜️🟩🟨⬜️\n🟩🟩🟩🟩🟩🟩\n⬜️🟨⬜️🟨⬜️⬜️🟨\n⬜️🟨🟨⬜️⬜️🟨⬜️\n🟨⬜️🟨⬜️⬜️🟨⬜️\n⬜️🟨🟨⬜️⬜️🟩🟨\n🟩🟩🟩🟩🟩🟩🟩",
         "Stepdle #537\n20/20 4-4 5-7 6-5 7-4\n🟨⬜️⬜️⬜️\n⬜️⬜️⬜️🟩\n🟩🟩⬜️🟩\n🟩🟩🟩🟩\n🟨🟩⬜️⬜️🟩\n⬜️🟩🟩⬜️🟩\n⬜️🟩🟩⬜️🟩\n⬜️🟩🟩⬜️🟩\n⬜️🟩🟩⬜️🟩\n🟩🟩🟩⬜️🟩\n🟩🟩🟩🟩🟩\n⬜️⬜️🟨🟨⬜️🟨\n⬜️⬜️🟨⬜️🟩⬜️\n⬜️🟩⬜️🟨⬜️🟨\n🟩🟩⬜️⬜️🟩🟨\n🟩🟩🟩🟩🟩🟩\n⬜️⬜️🟨⬜️⬜️⬜️⬜️\n🟩🟨⬜️⬜️⬜️🟨⬜️\n🟩🟨🟨⬜️⬜️⬜️⬜️\n🟩🟩🟩🟩🟩🟩🟩",
@@ -3090,6 +3104,7 @@ class TempoIndovinr(Giochino):
 
     can_lose: False
     hidden_game = True
+    disabled: bool = True
 
     examples = [
         "TempoIndovinr day 146\nHo fatto 593/1000 punti a TempoIndovinr!\n\n🟩🟩🟩 (99%) 💀⬛️⬛️ (2%)\n🟧⬛️⬛️ (77%) 🟩🟩🟩 (99%)\n🟩🟩🟩 (97%) 💀⬛️⬛️ (17%)\n🟩🟩🟩 (99%) 💀⬛️⬛️ (3%)\n🟩🟩🟩 (100%) 💀⬛️⬛️ (0%)\n https://jacopofarina.eu/experiments/tempoindovinr/",
@@ -3209,6 +3224,7 @@ class TimeGuessr(Giochino):
     _url = "https://timeguessr.com"
 
     can_lose: False
+    disabled: bool = True
 
     examples = [
         "TimeGuessr #268 33,990/50,000\n🌎🟩⬛️⬛️ 📅🟩⬛⬛\n🌎🟩⬛️⬛️ 📅🟩🟩🟨\n🌎⬛️⬛️⬛️ 📅🟩🟩🟨\n🌎🟩🟩🟨 📅🟩🟨⬛\n🌎🟩🟩🟩 📅🟨⬛️⬛️\nhttps://timeguessr.com",
@@ -3285,6 +3301,8 @@ class Tradle(Giochino):
     _day = "474"
     _emoji = "🚢"
     _url = "https://games.oec.world/en/tradle"
+
+    disabled: bool = True
 
     examples = [
         "#Tradle #761 5/6\n🟩🟩🟨⬜⬜\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟩\nhttps://games.oec.world/en/tradle",
@@ -3585,6 +3603,8 @@ class WhenTaken(Giochino):
     _day = "191"
     _emoji = "📍"
     _url = "https://whentaken.com"
+
+    disabled: bool = True
 
     examples = [
         "#WhenTaken #191 (05.09.2024)\n\nI scored 505/1000 🎉\n\n1️⃣ 📍 3499 km - 🗓 22 yrs - ⚡️ 82 / 200\n2️⃣ 📍 441 km - 🗓 7 yrs - ⚡️ 178 / 200\n3️⃣ 📍 16972 km - 🗓 11 yrs - ⚡️ 82 / 200\n4️⃣ 📍 1181 km - 🗓 4 yrs - ⚡️ 162 / 200\n5️⃣ 📍 9698 km - 🗓 62 yrs - ⚡️ 1 / 200\n\nhttps://whentaken.com"
