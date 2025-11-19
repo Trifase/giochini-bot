@@ -1058,6 +1058,8 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
     for categoria in categorie:
         message += f"<b>{categoria}</b>\n"
         for game in GAMES.keys():
+            if GAMES[game].get("disabled", False):
+                continue
             if GAMES[game]["category"] == categoria:
                 day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
                 message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
