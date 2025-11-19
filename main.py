@@ -241,6 +241,8 @@ def make_menu_setting_favs(favs: list = None, favs_extra_button: bool = False, u
     games = [x for x in GAMES.keys()]
     games = sorted(games)
     for game in games:
+        if GAMES[game].get("disabled", False):
+            continue
         if game not in favs:
             keyboard.append(InlineKeyboardButton(game, callback_data=f"favs_add_{game}_{user_id}"))
         else:
@@ -540,6 +542,8 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     messaggio = ""
     print(f"ci sono in totale {len(GAMES.keys())} giochi")
     for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
         classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, show_lost=True)
 
         # print(make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, data=True))
@@ -759,6 +763,8 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Divido i giochi in giocati e non giocati
     for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
         query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == update.message.from_user.id)
 
@@ -822,6 +828,8 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     played_today = []
     not_played_today = []
     for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
         query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
         if query:

@@ -172,6 +172,7 @@ class Giochino:
     lost_message: str = "Hai perso :("  # per-game lose message
     win_message: str = None  # per-game win message
     hidden_game: bool = False  # set this to true to hide game from list/dicts/info
+    disabled: bool = False # set this to true to soft-disable the game
     # Parsed result
     day: str = None
     tries: str = None
@@ -520,6 +521,7 @@ class Chronophoto(Giochino):
     _url = "https://www.chronophoto.app/daily.html"
 
     can_lose: False
+    disabled: bool = True
 
     examples = [
         "I got a score of 2952 on today's Chronophoto: 1/4/2024\nRound 1: 290\nRound 2: 777\nRound 3: 396\nRound 4: 640\nRound 5: 849 https://www.chronophoto.app/daily.html",
@@ -3836,6 +3838,7 @@ def get_games() -> dict:
             "url": giochino._url,
             "date": giochino._date,
             "day": giochino._day,
+            "disabled": giochino.disabled,
         }
     # print(games)
     return games

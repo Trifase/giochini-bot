@@ -166,7 +166,6 @@ backups/
 db/user_settings.json
 db/*
 .vscode/settings.json
-main.py
 db/sqlite2.db
 uv.lock
 00_combined_plot.png

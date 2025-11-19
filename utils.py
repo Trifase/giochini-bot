@@ -342,6 +342,9 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
     player_scores = {}
 
     for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
+
         day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, from_day)
 
         query = (
