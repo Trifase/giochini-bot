@@ -517,7 +517,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == 'Timdle':
         tries = 36 - tries
 
-    if game == 'CluesBySam':
+    if game == 'CluesBySam' or game == 'GuessThePhrase':
         seconds = int(tries)
         minutes = seconds // 60
         remaining_seconds = seconds % 60
