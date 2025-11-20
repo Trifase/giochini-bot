@@ -994,14 +994,15 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         for game_info in user_games:
             if game_info["lost"]:
-                message += f"{game_info['emoji']} <s><i>{game_info['game']}</i></s> - Perso\n"
+                message += f"<s><i>{game_info['game']}</i></s> - Perso\n"
             else:
-                stars_display = f"{game_info['stars']}{STAR_SYMBOL}" if game_info['stars'] > 0 else ""
-                message += f"{game_info['emoji']} {game_info['medal_emoji']}{stars_display} {game_info['game']} - {game_info['position']}° posto ({game_info['tries']})\n"
+                stars_display = f"+{game_info['stars']}{STAR_SYMBOL}" if game_info['stars'] > 0 else ""
+                message += f"{game_info['medal_emoji']}{stars_display} {game_info['game']}\n"
     
-    await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    # This will delete the original command after some time
-    await delete_original_command(update, context)
+    mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    command_msg = update.message
+    # Delete both the command and response after 30 seconds
+    context.job_queue.run_once(delete_post, 30, data=[mymsg, command_msg], name=f"myscore_delete_{str(update.effective_message.id)}")
 
 
 async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
