@@ -973,16 +973,16 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             # Find the user's game in the classifica
             for giocata in cl.giocate:
                 if giocata.user_id == user_id:
-                    user_games.append({
-                        "game": game,
-                        "emoji": GAMES[game]["emoji"],
-                        "position": giocata.posizione,
-                        "stars": giocata.stelle,
-                        "medal_emoji": giocata.emoji,
-                        "tries": giocata.processed_tries,
-                        "lost": giocata.lost
-                    })
+                    # Only include non-lost games since lost games produce 0 points
                     if not giocata.lost:
+                        user_games.append({
+                            "game": game,
+                            "emoji": GAMES[game]["emoji"],
+                            "position": giocata.posizione,
+                            "stars": giocata.stelle,
+                            "medal_emoji": giocata.emoji,
+                            "tries": giocata.processed_tries,
+                        })
                         total_stars += giocata.stelle
                     break
     
@@ -993,11 +993,8 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = f"<b>Il tuo punteggio di oggi:</b> {total_stars}{STAR_SYMBOL}\n\n"
         
         for game_info in user_games:
-            if game_info["lost"]:
-                message += f"<s><i>{game_info['game']}</i></s> - Perso\n"
-            else:
-                stars_display = f"+{game_info['stars']}{STAR_SYMBOL}" if game_info['stars'] > 0 else ""
-                message += f"{game_info['medal_emoji']}{stars_display} {game_info['game']}\n"
+            stars_display = f"+{game_info['stars']}{STAR_SYMBOL}" if game_info['stars'] > 0 else ""
+            message += f"{game_info['medal_emoji']}{stars_display} {game_info['game']}\n"
     
     mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
     command_msg = update.message
