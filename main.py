@@ -425,6 +425,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "📌 /nomegioco - Incolla il link per accedere alla partita odierna, dura solo 5 secondi, ad esempio: <code>/connections</code>",
         "",
         "📌 /myday - Mostra i giochi a cui non hai ancora giocato oggi",
+        "📌 /myscore - Mostra il tuo punteggio e le tue posizioni di oggi",
         "📌 /dailyranking - Mostra i punti del giorno corrente",
         "📌 /medaglie - Mostra il medagliere mensile",
         "",
@@ -909,6 +910,100 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(group_message, parse_mode="HTML", disable_web_page_preview=True)
 
 
+async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show the user's score and game positions for the current day."""
+    user_id = update.effective_user.id
+    today = datetime.date.today()
+    
+    # Dictionary to store game results for the user
+    user_games = []
+    total_stars = 0
+    
+    # Iterate through all active games
+    for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
+        
+        # Get the current day number for this game
+        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, today)
+        
+        # Query for user's score in this game today
+        query = (
+            Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
+            .where(
+                Punteggio.day == day,
+                Punteggio.game == game,
+                Punteggio.chat_id == update.effective_chat.id,
+                Punteggio.user_id == user_id
+            )
+        )
+        
+        # If user played this game, calculate their position and stars
+        if query:
+            # Get all scores for this game to calculate position
+            all_scores_query = (
+                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
+                .where(
+                    Punteggio.day == day,
+                    Punteggio.game == game,
+                    Punteggio.chat_id == update.effective_chat.id
+                )
+                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+            )
+            
+            # Create a Classifica object to calculate positions and stars
+            cl = Classifica()
+            cl.game = game
+            cl.day = str(day)
+            cl.date = today
+            cl.emoji = GAMES[game]["emoji"]
+            cl.giocate = [
+                Giocata(
+                    user_id=g.user_id,
+                    user_name=g.user_name,
+                    tries=g.tries,
+                    game=game,
+                    extra=g.extra if g.extra else 0
+                )
+                for g in all_scores_query
+            ]
+            cl.order_and_position()
+            cl.assign_stars("default")
+            
+            # Find the user's game in the classifica
+            for giocata in cl.giocate:
+                if giocata.user_id == user_id:
+                    user_games.append({
+                        "game": game,
+                        "emoji": GAMES[game]["emoji"],
+                        "position": giocata.posizione,
+                        "stars": giocata.stelle,
+                        "medal_emoji": giocata.emoji,
+                        "tries": giocata.processed_tries,
+                        "lost": giocata.lost
+                    })
+                    if not giocata.lost:
+                        total_stars += giocata.stelle
+                    break
+    
+    # Build the message
+    if not user_games:
+        message = "Non hai ancora giocato oggi. 🎮"
+    else:
+        message = f"<b>Il tuo punteggio di oggi:</b> {total_stars}{STAR_SYMBOL}\n\n"
+        
+        for game_info in user_games:
+            if game_info["lost"]:
+                message += f"{game_info['emoji']} <s><i>{game_info['game']}</i></s> - Perso\n"
+            else:
+                stars_display = f"{game_info['stars']}{STAR_SYMBOL}" if game_info['stars'] > 0 else ""
+                message += f"{game_info['emoji']} {game_info['medal_emoji']}{stars_display} {game_info['game']} - {game_info['position']}° posto ({game_info['tries']})\n"
+    
+    await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    # This will delete the original command after some time
+    await delete_original_command(update, context)
+
+
 async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat.id != ID_GIOCHINI:
         return
@@ -1205,6 +1300,7 @@ async def post_init(app: Application) -> None:
 
     my_commands = [
         ('myday', 'Quali giochi devi ancora giocare oggi?'),
+        ('myscore', 'Mostra il tuo punteggio di oggi'),
         ('mystats', 'Le tue statistiche'),
         ('favs', 'Mostra e setta i giochi preferiti'),
         ('dailyranking', 'Mostra i punteggi del giorno corrente'),
@@ -1241,6 +1337,7 @@ def main():
 
     app.add_handler(CommandHandler("classificona", classificona), 1)
     app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)
+    app.add_handler(CommandHandler(["myscore", "score"], myscore), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "stats", "statistiche"], mystats), 1)
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
