@@ -878,11 +878,70 @@ async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     message = "Lista dei giochi:\n"
 
     for game in GAMES.keys():
-        message += f'{GAMES[game]["emoji"]} {game}: {GAMES[game]["url"]}\n'
+        prefix = ""
+        if GAMES[game].get("disabled", False):
+            prefix = "🚫 "
+        message += f'{prefix}{GAMES[game]["emoji"]} {game}: {GAMES[game]["url"]}\n'
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
     # This will delete the original command after some time (iirc default 10 secs)
     await delete_original_command(update, context)
+
+
+async def show_disabled_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Admin-only command
+    if update.effective_user.id != ADMIN_ID:
+        return
+    
+    message = "Giochi disabilitati:\n\n"
+    disabled_games = []
+    
+    for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            disabled_games.append(game)
+    
+    if not disabled_games:
+        message = "Non ci sono giochi disabilitati."
+    else:
+        for game in disabled_games:
+            message += f'{GAMES[game]["emoji"]} {game}: {GAMES[game]["url"]}\n'
+    
+    await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    # Delete the original command after 30 seconds
+    await delete_original_command(update, context, 30)
+
+
+async def check_unused_games(context: ContextTypes.DEFAULT_TYPE) -> None:
+    cutoff_date = datetime.date.today() - datetime.timedelta(days=21)
+    unused_games = []
+
+    for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
+        
+        # Check if there are any plays in the last 20 days
+        # We use Punteggio.date which is a DateField or DateTimeField
+        query = Punteggio.select().where(
+            Punteggio.game == game, 
+            Punteggio.date >= cutoff_date
+        ).exists()
+        
+        if not query:
+            unused_games.append(game)
+
+    if unused_games:
+        message = "⚠️ <b>Giochi senza partite negli ultimi 20 giorni:</b>\n\n"
+        for game in unused_games:
+            message += f"{GAMES[game]['emoji']} {game}\n"
+
+        await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode="HTML")
+
+
+async def manual_check_unused(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id == ADMIN_ID:
+        await check_unused_games(context)
+        # await update.message.reply_text("Controllo eseguito. Se ci sono giochi inutilizzati, ho inviato un messaggio su Giochini.")
+
 
 
 async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1331,6 +1390,7 @@ def main():
     j.run_daily(daily_reminder, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(riassunto_serale, datetime.time(hour=0, minute=10, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(check_unused_games, datetime.time(hour=0, minute=10, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_repeating(heartbeat, interval=60 * 15, first=10)
 
     app.add_handler(CommandHandler("classificona", classificona), 1)
@@ -1370,6 +1430,9 @@ def main():
     app.add_handler(CommandHandler("webapp", launch_web_ui))
     app.add_handler(CommandHandler("giochiamo", manual_daily_reminder), 1)
     app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
+    app.add_handler(CommandHandler(["listdisabled", "disabledlist", "showdisabled", "disabled"], show_disabled_games), 1)
+    app.add_handler(CommandHandler(["checkunused", "unusedcheck", "nongiocati", "unused", "checkunusedgames"], manual_check_unused), 1)
+
 
     
     app.add_handler(MessageHandler(giochini_results_filter & ~filters.UpdateType.EDITED, parse_punteggio))

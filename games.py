@@ -3224,7 +3224,6 @@ class TimeGuessr(Giochino):
     _url = "https://timeguessr.com"
 
     can_lose: False
-    disabled: bool = True
 
     examples = [
         "TimeGuessr #268 33,990/50,000\n🌎🟩⬛️⬛️ 📅🟩⬛⬛\n🌎🟩⬛️⬛️ 📅🟩🟩🟨\n🌎⬛️⬛️⬛️ 📅🟩🟩🟨\n🌎🟩🟩🟨 📅🟩🟨⬛\n🌎🟩🟩🟩 📅🟨⬛️⬛️\nhttps://timeguessr.com",
