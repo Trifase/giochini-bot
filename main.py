@@ -912,33 +912,53 @@ async def show_disabled_games(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def check_unused_games(context: ContextTypes.DEFAULT_TYPE) -> None:
-    cutoff_date = datetime.date.today() - datetime.timedelta(days=21)
+    today = datetime.date.today()
+    cutoff_days = 20
     unused_games = []
+    print("Controllo giochi inutilizzati...")
 
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
             continue
         
-        # Check if there are any plays in the last 20 days
-        # We use Punteggio.date which is a DateField or DateTimeField
-        query = Punteggio.select().where(
-            Punteggio.game == game, 
-            Punteggio.date >= cutoff_date
-        ).exists()
+        # Get the latest play for this game
+        last_play = Punteggio.select().where(
+            Punteggio.game == game
+        ).order_by(Punteggio.date.desc()).first()
         
-        if not query:
-            unused_games.append(game)
+        days_since = None
+        if last_play:
+            # Ensure last_play.date is a date object
+            last_date = last_play.date
+            if isinstance(last_date, datetime.datetime):
+                last_date = last_date.date()
+                
+            days_since = (today - last_date).days
+            
+            if days_since > cutoff_days:
+                unused_games.append((game, days_since))
+        else:
+            # Never played
+            unused_games.append((game, -1))
 
     if unused_games:
-        message = "⚠️ <b>Giochi senza partite negli ultimi 20 giorni:</b>\n\n"
-        for game in unused_games:
-            message += f"{GAMES[game]['emoji']} {game}\n"
+        # Sort by days since (descending), putting "Never" (-1) at the top or bottom?
+        # Let's put "Never" first (treated as infinity), then descending days
+        unused_games.sort(key=lambda x: x[1] if x[1] != -1 else 99999, reverse=True)
+        
+        message = f"⚠️ <b>Giochi senza partite negli ultimi {cutoff_days} giorni:</b>\n\n"
+        for game, days in unused_games:
+            days_str = f"{days} giorni fa" if days != -1 else "Mai giocato"
+            message += f"<a href='{GAMES[game]['url']}'>{GAMES[game]['emoji']} {game}</a> ({days_str})\n"
 
         await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode="HTML")
+    else:
+        await context.bot.send_message(chat_id=ID_GIOCHINI, text="Tutti i giochi sono stati giocati di recente.", parse_mode="HTML")
 
 
 async def manual_check_unused(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
+        print("Eseguo il controllo dei giochi inutilizzati...")
         await check_unused_games(context)
         # await update.message.reply_text("Controllo eseguito. Se ci sono giochi inutilizzati, ho inviato un messaggio su Giochini.")
 
@@ -1390,7 +1410,7 @@ def main():
     j.run_daily(daily_reminder, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(riassunto_serale, datetime.time(hour=0, minute=10, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
-    j.run_daily(check_unused_games, datetime.time(hour=0, minute=10, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(check_unused_games, datetime.time(hour=9, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_repeating(heartbeat, interval=60 * 15, first=10)
 
     app.add_handler(CommandHandler("classificona", classificona), 1)

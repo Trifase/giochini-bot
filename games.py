@@ -2144,11 +2144,12 @@ class Moviedle(Giochino):
     _url = "https://likewise.com/games/moviedle"
 
     examples = [
-        "#Moviedle #2024-03-08 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2024-03-08",
-        "#Moviedle #2024-01-29 \n\n 🎥 🟥 🟥 ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2024-01-29",
-        "#Moviedle #2024-03-07 \n\n 🎥 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/moviedle/2024-03-07",
-        "#Moviedle #2024-01-21 \n\n 🎥 ⬛️ ⬛️ 🟩 ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/moviedle/2024-01-21",
-        "#Moviedle #2025-03-04 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://likewise.com/games/moviedle/2025-03-04",
+        "#Moviedle #2024-03-08 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://pix-media.com/games/moviedle/2024-03-08",
+        "#Moviedle #2024-01-29 \n\n 🎥 🟥 🟥 ⬛️ ⬛️ ⬛️ ⬛️  \n https://pix-media.com/games/moviedle/2024-01-29",
+        "#Moviedle #2024-03-07 \n\n 🎥 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://pix-media.com/games/moviedle/2024-03-07",
+        "#Moviedle #2024-01-21 \n\n 🎥 ⬛️ ⬛️ 🟩 ⬜️ ⬜️ ⬜️  \n https://pix-media.com/games/moviedle/2024-01-21",
+        "#Moviedle #2025-03-04 \n\n 🎥 ⬛️ ⬛️ ⬛️ ⬛️ ⬛️ ⬛️  \n https://pix-media.com/games/moviedle/2025-03-04",
+        '#Moviedle #2025-11-24 \n\n 🎥 🟥 🟥 🟩 ⬜️ ⬜️ ⬜️  \n https://pix-media.com/games/moviedle/2025-11-24'
     ]
     expected = [
         {"day": "459", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
@@ -2156,11 +2157,13 @@ class Moviedle(Giochino):
         {"day": "458", "name": "Moviedle", "timestamp": 10, "tries": "1", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "412", "name": "Moviedle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "820", "name": "Moviedle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {'day': '1085', 'name': 'Moviedle', 'timestamp': 10, 'tries': '3', 'user_id': 456481297, 'user_name': 'Trifase'},
+        
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["#Moviedle ", "https://likewise.com/games/moviedle"]
+        wordlist = ["#Moviedle ", "https://pix-media.com/games/moviedle"]
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
