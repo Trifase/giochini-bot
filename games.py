@@ -521,7 +521,7 @@ class Chronophoto(Giochino):
     _url = "https://www.chronophoto.app/daily.html"
 
     can_lose: False
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "I got a score of 2952 on today's Chronophoto: 1/4/2024\nRound 1: 290\nRound 2: 777\nRound 3: 396\nRound 4: 640\nRound 5: 849 https://www.chronophoto.app/daily.html",
@@ -796,7 +796,7 @@ class Contexto(Giochino):
     _emoji = "🔄"
     _url = "https://contexto.me"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "I played contexto.me #556 and got it in 57 guesses.\n\n🟩🟩 11\n🟨🟨 10\n🟥🟥🟥🟥🟥🟥 36",
@@ -848,7 +848,7 @@ class Countryle(Giochino):
     _url = "https://countryle.com"
 
     can_lose: False
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#Countryle 818\nGuessed in 1 tries.\n\n🟢🟢🟢🟢🟢\n\nhttps://countryle.com",
@@ -1062,7 +1062,7 @@ class DominoFit(Giochino):
     _url = "https://dominofit.isotropic.us"
 
     can_lose: False
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "DOMINO FIT #42 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️✅\n⌚️0️⃣4️⃣5️⃣",
@@ -1489,7 +1489,7 @@ class Geogrid(Giochino):
     _url = "https://geogridgame.com"
 
     can_lose: False
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         # "✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame",
@@ -1525,6 +1525,37 @@ class Geogrid(Giochino):
             score = int(float(score_match.group(1)))
             self.tries = "X" if score == 900 else str(score)
 
+        self.stars = None
+
+
+@dataclass
+class Gisnep(Giochino):
+    _name = "Gisnep"
+    _category = "Logica"
+    _date = datetime.date(2025, 11, 25)
+    _day = "475"
+    _emoji = "🧩"
+    _url = "https://gisnep.com"
+
+    examples = [
+        "I solved today’s #Gisnep in 13:18. 🎉\nNo. 475 | 25 novembre 2025 \nhttps://gisnep.com",
+    ]
+    expected = [
+        {"day": "475", "name": "Gisnep", "timestamp": 10, "tries": "1318", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#Gisnep", "https://gisnep.com"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        matches_day = re.search(r"No\. (\d+)", text)
+        matches_time = re.search(r"(\d+):(\d+)", text)
+        self.day = matches_day.group(1) if matches_day else None
+        self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
         self.stars = None
 
 
@@ -2051,7 +2082,7 @@ class Metaflora(Giochino):
     _emoji = "🌿"
     _url = "https://flora.metazooa.com/game"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "🌱 Plant #141 🌾\nI figured it out in 3 guesses!\n🟨🟩🟩\n🔥 1 | Avg. Guesses: 6.7\n\nhttps://flora.metazooa.com\n#metaflora",
@@ -2491,7 +2522,7 @@ class Picsey(Giochino):
     _emoji = "🪟"
     _url = "https://picsey.io"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "Picsey 04.08.24 \nNature : Phenomena \n0p/49t/3g \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟦🟦🟦🟦🟦🟦🟦 \n🟠🟠🟠",
@@ -2726,6 +2757,52 @@ class Queens(Giochino):
 
 
 @dataclass
+class Redattolo(Giochino):
+    _name = "Redattolo"
+    _category = "Giochi di parole"
+    _date = datetime.date(2025, 11, 25)
+    _day = "1298"
+    _emoji = "📝"
+    _url = "https://redattolo.vercel.app"
+
+    examples = [
+        "#Redattolo 1257 \nhttps://redattolo.vercel.app\n\nTotale: 15 | ++\nPrecisione: 80% | ++\nRivelazione: 32.59% | --\n\nDifficoltà: Estremamente difficile",
+        "#Redattolo 1265 \nhttps://redattolo.vercel.app\n\nTotale: 35 | ++\nPrecisione: 20% | ---\nRivelazione: 24.38% | ~\nSuggerimenti: 1/1\n\nDifficoltà: Eccezionalmente difficile",
+        "Mi sono arreso a #Redattolo 1298!\nhttps://redattolo.vercel.app\n\nParziale: 115 | ×\nPrecisione: 20.86% | ×\nRivelazione: 30.1% | ×\nSuggerimenti: 1/1\n\nDifficoltà: Molto difficile",
+    ]
+    expected = [
+        {"day": "1257", "name": "Redattolo", "timestamp": 10, "tries": "15", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1265", "name": "Redattolo", "timestamp": 10, "tries": "45", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1298", "name": "Redattolo", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["#Redattolo", "https://redattolo.vercel.app"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        
+        day_match = re.search(r"#Redattolo (\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        if "Mi sono arreso" in text:
+            self.tries = "X"
+        else:
+            total_match = re.search(r"Totale: (\d+)", text)
+            total = int(total_match.group(1)) if total_match else 0
+            
+            hints_match = re.search(r"Suggerimenti: (\d+)/(\d+)", text)
+            hints = int(hints_match.group(1)) if hints_match else 0
+            
+            self.tries = str(total + hints * 10)
+            
+        self.stars = None
+
+
+@dataclass
 class Reversle(Giochino):
     _name = "Reversle"
     _category = "Giochi di parole"
@@ -2841,7 +2918,7 @@ class Spellcheck(Giochino):
     _url = "https://spellcheck.xyz"
 
     can_lose: False
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "Spellcheck #75\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
@@ -2990,7 +3067,7 @@ class Stepdle(Giochino):
     _emoji = "🗼"
     _url = "https://www.stepdle.com"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "Stepdle #536\n16/20 4-4 5-3 6-4 7-5\n⬜️⬜️🟨⬜️\n🟩⬜️🟩⬜️\n🟩⬜️🟩🟩\n🟩🟩🟩🟩\n⬜️🟨⬜️⬜️🟨\n⬜️🟩🟩⬜️🟩\n🟩🟩🟩🟩🟩\n⬜️⬜️⬜️⬜️🟨🟨\n⬜️⬜️🟨🟩⬜️⬜️\n🟩🟩⬜️🟩🟨⬜️\n🟩🟩🟩🟩🟩🟩\n⬜️🟨⬜️🟨⬜️⬜️🟨\n⬜️🟨🟨⬜️⬜️🟨⬜️\n🟨⬜️🟨⬜️⬜️🟨⬜️\n⬜️🟨🟨⬜️⬜️🟩🟨\n🟩🟩🟩🟩🟩🟩🟩",
@@ -3304,7 +3381,7 @@ class Tradle(Giochino):
     _emoji = "🚢"
     _url = "https://games.oec.world/en/tradle"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#Tradle #761 5/6\n🟩🟩🟨⬜⬜\n🟩🟩🟩🟩⬜\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟨\n🟩🟩🟩🟩🟩\nhttps://games.oec.world/en/tradle",
@@ -3566,6 +3643,7 @@ class WhereTaken(Giochino):
     _url = "http://wheretaken.teuteuf.fr"
 
     has_extra: True
+    disabled: bool = True
 
     examples = [
         "📷 #WhereTaken🌎 #407 (08.04.2024) X/6\n🟦🟦🟦🟦🟨⬅️\n🟦🟦🟦🟦⬜️⬅️\n🟦🟦🟦🟦⬜️⬅️\n🟦🟦🟦🟦⬜️↖️\n🟦🟦🟦🟦⬜️⬅️\n🟦🟦🟨⬜️⬜️↖️\n\n\nwheretaken.teuteuf.fr",
@@ -3606,7 +3684,7 @@ class WhenTaken(Giochino):
     _emoji = "📍"
     _url = "https://whentaken.com"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#WhenTaken #191 (05.09.2024)\n\nI scored 505/1000 🎉\n\n1️⃣ 📍 3499 km - 🗓 22 yrs - ⚡️ 82 / 200\n2️⃣ 📍 441 km - 🗓 7 yrs - ⚡️ 178 / 200\n3️⃣ 📍 16972 km - 🗓 11 yrs - ⚡️ 82 / 200\n4️⃣ 📍 1181 km - 🗓 4 yrs - ⚡️ 162 / 200\n5️⃣ 📍 9698 km - 🗓 62 yrs - ⚡️ 1 / 200\n\nhttps://whentaken.com"
@@ -3907,6 +3985,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = GuessThePhrase
+    giochino_da_testare = Redattolo
 
     test(True, giochino_da_testare)

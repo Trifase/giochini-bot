@@ -4,6 +4,7 @@ import locale
 import logging
 import logging.handlers
 import sys
+import os
 import time
 import traceback
 import zipfile
@@ -958,9 +959,14 @@ async def check_unused_games(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def manual_check_unused(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
-        print("Eseguo il controllo dei giochi inutilizzati...")
         await check_unused_games(context)
-        # await update.message.reply_text("Controllo eseguito. Se ci sono giochi inutilizzati, ho inviato un messaggio su Giochini.")
+        # await update.message.reply_text("Controllo eseguito. Se ci sono giochi inutilizzati, ho inviato un messaggio su BotCentral.")
+
+
+async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id == ADMIN_ID:
+        await update.message.reply_text("Riavvio in corso...")
+        os.execl(sys.executable, sys.executable, *sys.argv)
 
 
 
@@ -1391,6 +1397,8 @@ async def post_init(app: Application) -> None:
         ]
     await app.bot.set_my_commands(my_commands)
 
+    await app.bot.send_message(chat_id=ID_BOTCENTRAL, text="Bot riavviato! 🔄")
+
     logger.info("Pronti!")
 
 
@@ -1452,6 +1460,7 @@ def main():
     app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
     app.add_handler(CommandHandler(["listdisabled", "disabledlist", "showdisabled", "disabled"], show_disabled_games), 1)
     app.add_handler(CommandHandler(["checkunused", "unusedcheck", "nongiocati", "unused", "checkunusedgames"], manual_check_unused), 1)
+    app.add_handler(CommandHandler("restart", restart_bot), 1)
 
 
     
