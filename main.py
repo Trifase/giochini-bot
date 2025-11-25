@@ -665,11 +665,13 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if str_as_int(result["day"]) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"], show_lost=True)
-            tot_games = len(GAMES.keys())
+            tot_games = len([x for x in GAMES.keys() if not GAMES[x].get("disabled", False)])
             game_played_today = 0
 
             # for each game, see if there is a result for the last day of the game, and if there is, count it
             for game in GAMES.keys():
+                if GAMES[game].get("disabled", False):
+                    continue
                 day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
                 query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"])
 
@@ -713,10 +715,12 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
 
-        tot_games = len(GAMES.keys())
+        tot_games = len([x for x in GAMES.keys() if not GAMES[x].get("disabled", False)])
         game_played_today = 0
         # for each game, see if there is a result for the last day of the game, and if there is, count it
         for game in GAMES.keys():
+            if GAMES[game].get("disabled", False):
+                continue
             day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
             query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"])
             if query:
