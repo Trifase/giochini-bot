@@ -501,7 +501,7 @@ class Chrono(Giochino):
         else:
             self.tries = None
 
-        time_match = re.search(r"⏱: (\d+\.\d+)", text)
+        time_match = re.search(r": (\d+\.\d+)", text)
         time = float(time_match.group(1)) if time_match else None
 
         # Calculate stars based on time (10000 - time)
@@ -685,11 +685,16 @@ class CluesBySam(Giochino):
             "🟡": 30,
             "🟠": 60,
         }
-        
+        has_penality = any(emoji in text for emoji in penalties.keys())
+
         # Ensure self.tries is an integer before addition
         if isinstance(self.tries, int):
             for emoji, penalty in penalties.items():
                 self.tries += text.count(emoji) * penalty
+        
+        if has_penality and isinstance(self.tries, int):
+            self.tries += 180  # Additional 1 minute penalty if any penalities were applied
+            self.win_message = f"Penalità totali: {self.tries - (base_minutes * 60 + base_seconds if solved_match else (base_minutes * 60))} secondi."
         
         self.stars = None
 
