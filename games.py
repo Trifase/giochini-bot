@@ -371,6 +371,8 @@ class Bandle(Giochino):
     _emoji = "🎸"
     _url = "https://bandle.app/"
 
+    disabled: bool = True
+
     examples = [
         "Bandle #597 4/6\n⬛️⬛️⬛️🟩⬜️⬜️\nFound: 10/14 (71.4%)\nCurrent Streak: 1 (max 2)\n#Bandle #Heardle #Wordle \n https://bandle.app/",
         "Bandle #579 x/6\n⬛️⬛️⬛️⬛️⬛️⬛️\nFound: 3/5 (60%)\n#Bandle #Heardle #Wordle \n https://bandle.app/",
@@ -801,7 +803,7 @@ class Contexto(Giochino):
     _emoji = "🔄"
     _url = "https://contexto.me"
 
-    disabled: bool = False
+    disabled: bool = True
 
     examples = [
         "I played contexto.me #556 and got it in 57 guesses.\n\n🟩🟩 11\n🟨🟨 10\n🟥🟥🟥🟥🟥🟥 36",
@@ -1067,7 +1069,7 @@ class DominoFit(Giochino):
     _url = "https://dominofit.isotropic.us"
 
     can_lose: False
-    disabled: bool = False
+    disabled: bool = True
 
     examples = [
         "DOMINO FIT #42 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️✅\n⌚️0️⃣4️⃣5️⃣",
@@ -1167,6 +1169,49 @@ class Flagle(Giochino):
         golf = text.count("⛳")
 
         self.stars = bussola + population + coin + mappa + scudo + golf
+
+
+@dataclass
+class EncloseHorse(Giochino):
+    _name = "EncloseHorse"
+    _category = "Logica"
+    _date = datetime.date(2026, 1, 7)
+    _day = "9"
+    _emoji = "🐴"
+    _url = "https://enclose.horse"
+
+    can_lose: False
+
+    examples = [
+        'https://enclose.horse Day 8\n💎 PERFECT! 💎 100%',
+        'https://enclose.horse Day 8\n🥇 Excellent! 🥇 95%',
+        'https://enclose.horse Day 9\n🥈 Great 🥈 86%',
+    ]
+    expected = [
+        {"day": "8", "name": "EncloseHorse", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "8", "name": "EncloseHorse", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "9", "name": "EncloseHorse", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["https://enclose.horse Day"]
+        _can_handle_this = all(c in raw_text for c in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        # Extract day number using regex
+        day_match = re.search(r"https://enclose.horse Day (\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+
+        # Extract percentage using regex
+        percentage_match = re.search(r"(\d+)%", text)
+        if percentage_match:
+            perc = percentage_match.group(1)
+            self.tries = 100 - int(perc)
 
 
 @dataclass
@@ -1494,7 +1539,7 @@ class Geogrid(Giochino):
     _url = "https://geogridgame.com"
 
     can_lose: False
-    disabled: bool = False
+    disabled: bool = True
 
     examples = [
         # "✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame",
@@ -1780,6 +1825,8 @@ class GuessTheLogo(Giochino):
     _emoji = "®"
     _url = "https://guessthelogo.wtf"
 
+    disabled: bool = True
+
     examples = [
         "#GuessTheLogo #318\n\n® 🟥 🟥 🟥 🟥 🟥\n\n#LogoLearner\nhttps://GuessTheLogo.wtf/p/318",
         "#GuessTheLogo #318\n\n® 🟥 🟩 ⬜️ ⬜️\n\n#LogoLearner\nhttps://GuessTheLogo.wtf/p/318",
@@ -2034,6 +2081,8 @@ class Lyricle(Giochino):
     _emoji = "📜"
     _url = "https://lyricle.app"
 
+    disabled: bool = True
+
     examples = [
         "#Lyricle #1052\n\n⬛️⬛️⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app",
         "#Lyricle #1051\n\n🟩⬛⬛⬛⬛⬛\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app",
@@ -2087,7 +2136,7 @@ class Metaflora(Giochino):
     _emoji = "🌿"
     _url = "https://flora.metazooa.com/game"
 
-    disabled: bool = False
+    disabled: bool = True
 
     examples = [
         "🌱 Plant #141 🌾\nI figured it out in 3 guesses!\n🟨🟩🟩\n🔥 1 | Avg. Guesses: 6.7\n\nhttps://flora.metazooa.com\n#metaflora",
@@ -2362,6 +2411,7 @@ class NFLXdle(Giochino):
     _url = "https://likewise.com/games/nflxdle"
 
     has_extra = True
+    disabled: bool = True
 
     examples = [
         "#NFLXdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 📺 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04",  # vinta
@@ -2686,6 +2736,7 @@ class Posterdle(Giochino):
     _url = "https://likewise.com/games/posterdle"
 
     has_extra = True
+    disabled: bool = True
 
     examples = [
         "#Posterdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 🍿 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04",  # vinta
@@ -3309,6 +3360,7 @@ class TimeGuessr(Giochino):
     _url = "https://timeguessr.com"
 
     can_lose: False
+    disabled: bool = False
 
     examples = [
         "TimeGuessr #268 33,990/50,000\n🌎🟩⬛️⬛️ 📅🟩⬛⬛\n🌎🟩⬛️⬛️ 📅🟩🟩🟨\n🌎⬛️⬛️⬛️ 📅🟩🟩🟨\n🌎🟩🟩🟨 📅🟩🟨⬛\n🌎🟩🟩🟩 📅🟨⬛️⬛️\nhttps://timeguessr.com",
@@ -3574,6 +3626,8 @@ class Unzoomed(Giochino):
     _emoji = "🔎"
     _url = "https://unzoomed.com"
 
+    disabled: bool = True
+
     examples = [
         "Unzoomed #89 1/6 🟢⚪️⚪️⚪️⚪️⚪️\n https://unzoomed.com",
         "Unzoomed #89 4/6 🔴🔴🟡🟢⚪️⚪️\n https://unzoomed.com",
@@ -3689,7 +3743,7 @@ class WhenTaken(Giochino):
     _emoji = "📍"
     _url = "https://whentaken.com"
 
-    disabled: bool = False
+    disabled: bool = True
 
     examples = [
         "#WhenTaken #191 (05.09.2024)\n\nI scored 505/1000 🎉\n\n1️⃣ 📍 3499 km - 🗓 22 yrs - ⚡️ 82 / 200\n2️⃣ 📍 441 km - 🗓 7 yrs - ⚡️ 178 / 200\n3️⃣ 📍 16972 km - 🗓 11 yrs - ⚡️ 82 / 200\n4️⃣ 📍 1181 km - 🗓 4 yrs - ⚡️ 162 / 200\n5️⃣ 📍 9698 km - 🗓 62 yrs - ⚡️ 1 / 200\n\nhttps://whentaken.com"
@@ -3721,6 +3775,8 @@ class WordGrid(Giochino):
     _day = "11"
     _emoji = "🦄"
     _url = "https://wordgrid.clevergoat.com/"
+
+    disabled: bool = True
 
     examples = [
         "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.0\nwordgrid.clevergoat.com 🐐",
@@ -3990,6 +4046,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = Redattolo
+    giochino_da_testare = EncloseHorse
 
     test(True, giochino_da_testare)

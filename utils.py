@@ -525,6 +525,14 @@ def process_tries(game: str, tries: int | str) -> int | str:
         minutes = seconds // 60
         remaining_seconds = seconds % 60
         tries =  f"{minutes:02d}:{remaining_seconds:02d}"
+
+    if game == 'Timdle':
+        tries = 36 - tries
+
+    # Percentage, more is better
+    if game == 'EncloseHorse':
+        tries = f"{100 - tries}%"
+
     return tries
 
 
