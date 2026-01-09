@@ -371,7 +371,7 @@ class Bandle(Giochino):
     _emoji = "🎸"
     _url = "https://bandle.app/"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "Bandle #597 4/6\n⬛️⬛️⬛️🟩⬜️⬜️\nFound: 10/14 (71.4%)\nCurrent Streak: 1 (max 2)\n#Bandle #Heardle #Wordle \n https://bandle.app/",
@@ -803,7 +803,7 @@ class Contexto(Giochino):
     _emoji = "🔄"
     _url = "https://contexto.me"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "I played contexto.me #556 and got it in 57 guesses.\n\n🟩🟩 11\n🟨🟨 10\n🟥🟥🟥🟥🟥🟥 36",
@@ -1069,7 +1069,7 @@ class DominoFit(Giochino):
     _url = "https://dominofit.isotropic.us"
 
     can_lose: False
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "DOMINO FIT #42 6x6 \n🏅🧙\u200d♂️🧙\u200d♂️✅\n⌚️0️⃣4️⃣5️⃣",
@@ -1539,7 +1539,7 @@ class Geogrid(Giochino):
     _url = "https://geogridgame.com"
 
     can_lose: False
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         # "✅ ✅ ✅\n✅ ✅ ✅\n✅ ✅ ✅\n\n🌎Game Summary🌎\nBoard #45\nScore: 112.3\nRank: 1,242 / 3,262\nhttps://geogridgame.com\n@geogridgame",
@@ -1825,7 +1825,7 @@ class GuessTheLogo(Giochino):
     _emoji = "®"
     _url = "https://guessthelogo.wtf"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#GuessTheLogo #318\n\n® 🟥 🟥 🟥 🟥 🟥\n\n#LogoLearner\nhttps://GuessTheLogo.wtf/p/318",
@@ -2081,7 +2081,7 @@ class Lyricle(Giochino):
     _emoji = "📜"
     _url = "https://lyricle.app"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#Lyricle #1052\n\n⬛️⬛️⬛️⬛️⬛️⬛️\n\nGuess the song by lyrics in this fun, daily challenge!\n\nhttps://lyricle.app",
@@ -2136,7 +2136,7 @@ class Metaflora(Giochino):
     _emoji = "🌿"
     _url = "https://flora.metazooa.com/game"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "🌱 Plant #141 🌾\nI figured it out in 3 guesses!\n🟨🟩🟩\n🔥 1 | Avg. Guesses: 6.7\n\nhttps://flora.metazooa.com\n#metaflora",
@@ -2411,7 +2411,7 @@ class NFLXdle(Giochino):
     _url = "https://likewise.com/games/nflxdle"
 
     has_extra = True
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#NFLXdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 📺 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/nflxdle/2024-09-04",  # vinta
@@ -2455,7 +2455,7 @@ class Numble(Giochino):
     _emoji = "➗"
     _url = "https://numble.wtf"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "Numble #832\nSOLVED: ❌\nNumbers used: 6/6\nFinal answer: 80\n32.652s\nhttps://numble.wtf",
@@ -2736,7 +2736,7 @@ class Posterdle(Giochino):
     _url = "https://likewise.com/games/posterdle"
 
     has_extra = True
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#Posterdle #2024-09-04 \n\n ⌛️ 3️⃣ seconds \n 🍿 🟩 ⬜️ ⬜️ ⬜️ ⬜️ ⬜️  \n https://likewise.com/games/posterdle/2024-09-04",  # vinta
@@ -3240,7 +3240,7 @@ class TempoIndovinr(Giochino):
 
     can_lose: False
     hidden_game = True
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "TempoIndovinr day 146\nHo fatto 593/1000 punti a TempoIndovinr!\n\n🟩🟩🟩 (99%) 💀⬛️⬛️ (2%)\n🟧⬛️⬛️ (77%) 🟩🟩🟩 (99%)\n🟩🟩🟩 (97%) 💀⬛️⬛️ (17%)\n🟩🟩🟩 (99%) 💀⬛️⬛️ (3%)\n🟩🟩🟩 (100%) 💀⬛️⬛️ (0%)\n https://jacopofarina.eu/experiments/tempoindovinr/",
@@ -3626,7 +3626,7 @@ class Unzoomed(Giochino):
     _emoji = "🔎"
     _url = "https://unzoomed.com"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "Unzoomed #89 1/6 🟢⚪️⚪️⚪️⚪️⚪️\n https://unzoomed.com",
@@ -3702,7 +3702,7 @@ class WhereTaken(Giochino):
     _url = "http://wheretaken.teuteuf.fr"
 
     has_extra: True
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "📷 #WhereTaken🌎 #407 (08.04.2024) X/6\n🟦🟦🟦🟦🟨⬅️\n🟦🟦🟦🟦⬜️⬅️\n🟦🟦🟦🟦⬜️⬅️\n🟦🟦🟦🟦⬜️↖️\n🟦🟦🟦🟦⬜️⬅️\n🟦🟦🟨⬜️⬜️↖️\n\n\nwheretaken.teuteuf.fr",
@@ -3743,7 +3743,7 @@ class WhenTaken(Giochino):
     _emoji = "📍"
     _url = "https://whentaken.com"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "#WhenTaken #191 (05.09.2024)\n\nI scored 505/1000 🎉\n\n1️⃣ 📍 3499 km - 🗓 22 yrs - ⚡️ 82 / 200\n2️⃣ 📍 441 km - 🗓 7 yrs - ⚡️ 178 / 200\n3️⃣ 📍 16972 km - 🗓 11 yrs - ⚡️ 82 / 200\n4️⃣ 📍 1181 km - 🗓 4 yrs - ⚡️ 162 / 200\n5️⃣ 📍 9698 km - 🗓 62 yrs - ⚡️ 1 / 200\n\nhttps://whentaken.com"
@@ -3776,7 +3776,7 @@ class WordGrid(Giochino):
     _emoji = "🦄"
     _url = "https://wordgrid.clevergoat.com/"
 
-    disabled: bool = True
+    disabled: bool = False
 
     examples = [
         "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.0\nwordgrid.clevergoat.com 🐐",

@@ -57,6 +57,14 @@ class Giocata:
 
 
 
+class GameStatus(peewee.Model):
+    game_name = peewee.CharField(primary_key=True)
+    is_disabled = peewee.BooleanField(default=False)
+    last_disabled_date = peewee.DateTimeField(null=True)
+    last_enabled_date = peewee.DateTimeField(null=True)
+
+    class Meta:
+        database = Punteggio._meta.database
 
 @dataclass
 class Classifica:

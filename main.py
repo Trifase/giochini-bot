@@ -53,9 +53,11 @@ from games import GameFilter
 from utils import (
     Classifica,
     Giocata,
+    GameStatus,
     correct_name,
     daily_ranking,
     get_day_from_date,
+    get_date_from_day,
     group_stats,
     longest_streak,
     make_buttons,
@@ -64,6 +66,10 @@ from utils import (
     print_progressbar,
     str_as_int,
     streak_at_day,
+    new_classifica,
+    process_tries,
+    seconds_to_time,
+    update_streak,
 )
 
 # Logging setup
@@ -603,6 +609,9 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if giochino.has_extra and result.get("stars", None) is None:
         result["stars"] = 0
 
+    # Hook for auto-reenabling games
+    await check_reenable(giochino._name, update, context)
+
     # Testing debug
     if update.effective_chat.id == ID_TESTING:
         import pprint
@@ -898,18 +907,36 @@ async def show_disabled_games(update: Update, context: ContextTypes.DEFAULT_TYPE
     if update.effective_user.id != ADMIN_ID:
         return
     
-    message = "Giochi disabilitati:\n\n"
-    disabled_games = []
+    message = ""
+    
+    # Query auto-disabled games from DB
+    auto_disabled_names = [st.game_name for st in GameStatus.select().where(GameStatus.is_disabled == True)]
+    
+    auto_disabled = []
+    perma_disabled = []
     
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
-            disabled_games.append(game)
+            if game in auto_disabled_names:
+                auto_disabled.append(game)
+            else:
+                perma_disabled.append(game)
     
-    if not disabled_games:
+    if auto_disabled:
+        message += "📉 **Disabilitati Automaticamente** (Inattività):\n"
+        for game in auto_disabled:
+            message += f'{GAMES[game]["emoji"]} {game} ({GAMES[game]["url"]})\n'
+        message += "\n"
+        
+    if perma_disabled:
+        message += "⛔ **Disabilitati Manualmente** (Permanent):\n"
+        for game in perma_disabled:
+            message += f'{GAMES[game]["emoji"]} {game} ({GAMES[game]["url"]})\n'
+            
+    if not message:
         message = "Non ci sono giochi disabilitati."
     else:
-        for game in disabled_games:
-            message += f'{GAMES[game]["emoji"]} {game}: {GAMES[game]["url"]}\n'
+        message = "Giochi disabilitati:\n\n" + message
     
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
     # Delete the original command after 30 seconds
@@ -964,7 +991,107 @@ async def check_unused_games(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def manual_check_unused(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
         await check_unused_games(context)
-        # await update.message.reply_text("Controllo eseguito. Se ci sono giochi inutilizzati, ho inviato un messaggio su BotCentral.")
+        await update.message.reply_text("Controllo eseguito. Se ci sono giochi inutilizzati, ho inviato un messaggio su BotCentral.")
+
+
+async def manual_auto_disable(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id == ADMIN_ID:
+        await auto_disable_games(context)
+        await update.message.reply_text("Controllo disabilitazione automatica eseguito.")
+
+
+async def auto_disable_games(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Daily check to automatically disable unused games."""
+    logging.info("Running auto_disable_games...")
+    today = datetime.datetime.now()
+    cutoff_days = 30
+    cutoff_date = today - datetime.timedelta(days=cutoff_days)
+    
+    disabled_count = 0
+    newly_disabled = []
+
+    for game_name, game_data in GAMES.items():
+        # strict check: if it is already disabled, skip
+        if game_data.get("disabled", False):
+            continue
+
+        # Check last play
+        last_play = Punteggio.select().where(Punteggio.game == game_name).order_by(Punteggio.date.desc()).first()
+        
+        should_disable = False
+        if not last_play:
+            # Never played. Check if game is old enough? 
+            # If game date is older than cutoff, disable.
+            game_date = game_data.get("date") # This is a date object
+            if isinstance(game_date, datetime.date):
+                 # Convert to datetime for comparison or just compare dates
+                 if game_date < cutoff_date.date():
+                     should_disable = True
+        else:
+            if last_play.date < cutoff_date.date():
+                should_disable = True
+        
+        if should_disable:
+            # Disable it!
+            logging.info(f"Auto-disabling {game_name} (Last play: {last_play.date if last_play else 'Never'})")
+            
+            # Update DB
+            status, created = GameStatus.get_or_create(game_name=game_name)
+            status.is_disabled = True
+            status.last_disabled_date = today
+            status.save()
+
+            # Update Memory
+            GAMES[game_name]["disabled"] = True
+            
+            newly_disabled.append(f"{game_data['emoji']} {game_name}")
+            disabled_count += 1
+            
+    if newly_disabled:
+        message = f"📉 **Pulizia Giochi** 📉\n\nI seguenti giochi sono stati disabilitati automaticamente per inattività (> {cutoff_days} gg):\n"
+        message += "\n".join(newly_disabled)
+        message += "\n\nSe qualcuno ci giocherà di nuovo, verranno riattivati automaticamente! 🪄"
+        
+        await context.bot.send_message(chat_id=ID_GIOCHINI, text=message)
+
+
+async def check_reenable(game_name: str, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Checks if a game is auto-disabled and re-enables it if played."""
+    try:
+        status = GameStatus.get_or_none(GameStatus.game_name == game_name)
+        if status and status.is_disabled:
+            # It's disabled! Re-enable it.
+            status.is_disabled = False
+            status.last_enabled_date = datetime.datetime.now()
+            status.save()
+            
+            # Update memory
+            if game_name in GAMES:
+                GAMES[game_name]["disabled"] = False
+                
+            logging.info(f"Auto-reenabling {game_name}!")
+            
+            # Notify user
+            emoji = GAMES[game_name].get("emoji", "")
+            days_disabled = (datetime.datetime.now() - status.last_disabled_date).days if status.last_disabled_date else "?"
+            await update.message.reply_text(f"✨ Hai risvegliato {emoji} {game_name}!\nEra stato disabilitato {days_disabled} giorni fa per inattività.\nOra è di nuovo attivo per tutti! Buon divertimento! 🎮")
+            await update.message.set_reaction(reaction="✨")
+
+    except Exception as e:
+        logging.error(f"Error in check_reenable: {e}")
+
+
+def sync_disabled_games():
+    """Syncs in-memory GAMES dict with GameStatus DB."""
+    # This runs on startup.
+    logging.info("Syncing disabled games from DB...")
+    disabled_games = GameStatus.select().where(GameStatus.is_disabled == True)
+    count = 0
+    for status in disabled_games:
+        if status.game_name in GAMES:
+            GAMES[status.game_name]["disabled"] = True
+            count += 1
+    logging.info(f"Synced {count} disabled games.")
 
 
 async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1375,7 +1502,10 @@ async def post_init(app: Application) -> None:
     Punteggio.create_table()
     Punti.create_table()
     Medaglia.create_table()
+    GameStatus.create_table()
     # Setting.create_table()
+    
+    sync_disabled_games()
 
     # Recupero i settings e li storo in memoria
     if "settings" not in app.bot_data:
@@ -1419,10 +1549,12 @@ def main():
     app = builder.build()
 
     j = app.job_queue
-    j.run_daily(daily_reminder, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    # j.run_repeating(daily_reminder, interval=datetime.timedelta(days=1), first=datetime.time(hour=8, minute=00, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(daily_reminder, datetime.time(hour=8, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(riassunto_serale, datetime.time(hour=0, minute=10, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_daily(make_backup, datetime.time(hour=2, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
-    j.run_daily(check_unused_games, datetime.time(hour=9, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(check_unused_games, datetime.time(hour=0, minute=10, tzinfo=pytz.timezone("Europe/Rome")), data=None)
+    j.run_daily(auto_disable_games, datetime.time(hour=7, minute=0, tzinfo=pytz.timezone("Europe/Rome")), data=None)
     j.run_repeating(heartbeat, interval=60 * 15, first=10)
 
     app.add_handler(CommandHandler("classificona", classificona), 1)
@@ -1464,6 +1596,7 @@ def main():
     app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
     app.add_handler(CommandHandler(["listdisabled", "disabledlist", "showdisabled", "disabled"], show_disabled_games), 1)
     app.add_handler(CommandHandler(["checkunused", "unusedcheck", "nongiocati", "unused", "checkunusedgames"], manual_check_unused), 1)
+    app.add_handler(CommandHandler(["checkdisable", "forcecheckdisable"], manual_auto_disable), 1)
     app.add_handler(CommandHandler("restart", restart_bot), 1)
 
 
