@@ -634,18 +634,22 @@ class CluesBySam(Giochino):
         "Clues by Sam - Sep 13th 2025\nLess than 36 minutes\n🟩🟩🟠🟨\n🟨🟩🟠🟩\n🟩🟩🟩🟩\n🟠🟠🟡🟠\n🟩🟠🟠🟩",
         "I solved the daily Clues by Sam (Sep 9th 2025) in 05:46\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com",
         "I solved the daily Clues by Sam, Nov 15th 2025 (Hard), in 03:56\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟡🟩🟩🟩\nhttps://cluesbysam.com",
-        "I solved the daily Clues by Sam, Nov 16th 2025 (Hard), in less than 12 minutes\n🟩🟩🟩🟩\n🟩🟩🟨🟩\n🟩🟩🟩🟩\n🟩🟡🟨🟩\n🟠🟨🟩🟩\nhttps://cluesbysam.com"
+        "I solved the daily Clues by Sam, Nov 16th 2025 (Hard), in less than 12 minutes\n🟩🟩🟩🟩\n🟩🟩🟨🟩\n🟩🟩🟩🟩\n🟩🟡🟨🟩\n🟠🟨🟩🟩\nhttps://cluesbysam.com",
+        'I solved the daily #CluesBySam, Jan 12th 2026 (Easy), in 01:15\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com',
+        '#CluesBySam - Jan 12th 2026 (Easy)\n03:21\n🟩🟩🟩🟩\n🟠🟩🟩🟩\n🟩🟨🟩🟩\n🟠🟩🟠🟩\n🟩🟩🟩🟩'
     ]
     expected = [
         {"day": "104", "name": "CluesBySam", "timestamp": 10, "tries": 2580, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "100", "name": "CluesBySam", "timestamp": 10, "tries": 361, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "167", "name": "CluesBySam", "timestamp": 10, "tries": 281, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "168", "name": "CluesBySam", "timestamp": 10, "tries": 795, "user_id": 456481297, "user_name": "Trifase"}, # New Expected (660 base + 255 penalty)
+        {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': 75, 'user_id': 456481297, 'user_name': 'Trifase'},
+        {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': 576, 'user_id': 456481297, 'user_name': 'Trifase'},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Clues by Sam ", "Clues by Sam, "]
+        wordlist = ["Clues by Sam ", "Clues by Sam, ", "daily #CluesBySam,", "#CluesBySam - "]
         return any(w in raw_text for w in wordlist)
 
     def parse(self):
@@ -671,7 +675,7 @@ class CluesBySam(Giochino):
 
         ## ⏱️ Calculate Base Time (Made robust)
         minutes_match = re.search(r"less\s+than\s+(\d+)\s+minutes", text, re.IGNORECASE)
-        solved_match = re.search(r"in (\d+):(\d+)", text)
+        solved_match = re.search(r"(\d+):(\d+)", text)
         
         if minutes_match:
             base_minutes = int(minutes_match.group(1)) - 1
