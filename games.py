@@ -1190,16 +1190,18 @@ class EncloseHorse(Giochino):
         'https://enclose.horse Day 8\n💎 PERFECT! 💎 100%',
         'https://enclose.horse Day 8\n🥇 Excellent! 🥇 95%',
         'https://enclose.horse Day 9\n🥈 Great 🥈 86%',
+        'enclose.horse Day 74\n🐴 💎 PERFECT! 💎 100%'
     ]
     expected = [
         {"day": "8", "name": "EncloseHorse", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "8", "name": "EncloseHorse", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "9", "name": "EncloseHorse", "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "74", "name": "EncloseHorse", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["https://enclose.horse Day"]
+        wordlist = ["enclose.horse Day "]
         _can_handle_this = all(c in raw_text for c in wordlist)
         return _can_handle_this
 
@@ -1207,7 +1209,7 @@ class EncloseHorse(Giochino):
         text = self.raw_text
 
         # Extract day number using regex
-        day_match = re.search(r"https://enclose.horse Day (\d+)", text)
+        day_match = re.search(r"enclose.horse Day (\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
 
@@ -2570,6 +2572,41 @@ class Pedantle(Giochino):
         matches = re.search(r"#pedantle #(\d+) in (\d+) guesses", self.raw_text)
         self.day = matches.group(1)
         self.tries = matches.group(2)
+
+
+@dataclass
+class Patches(Giochino):
+    _name = "Patches"
+    _category = "Logica"
+    _date = datetime.date(2026, 3, 18)
+    _day = "1"
+    _emoji = "🧶"
+    _url = "https://lnkd.in/patches"
+
+    can_lose: False
+
+    examples = [
+        'Patches #1 | 0:09 🧶\nWith no hints & no redraws\nlnkd.in/patches.',
+        'Patches #1 | 0:12 🧶\nCon 0 suggerimenti e 0 tentativi extra\nlnkd.in/patches.',
+    ]
+    expected = [
+        {"day": "1", "name": "Patches", "timestamp": 10, "tries": "009", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "Patches", "timestamp": 10, "tries": "012", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Patches", "lnkd.in/patches."]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        matches_day = re.search(r"Patches (?:n\. |#|Nr\. )(\d+)", text)
+        matches_time = re.search(r"(\d+):(\d+)", text)
+        self.day = matches_day.group(1) if matches_day else None
+        self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
 
 
 @dataclass

@@ -260,7 +260,7 @@ def make_menu_setting_favs(favs: list = None, favs_extra_button: bool = False, u
     else:
         columns.append([InlineKeyboardButton("Solo Preferiti", callback_data=f"fav_more_{user_id}")])
 
-    columns.append([InlineKeyboardButton("Fine", callback_data=f"fav_close_{user_id}")])
+    columns.append([InlineKeyboardButton("Fine", callback_data=f"fav_close_{user_id}", api_kwargs={"style": "success"})])
     return columns
 
 
