@@ -3371,13 +3371,53 @@ class Timdle(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         wordlist = ["TIMDLE", "Play at https://timdle.com"]
-        _can_handle_this = all(w in raw_text for w in wordlist)
+        _can_handle_this = all(w in raw_text for w in wordlist) and "Music" not in raw_text
         return _can_handle_this
 
     def parse(self):
         text = self.raw_text
 
         match_date = re.search(r"TIMDLE (\w+ \d{1,2})", text)
+        current_year = datetime.datetime.now().year
+    
+        if match_date:
+            date_str = match_date.group(1)
+        current_day = f"{date_str} {current_year}"
+        self.day = get_day_from_date(self._date, self._day, "Timdle", current_day)
+
+        match_points = re.search(r"(\d+)/36", text)
+
+        self.tries = 36 - int(match_points.group(1)) if match_points else None
+        self.stars = None
+
+@dataclass
+class TimdleMusic(Giochino):
+    _name = "Timdle Music"
+    _category = "Logica"
+    _date = datetime.date(2026, 5, 1)
+    _day = "1"
+    _emoji = "⏳"
+    _url = "https://www.timdle.com/music"
+
+    can_lose: False
+
+    examples = [
+        '🎵 TIMDLE Music May 4\n😌 31/36\n1: 1p     5: 5p\n2: 2p     6: 4p\n3: 1p     7: 6p\n4: 4p     8: 8p\nPlay at https://timdle.com/music'
+    ]
+    expected = [
+        {"day": "4", "name": "TimdleMusic", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["TIMDLE Music", "Play at https://timdle.com/music"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+
+        match_date = re.search(r"TIMDLE Music (\w+ \d{1,2})", text)
         current_year = datetime.datetime.now().year
     
         if match_date:
