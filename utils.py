@@ -525,14 +525,18 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == 'BracketCity':
         tries = round(100 - tries, 1)
 
-    if game == 'Timdle':
+    if game == 'Timdle' or game == 'Timdle Music':
         tries = 36 - tries
 
-    if game == 'CluesBySam' or game == 'GuessThePhrase':
+    if game == 'GuessThePhrase':
         seconds = int(tries)
         minutes = seconds // 60
         remaining_seconds = seconds % 60
         tries =  f"{minutes:02d}:{remaining_seconds:02d}"
+
+    if game == 'CluesBySam':
+        t = -int(tries)
+        tries = 20 - t
 
     # Percentage, more is better
     if game == 'EncloseHorse':

@@ -629,7 +629,9 @@ class CluesBySam(Giochino):
     _day = "100"
     _emoji = "🔎"
     _url = "https://cluesbysam.com"
-    
+
+    has_extra = True
+
     examples = [
         "Clues by Sam - Sep 13th 2025\nLess than 36 minutes\n🟩🟩🟠🟨\n🟨🟩🟠🟩\n🟩🟩🟩🟩\n🟠🟠🟡🟠\n🟩🟠🟠🟩",
         "I solved the daily Clues by Sam (Sep 9th 2025) in 05:46\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟨🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com",
@@ -638,13 +640,21 @@ class CluesBySam(Giochino):
         'I solved the daily #CluesBySam, Jan 12th 2026 (Easy), in 01:15\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\n🟩🟩🟩🟩\nhttps://cluesbysam.com',
         '#CluesBySam - Jan 12th 2026 (Easy)\n03:21\n🟩🟩🟩🟩\n🟠🟩🟩🟩\n🟩🟨🟩🟩\n🟠🟩🟠🟩\n🟩🟩🟩🟩'
     ]
+    # expected = [
+    #     {"day": "104", "name": "CluesBySam", "timestamp": 10, "tries": 2580, "user_id": 456481297, "user_name": "Trifase"},
+    #     {"day": "100", "name": "CluesBySam", "timestamp": 10, "tries": 361, "user_id": 456481297, "user_name": "Trifase"},
+    #     {"day": "167", "name": "CluesBySam", "timestamp": 10, "tries": 281, "user_id": 456481297, "user_name": "Trifase"},
+    #     {"day": "168", "name": "CluesBySam", "timestamp": 10, "tries": 795, "user_id": 456481297, "user_name": "Trifase"}, # New Expected (660 base + 255 penalty)
+    #     {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': 75, 'user_id': 456481297, 'user_name': 'Trifase'},
+    #     {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': 576, 'user_id': 456481297, 'user_name': 'Trifase'},
+    # ]
     expected = [
-        {"day": "104", "name": "CluesBySam", "timestamp": 10, "tries": 2580, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "100", "name": "CluesBySam", "timestamp": 10, "tries": 361, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "167", "name": "CluesBySam", "timestamp": 10, "tries": 281, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "168", "name": "CluesBySam", "timestamp": 10, "tries": 795, "user_id": 456481297, "user_name": "Trifase"}, # New Expected (660 base + 255 penalty)
-        {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': 75, 'user_id': 456481297, 'user_name': 'Trifase'},
-        {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': 576, 'user_id': 456481297, 'user_name': 'Trifase'},
+        {"day": "104", "name": "CluesBySam", "timestamp": 10, "tries": -10, "user_id": 456481297, "user_name": "Trifase", "stars":-2100},
+        {"day": "100", "name": "CluesBySam", "timestamp": 10, "tries": -19, "user_id": 456481297, "user_name": "Trifase", "stars":-346},
+        {"day": "167", "name": "CluesBySam", "timestamp": 10, "tries": -18, "user_id": 456481297, "user_name": "Trifase", "stars":-236},
+        {"day": "168", "name": "CluesBySam", "timestamp": 10, "tries": -15, "user_id": 456481297, "user_name": "Trifase", "stars":-660}, # New Expected (660)
+        {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': -20, 'user_id': 456481297, 'user_name': 'Trifase', "stars":-75},
+        {'day': '225', 'name': 'CluesBySam', 'timestamp': 10, 'tries': -16, 'user_id': 456481297, 'user_name': 'Trifase', "stars":-201},
     ]
 
     @staticmethod
@@ -677,32 +687,43 @@ class CluesBySam(Giochino):
         minutes_match = re.search(r"less\s+than\s+(\d+)\s+minutes", text, re.IGNORECASE)
         solved_match = re.search(r"(\d+):(\d+)", text)
         
+
+        solv_time = 0
         if minutes_match:
             base_minutes = int(minutes_match.group(1)) - 1
-            self.tries += base_minutes * 60
+            # self.tries += base_minutes * 60
+            solv_time += base_minutes * 60
         elif solved_match:
             base_minutes = int(solved_match.group(1))
             base_seconds = int(solved_match.group(2))
-            self.tries += base_minutes * 60 + base_seconds
+            # self.tries += base_minutes * 60 + base_seconds
+            solv_time += base_minutes * 60 + base_seconds
         
         ## ➕ Add Penalties
-        penalties = {
-            "🟨": 15,
-            "🟡": 30,
-            "🟠": 60,
-        }
-        has_penality = any(emoji in text for emoji in penalties.keys())
+        # penalties = {
+        #     "🟨": 15,
+        #     "🟡": 30,
+        #     "🟠": 60,
+        # }
+        # has_penality = any(emoji in text for emoji in penalties.keys())
 
-        # Ensure self.tries is an integer before addition
-        if isinstance(self.tries, int):
-            for emoji, penalty in penalties.items():
-                self.tries += text.count(emoji) * penalty
+
+        # # Ensure self.tries is an integer before addition
+        # if isinstance(self.tries, int):
+        #     for emoji, penalty in penalties.items():
+        #         self.tries += text.count(emoji) * penalty
         
-        if has_penality and isinstance(self.tries, int):
-            self.tries += 180  # Additional 1 minute penalty if any penalities were applied
-            self.win_message = f"Penalità totali: {self.tries - (base_minutes * 60 + base_seconds if solved_match else (base_minutes * 60))} secondi."
+        # if has_penality and isinstance(self.tries, int):
+        #     self.tries += 180  # Additional 1 minute penalty if any penalities were applied
+        #     self.win_message = f"Penalità totali: {self.tries - (base_minutes * 60 + base_seconds if solved_match else (base_minutes * 60))} secondi."
         
-        self.stars = None
+        # self.stars = None
+
+        correct_squares = 0
+        correct_squares = text.count("🟩")
+        self.tries = -int(correct_squares)
+        self.stars = -int(solv_time)
+        
 
 
 @dataclass
@@ -3389,6 +3410,8 @@ class Timdle(Giochino):
 
         self.tries = 36 - int(match_points.group(1)) if match_points else None
         self.stars = None
+        if self.tries == 1:
+            self.win_message = '🤏'
 
 @dataclass
 class TimdleMusic(Giochino):
@@ -3429,6 +3452,8 @@ class TimdleMusic(Giochino):
 
         self.tries = 36 - int(match_points.group(1)) if match_points else None
         self.stars = None
+        if self.tries == 1:
+            self.win_message = '🤏'
 
 
 @dataclass
@@ -4127,6 +4152,6 @@ def test(print_debug, giochino=None):
 # Tests! you can pass None as second parameter to test all games
 if __name__ == "__main__":
     giochino_da_testare = None
-    giochino_da_testare = EncloseHorse
+    giochino_da_testare = CluesBySam
 
     test(True, giochino_da_testare)
