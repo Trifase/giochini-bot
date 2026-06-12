@@ -2155,6 +2155,44 @@ class Lyricle(Giochino):
 
 
 @dataclass
+class Linxicon(Giochino):
+    _name = "Linxicon"
+    _category = "Giochi di parole"
+    _date = datetime.date(2026, 6, 12)
+    _day = "851"
+    _emoji = "🔗"
+    _url = "https://linxicon.com"
+
+    examples = [
+        "Game #851\nShortest path: 8 (Avg. 😍\nTotal words: 13 (Avg. 13)\n\n🟦🟦🟪🟦🟪🟪🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon",
+        "Game #851\nShortest path: 7 (Avg. 6)\nTotal words: 9 (Avg. 6.7)\n\n🟦🟦🟪🟪🟥🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon",
+        "Game #851\nShortest path: 4 (Avg. 5.7)\nTotal words: 6 (Avg. 11.8)\n\n🟦🟦🟥🟥 | 🔥 2\n\nhttps://linxicon.com\n#Linxicon",
+        "Game #849\nShortest path: 6 (Avg. 6)\nTotal words: 25 (Avg. 25)\n\n🟦🟦🟪🟥🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon"
+    ]
+    expected = [
+        {"day": "851", "name": "Linxicon", "timestamp": 10, "tries": "13", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "851", "name": "Linxicon", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "851", "name": "Linxicon", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "849", "name": "Linxicon", "timestamp": 10, "tries": "25", "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Shortest path:", "Total words:", "linxicon.com"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Game #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        words_match = re.search(r"Total words:\s*(\d+)", text)
+        self.tries = words_match.group(1) if words_match else None
+        self.stars = None
+
+
+@dataclass
 class Metaflora(Giochino):
     _name = "Metaflora"
     _category = "Scienza"
@@ -2872,6 +2910,57 @@ class Queens(Giochino):
         matches_time = re.search(r"(\d+):(\d+)", text)
         self.day = matches_day.group(1) if matches_day else None
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
+
+
+@dataclass
+class QueensUltimateMini(Giochino):
+    _name = "QueensUltimateMini"
+    _category = "Logica"
+    _date = datetime.date(2026, 6, 12)
+    _day = "152"
+    _emoji = "👑"
+    _url = "https://queensultimate.com"
+
+    examples = [
+        "👑 Queens Ultimate - Daily Mini #152\n⏱️ 01:08.75 | 💎 Brilliant\n\n🟩🟩🟪🟪🟪🟪\n🟥🟥🟪🟪🟪🟪\n🟥🟥⬜⬜🟦🟪\n\nCan you beat my time?\nqueensultimate.com",
+        "👑 Queens Ultimate - Daily Mini #134\n⏱️ 00:57.73 | 💡 Hints: 1\n\n🟦🟧⬜⬜🟪🟪\n\nCan you beat my time?\nqueensultimate.com",
+        "👑 Queens Ultimate - Daily Mini #134\n⏱️ 00:52.41 | 💡 Hints: 1\n\n🟦🟧⬜️⬜️🟪🟪\n\nCan you beat my time?\nqueensultimate.com"
+    ]
+    expected = [
+        {"day": "152", "name": "QueensUltimateMini", "timestamp": 10, "tries": "0108", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "0107", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "0102", "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Queens Ultimate - Daily Mini", "queensultimate.com"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Daily Mini #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})", text)
+        if time_match:
+            minutes = int(time_match.group(1))
+            seconds = int(time_match.group(2))
+            total_seconds = minutes * 60 + seconds
+
+            hints_match = re.search(r"💡\s*Hints:\s*(\d+)", text)
+            if hints_match:
+                hints = int(hints_match.group(1))
+                total_seconds += hints * 10
+
+            final_minutes = total_seconds // 60
+            final_seconds = total_seconds % 60
+            self.tries = f"{final_minutes:02d}{final_seconds:02d}"
+        else:
+            self.tries = None
+
+        self.stars = None
 
 
 @dataclass
@@ -3796,6 +3885,41 @@ class Waffle(Giochino):
         self.day = matches.group(1) if matches else None
         self.tries = 15 - int(matches.group(2)) if matches.group(2) != "X" else "X"
         self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
+
+
+@dataclass
+class Wend(Giochino):
+    _name = "Wend"
+    _category = "Logica"
+    _date = datetime.date(2026, 6, 12)
+    _day = "4"
+    _emoji = "🌀"
+    _url = "https://lnkd.in/wend"
+
+    examples = [
+        "Wend #4 | 0:41 🌀\nCon 2 dietrofront\nlnkd.in/wend.",
+        "Wend #4 | 0:43 🌀\n🏅 I’m on a 4-day win streak!\nlnkd.in/wend.",
+        "Wend n. 4 | 1:03 🌀\nSenza suggerimenti\n🏅 Sono a 4 giorni vincenti di fila!\nlnkd.in/wend."
+    ]
+    expected = [
+        {"day": "4", "name": "Wend", "timestamp": 10, "tries": "041", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "4", "name": "Wend", "timestamp": 10, "tries": "043", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "4", "name": "Wend", "timestamp": 10, "tries": "103", "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Wend", "lnkd.in/wend"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        matches_day = re.search(r"Wend (?:n\. |#|Nr\. )(\d+)", text)
+        matches_time = re.search(r"(\d+):(\d+)", text)
+        self.day = matches_day.group(1) if matches_day else None
+        self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
+        self.stars = None
 
 
 @dataclass
