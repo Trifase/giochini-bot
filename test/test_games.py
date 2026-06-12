@@ -22,7 +22,7 @@ for cls in testable_games:
 @pytest.mark.parametrize(
     "game_class, idx, example, expected",
     test_cases,
-    ids=lambda case: f"{case[0]._name}_example_{case[1] + 1}"
+    ids=[f"{case[0]._name}_example_{case[1] + 1}" for case in test_cases]
 )
 def test_game_examples(game_class, idx, example, expected):
     # Generate the dummy update object from the example string
