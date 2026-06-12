@@ -3,6 +3,8 @@ import sys
 import datetime
 import re
 
+_original_datetime = datetime.datetime
+
 # Add the parent directory to sys.path to allow importing from the root directory
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -16,13 +18,13 @@ class FakeDatetime:
         self.target_year = target_year
         
     def __getattr__(self, name):
-        return getattr(datetime.datetime, name)
+        return getattr(_original_datetime, name)
         
     def __call__(self, *args, **kwargs):
-        return datetime.datetime(*args, **kwargs)
+        return _original_datetime(*args, **kwargs)
         
     def now(self, tz=None):
-        return datetime.datetime(self.target_year, 1, 1)
+        return _original_datetime(self.target_year, 1, 1)
 
 
 # Gather all subclasses of Giochino that define examples
