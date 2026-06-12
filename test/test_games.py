@@ -7,7 +7,23 @@ import re
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+from unittest.mock import patch
 from games import ALL_CLASSES, generate_sample_update
+
+
+class FakeDatetime:
+    def __init__(self, target_year):
+        self.target_year = target_year
+        
+    def __getattr__(self, name):
+        return getattr(datetime.datetime, name)
+        
+    def __call__(self, *args, **kwargs):
+        return datetime.datetime(*args, **kwargs)
+        
+    def now(self, tz=None):
+        return datetime.datetime(self.target_year, 1, 1)
+
 
 # Gather all subclasses of Giochino that define examples
 testable_games = [cls for cls in ALL_CLASSES if getattr(cls, "examples", None)]
@@ -28,8 +44,21 @@ def test_game_examples(game_class, idx, example, expected):
     # Generate the dummy update object from the example string
     update = generate_sample_update(example)
     
-    # Instantiate the game class (which automatically calls parse())
-    instance = game_class(update)
+    # Determine if we need to freeze the year (e.g. for Timdle or Timdle Music)
+    target_year = None
+    if game_class._name == "Timdle":
+        target_year = 2025
+    elif game_class._name == "Timdle Music":
+        target_year = 2026
+
+    if target_year:
+        fake_dt = FakeDatetime(target_year)
+        with patch("games.datetime.datetime", fake_dt):
+            # Instantiate the game class (which automatically calls parse())
+            instance = game_class(update)
+    else:
+        # Instantiate the game class (which automatically calls parse())
+        instance = game_class(update)
     
     if expected is None:
         assert instance.punteggio is None
@@ -43,3 +72,4 @@ def test_game_examples(game_class, idx, example, expected):
                 assert instance.punteggio.get(key) == 10
             else:
                 assert instance.punteggio.get(key) == val
+

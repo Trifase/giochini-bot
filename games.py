@@ -3517,7 +3517,7 @@ class TimdleMusic(Giochino):
         '🎵 TIMDLE Music May 4\n😌 31/36\n1: 1p     5: 5p\n2: 2p     6: 4p\n3: 1p     7: 6p\n4: 4p     8: 8p\nPlay at https://timdle.com/music'
     ]
     expected = [
-        {"day": "4", "name": "TimdleMusic", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "4", "name": "Timdle Music", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
