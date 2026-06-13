@@ -1100,6 +1100,21 @@ async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         os.execl(sys.executable, sys.executable, *sys.argv)
 
 
+async def refresh_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id == ADMIN_ID:
+        import subprocess
+        await update.message.reply_text("Eseguo git pull...")
+        try:
+            result = subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
+            pull_output = result.stdout.strip() or "Già aggiornato."
+            await update.message.reply_text(f"Git pull completato:\n<pre>{pull_output}</pre>", parse_mode="HTML")
+        except Exception as e:
+            await update.message.reply_text(f"Errore durante git pull: {e}\nRiavvio comunque...")
+        
+        await update.message.reply_text("Riavvio in corso... 🔄")
+        os.execl(sys.executable, sys.executable, *sys.argv)
+
+
 
 async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if context.args:
@@ -1598,6 +1613,7 @@ def main():
     app.add_handler(CommandHandler(["checkunused", "unusedcheck", "nongiocati", "unused", "checkunusedgames"], manual_check_unused), 1)
     app.add_handler(CommandHandler(["checkdisable", "forcecheckdisable"], manual_auto_disable), 1)
     app.add_handler(CommandHandler("restart", restart_bot), 1)
+    app.add_handler(CommandHandler("refresh", refresh_bot), 1)
 
 
     
