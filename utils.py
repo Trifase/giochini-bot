@@ -595,22 +595,49 @@ def update_streak():
         punt.save()
 
 
-def personal_stats(user_id: int, correct_game=None) -> str:
-    if correct_game is not None:
-        intro = f"Ecco le tue statistiche personali per {correct_game}:\n\n"
-    else:
-        intro = "Ecco le tue statistiche personali:\n\n"
-
+def personal_stats(user_id: int, correct_game=None, favs_count=0, is_favorite=False) -> str:
     # giocate totali
     if correct_game is not None:
-        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id, Punteggio.game == correct_game).scalar()
+        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id, Punteggio.game == correct_game).scalar() or 0
     else:
-        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id).scalar()
+        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == user_id).scalar() or 0
 
     if not total_plays:
         return "Non hai mai giocato!"
 
-    # longest streak best game streak
+    # giocate perse totali
+    if correct_game is not None:
+        total_loses = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(
+            Punteggio.user_id == user_id,
+            Punteggio.lost == True,
+            Punteggio.game == correct_game,
+        ).scalar() or 0
+    else:
+        total_loses = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(
+            Punteggio.user_id == user_id,
+            Punteggio.lost == True,
+        ).scalar() or 0
+
+    win_rate = round(((total_plays - total_loses) / total_plays) * 100, 1)
+
+    # First play date and how long playing
+    if correct_game is not None:
+        first_play_date = Punteggio.select(peewee.fn.MIN(Punteggio.date)).where(
+            Punteggio.user_id == user_id,
+            Punteggio.game == correct_game
+        ).scalar()
+    else:
+        first_play_date = Punteggio.select(peewee.fn.MIN(Punteggio.date)).where(Punteggio.user_id == user_id).scalar()
+
+    playing_since_str = ""
+    if first_play_date:
+        days_playing = (datetime.date.today() - first_play_date).days
+        if correct_game is not None:
+            playing_since_str = f"• Attivo su questo gioco: dal <code>{first_play_date}</code> ({days_playing} giorni fa)\n"
+        else:
+            playing_since_str = f"• Attivo nel bot: dal <code>{first_play_date}</code> ({days_playing} giorni fa)\n"
+
+    # longest streak
     if correct_game is not None:
         long_streak_query = (
             Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
@@ -619,8 +646,8 @@ def personal_stats(user_id: int, correct_game=None) -> str:
             .order_by(Punteggio.streak.desc())
             .limit(1)
         )
-        long_streak = long_streak_query[0].streak
-        long_streak_string = f"Il tuo streak più lungo è di <b>{long_streak}</b> partite.\n"
+        long_streak = long_streak_query[0].streak if long_streak_query.exists() else 0
+        long_streak_string = f"• Lo streak più lungo è di <b>{long_streak}</b> partite consecutive\n"
     else:
         long_streak_query = (
             Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
@@ -629,42 +656,12 @@ def personal_stats(user_id: int, correct_game=None) -> str:
             .order_by(Punteggio.streak.desc())
             .limit(1)
         )
-        long_streak = long_streak_query[0].streak
-        long_streak_game = long_streak_query[0].game
-        long_streak_string = f"Il tuo streak più lungo è di <b>{long_streak}</b> partite a <b>{long_streak_game}.</b>\n"
-
-    # gioco più giocato
-    if correct_game is not None:
-        most_played_string = ""
-    else:
-        most_played_query = (
-            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-            .where(Punteggio.user_id == user_id)
-            .group_by(Punteggio.game)
-            .order_by(peewee.fn.COUNT(Punteggio.game).desc())
-            .limit(1)
-        )
-        most_played = most_played_query[0].game
-        most_played_count = most_played_query[0].c
-        most_played_string = f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
-
-
-    # gioco meno giocato
-    if correct_game is not None:
-        least_played_string = ""
-    else:
-        least_played_query = (
-            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-            .where(Punteggio.user_id == user_id)
-            .group_by(Punteggio.game)
-            .order_by(peewee.fn.COUNT(Punteggio.game).asc())
-            .limit(1)
-        )
-        least_played = least_played_query[0].game
-        least_played_count = least_played_query[0].c
-        least_played_string = f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
-
-
+        if long_streak_query.exists() and long_streak_query[0].streak:
+            long_streak = long_streak_query[0].streak
+            long_streak_game = long_streak_query[0].game
+            long_streak_string = f"• Lo streak più lungo è di <b>{long_streak}</b> partite a {long_streak_game}\n"
+        else:
+            long_streak_string = ""
 
     # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
     single_play_minutes = 2
@@ -677,37 +674,145 @@ def personal_stats(user_id: int, correct_game=None) -> str:
         time_string += f"{td.total.hours % 24} ore e "
     time_string += f"{td.total.minutes % 60} minuti"
 
-    total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n"
-
-    # giocate perse totali
     if correct_game is not None:
-        total_loses = (
-            Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-            .where(
-                Punteggio.user_id == user_id,
-                Punteggio.lost == True,
-                Punteggio.game == correct_game,
-            )
-            .scalar()
+        # Calculate average score/tries for the specific game
+        avg_score_str = ""
+        winning_plays = Punteggio.select(Punteggio.tries).where(
+            Punteggio.user_id == user_id, 
+            Punteggio.game == correct_game, 
+            (Punteggio.lost == False) | (Punteggio.lost.is_null(True))
         )
-        if total_loses:
-            total_loses_string = f"In totale, hai perso <b>{total_loses}</b> partite.\n"
-    else:
-        total_loses = (
-            Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-            .where(
-                Punteggio.user_id == user_id,
-                Punteggio.lost == True,
-            )
-            .scalar()
-        )
-        if total_loses:
-            total_loses_string = f"In totale, hai perso <b>{total_loses}</b> partite.\n"
+        
+        plays_count = len(winning_plays)
+        if plays_count > 0:
+            if correct_game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "QueensUltimateMini", "Wend"]:
+                # Time-based: parse to total seconds
+                total_secs = 0
+                for p in winning_plays:
+                    try:
+                        val = int(p.tries)
+                        mins = val // 100
+                        secs = val % 100
+                        total_secs += mins * 60 + secs
+                    except (ValueError, TypeError):
+                        pass
+                avg_secs = total_secs / plays_count
+                avg_mins = int(avg_secs // 60)
+                avg_remaining_secs = int(avg_secs % 60)
+                avg_score_str = f"• Media punteggio/tempo: <code>{avg_mins}:{avg_remaining_secs:02d}</code>\n"
+            elif correct_game == "Snoop":
+                # Snoop format: HHMMSS
+                total_secs = 0
+                for p in winning_plays:
+                    try:
+                        val = int(p.tries)
+                        hours = val // 10000
+                        mins = (val % 10000) // 100
+                        secs = val % 100
+                        total_secs += hours * 3600 + mins * 60 + secs
+                    except (ValueError, TypeError):
+                        pass
+                avg_secs = total_secs / plays_count
+                avg_hours = int(avg_secs // 3600)
+                avg_mins = int((avg_secs % 3600) // 60)
+                avg_remaining_secs = int(avg_secs % 60)
+                avg_score_str = f"• Media punteggio/tempo: <code>{avg_hours:02d}:{avg_mins:02d}.{avg_remaining_secs:02d}</code>\n"
+            else:
+                # Standard numeric tries
+                total_processed = 0
+                has_numeric = True
+                for p in winning_plays:
+                    processed = process_tries(correct_game, p.tries)
+                    try:
+                        total_processed += float(processed)
+                    except (ValueError, TypeError):
+                        has_numeric = False
+                        break
+                if has_numeric:
+                    avg_val = round(total_processed / plays_count, 1)
+                    avg_score_str = f"• Media tentativi/punteggio: <code>{avg_val}</code>\n"
 
-    result = intro + long_streak_string + most_played_string + least_played_string + total_plays_string
-    if total_loses:
-        result += total_loses_string
-    return result
+        message = f"🎮 <b>STATISTICHE PERSONALI: {correct_game}</b> 🎮\n\n"
+        message += "📊 <b>Panoramica:</b>\n"
+        message += f"• Partite giocate: <code>{total_plays}</code>\n"
+        message += f"• Partite perse: <code>{total_loses}</code> (Win Rate: <code>{win_rate}%</code>)\n"
+        message += avg_score_str
+        message += f"• Tempo di gioco stimato: <code>{time_string}</code>\n"
+        message += playing_since_str
+        message += f"• Nei preferiti: <code>{'Sì' if is_favorite else 'No'}</code>\n\n"
+        message += "🔥 <b>Record di Streak:</b>\n"
+        message += long_streak_string
+        return message
+
+    else:
+        # gioco più giocato
+        most_played_query = (
+            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(Punteggio.user_id == user_id)
+            .group_by(Punteggio.game)
+            .order_by(peewee.fn.COUNT(Punteggio.game).desc())
+            .limit(1)
+        )
+        if most_played_query.exists() and most_played_query[0].c:
+            most_played = most_played_query[0].game
+            most_played_count = most_played_query[0].c
+            most_played_pct = round((most_played_count / total_plays) * 100, 1)
+            most_played_string = f"• Gioco preferito (più giocato): <b>{most_played}</b> ({most_played_count} partite, {most_played_pct}%)\n"
+        else:
+            most_played_string = ""
+
+        # gioco meno giocato
+        least_played_query = (
+            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(Punteggio.user_id == user_id)
+            .group_by(Punteggio.game)
+            .order_by(peewee.fn.COUNT(Punteggio.game).asc())
+            .limit(1)
+        )
+        if least_played_query.exists() and least_played_query[0].c:
+            least_played = least_played_query[0].game
+            least_played_count = least_played_query[0].c
+            least_played_string = f"• Gioco meno giocato: <b>{least_played}</b> ({least_played_count} partite)\n"
+        else:
+            least_played_string = ""
+
+        # Medaglie vinte
+        medals_query = (
+            Medaglia.select(
+                peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.gold, 0)).alias("g"),
+                peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.silver, 0)).alias("s"),
+                peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.bronze, 0)).alias("b")
+            )
+            .where(Medaglia.user_id == user_id)
+        ).first()
+
+        medals_str = "Nessuna medaglia"
+        if medals_query:
+            g = int(medals_query.g or 0)
+            s = int(medals_query.s or 0)
+            b = int(medals_query.b or 0)
+            total_medals = g + s + b
+            if total_medals > 0:
+                medals_str = f"{total_medals} ({g}🥇, {s}🥈, {b}🥉)"
+
+        message = "👤 <b>LE TUE STATISTICHE PERSONALI</b> 👤\n\n"
+        message += "📊 <b>Panoramica Attività:</b>\n"
+        message += f"• Partite totali giocate: <code>{total_plays}</code>\n"
+        message += f"• Partite perse: <code>{total_loses}</code> (Win Rate: <code>{win_rate}%</code>)\n"
+        message += f"• Tempo di gioco stimato: <code>{time_string}</code>\n"
+        message += f"• Medaglie vinte: <code>{medals_str}</code>\n"
+        message += playing_since_str
+        message += f"• Giochi nei preferiti: <code>{favs_count}</code>\n\n"
+        
+        message += "🔥 <b>Record di Streak:</b>\n"
+        message += f"{long_streak_string}\n"
+        
+        if most_played_string or least_played_string:
+            message += "🎮 <b>Preferenze Giochi:</b>\n"
+            message += most_played_string
+            message += least_played_string
+
+        return message
 
 
 def group_stats(chat_id: int) -> str:

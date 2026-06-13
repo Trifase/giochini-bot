@@ -1136,21 +1136,35 @@ async def refresh_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data.get("settings", {})
+    user_id_str = str(update.effective_user.id)
+    favs = settings.get(user_id_str, {}).get("favs", [])
+    favs_count = len(favs)
+
     if context.args:
         correct_game_names = [x for x in GAMES.keys()]
         game_names = [x.lower() for x in GAMES.keys()]
         game = context.args[0].lower()
         if game in game_names:
             correct_game = correct_game_names[game_names.index(game)]
+            is_favorite = correct_game in favs
             try:
-                message = personal_stats(update.effective_user.id, correct_game)
+                message = personal_stats(
+                    update.effective_user.id, 
+                    correct_game=correct_game, 
+                    favs_count=favs_count, 
+                    is_favorite=is_favorite
+                )
             except Exception as e:
                 message = f"Ho qualche problema, scusa ({e})"
         else:
-            message = personal_stats(update.effective_user.id)
+            try:
+                message = personal_stats(update.effective_user.id, favs_count=favs_count)
+            except Exception as e:
+                message = f"Ho qualche problema, scusa ({e})"
     else:
         try:
-            message = personal_stats(update.effective_user.id)
+            message = personal_stats(update.effective_user.id, favs_count=favs_count)
         except Exception as e:
             message = f"Ho qualche problema, scusa ({e})"
 
