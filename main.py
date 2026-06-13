@@ -1155,9 +1155,14 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             message = f"Ho qualche problema, scusa ({e})"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    if update.effective_user.id == ADMIN_ID and context.args and "-group" in context.args:
-        group_message = group_stats(update.effective_chat.id)
-        await update.message.reply_text(group_message, parse_mode="HTML", disable_web_page_preview=True)
+
+
+async def groupstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_chat.id not in [ID_GIOCHINI, ID_TESTING]:
+        return
+
+    message = group_stats(update.effective_chat.id)
+    await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
 
 async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1553,6 +1558,7 @@ async def post_init(app: Application) -> None:
         ('myday', 'Quali giochi devi ancora giocare oggi?'),
         ('myscore', 'Mostra il tuo punteggio di oggi'),
         ('mystats', 'Le tue statistiche'),
+        ('groupstats', 'Le statistiche del gruppo'),
         ('favs', 'Mostra e setta i giochi preferiti'),
         ('dailyranking', 'Mostra i punteggi del giorno corrente'),
         ('classifica', 'Mostra la classifica'),
@@ -1595,6 +1601,7 @@ def main():
     app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)
     app.add_handler(CommandHandler(["myscore", "score"], myscore), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "stats", "statistiche"], mystats), 1)
+    app.add_handler(CommandHandler(["groupstats", "gstats", "statsgroup"], groupstats_command), 1)
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)

@@ -711,63 +711,139 @@ def personal_stats(user_id: int, correct_game=None) -> str:
 
 
 def group_stats(chat_id: int) -> str:
-    message = "Ecco le classifiche globali:\n\n"
-
     # Totali x giocate.
-    total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id).scalar()
-    total_lost = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id, Punteggio.lost == True).scalar()
+    total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id).scalar() or 0
+    if total_plays == 0:
+        return "Non ci sono ancora statistiche di gruppo registrate."
+
+    total_lost = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.chat_id == chat_id, Punteggio.lost == True).scalar() or 0
     max_day = Punteggio.select(peewee.fn.MAX(Punteggio.date).alias("max_day")).where(Punteggio.chat_id == chat_id).scalar()
     min_day = Punteggio.select(peewee.fn.MIN(Punteggio.date).alias("min_day")).where(Punteggio.chat_id == chat_id).scalar()
     tracked_games = Punteggio.select(Punteggio.game).where(Punteggio.chat_id == chat_id).distinct().count()
-    # three most played games
-    most_played_games = (
+    total_players = Punteggio.select(Punteggio.user_id).where(Punteggio.chat_id == chat_id).distinct().count()
+
+    # Day differences
+    day_diff = (max_day - min_day).days if max_day and min_day else 1
+    day_diff = max(day_diff, 1)
+
+    avg_plays_per_day = round(total_plays / day_diff, 2)
+    avg_plays_per_player = round(total_plays / total_players, 1) if total_players else 0
+    lost_percentage = round(total_lost / total_plays * 100, 2)
+
+    # Three most played games
+    most_played_query = (
         Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
         .where(Punteggio.chat_id == chat_id)
         .group_by(Punteggio.game)
         .order_by(peewee.fn.COUNT(Punteggio.game).desc())
         .limit(3)
     )
-    least_played_games = (
+    most_played_games = "\n".join([f"• {x.game} ({x.c} giocate)" for x in most_played_query])
+
+    # Three least played games
+    least_played_query = (
         Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
         .where(Punteggio.chat_id == chat_id)
         .group_by(Punteggio.game)
         .order_by(peewee.fn.COUNT(Punteggio.game).asc())
         .limit(3)
     )
-    most_played_games = "\n".join([f"- {x.game} ({x.c})" for x in most_played_games])
-    least_played_games = "\n".join([f"- {x.game} ({x.c})" for x in least_played_games])
+    least_played_games = "\n".join([f"• {x.game} ({x.c} giocate)" for x in least_played_query])
 
-    total_players = Punteggio.select(Punteggio.user_id).where(Punteggio.chat_id == chat_id).distinct().count()
-
-    most_active_players = (
+    # Three most active players
+    most_active_players_query = (
         Punteggio.select(Punteggio.user_name, peewee.fn.COUNT(Punteggio.user_name).alias("c"))
         .where(Punteggio.chat_id == chat_id)
         .group_by(Punteggio.user_name)
         .order_by(peewee.fn.COUNT(Punteggio.user_name).desc())
         .limit(3)
     )
-    most_active_players = "\n".join([f"- {x.user_name} ({x.c})" for x in most_active_players])
+    most_active_players = "\n".join([f"• {x.user_name} ({x.c} giocate)" for x in most_active_players_query])
 
-    # the record with the longest streak, with game name, username, day
+    # Longest streak
     longest_streak = (
         Punteggio.select(Punteggio.streak, Punteggio.game, Punteggio.user_name, Punteggio.day)
         .where(Punteggio.chat_id == chat_id)
         .order_by(Punteggio.streak.desc())
         .limit(1)
     )
+    longest_streak_str = "Nessuno"
+    if longest_streak.exists() and longest_streak[0].streak:
+        ls = longest_streak[0]
+        longest_streak_str = f"<b>{ls.user_name}</b>: {ls.streak} consecutive a {ls.game} (Giorno #{ls.day})"
 
-    # day differences between two dates in YYYY-MM-DD format
-    day_diff = (max_day - min_day).days
+    # Top medal winner
+    top_medal_winner = (
+        Medaglia.select(
+            Medaglia.user_name,
+            peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.gold, 0)).alias("g"),
+            peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.silver, 0)).alias("s"),
+            peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.bronze, 0)).alias("b")
+        )
+        .where(Medaglia.chat_id == chat_id)
+        .group_by(Medaglia.user_id)
+        .order_by(
+            peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.gold, 0)).desc(),
+            peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.silver, 0)).desc(),
+            peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.bronze, 0)).desc()
+        )
+        .first()
+    )
+    
+    medal_str = "Nessuna medaglia registrata"
+    if top_medal_winner:
+        total_medals = int(top_medal_winner.g or 0) + int(top_medal_winner.s or 0) + int(top_medal_winner.b or 0)
+        if total_medals > 0:
+            medal_str = (
+                f"<b>{top_medal_winner.user_name}</b> con {total_medals} medaglie "
+                f"({int(top_medal_winner.g or 0)}🥇, {int(top_medal_winner.s or 0)}🥈, {int(top_medal_winner.b or 0)}🥉)"
+            )
 
-    message += f"Ci sono {total_plays} partire registrate in {day_diff} giorni, dal {min_day} al {max_day}.\n"
-    message += f"In media sono {round(total_plays/day_diff, 2)} giocate al giorno.\n"
-    message += f"In totale sono state perse {total_lost} partite (il {round(total_lost/total_plays*100, 2)}%).\n\n"
-    message += f"Ci sono {tracked_games} giochi tracciati.\n\n"
-    message += f"I tre giochi più giocati sono:\n{most_played_games}\n\n"
-    message += f"I tre giochi meno giocati sono:\n{least_played_games}\n\n"
-    message += f"Ci sono {total_players} giocatori registrati.\n\n"
-    message += f"I tre giocatori più attivi sono:\n{most_active_players}\n\n"
-    message += f"Lo streak più lungo è di {longest_streak[0].streak} partite consecutive a {longest_streak[0].game}, di {longest_streak[0].user_name}.\n"
+    # Hardest game calculation
+    lost_query = (
+        Punteggio.select(
+            Punteggio.game,
+            Punteggio.lost,
+            peewee.fn.COUNT(Punteggio.game).alias("count")
+        )
+        .where(Punteggio.chat_id == chat_id)
+        .group_by(Punteggio.game, Punteggio.lost)
+    )
+    
+    game_stats = {}
+    for row in lost_query:
+        g = row.game
+        if g not in game_stats:
+            game_stats[g] = {"lost": 0, "total": 0}
+        game_stats[g]["total"] += row.count
+        if row.lost:
+            game_stats[g]["lost"] += row.count
+
+    hardest_game_str = "Nessuno (almeno 10 partite giocate)"
+    hardest_rate = -1
+    for g, stats in game_stats.items():
+        if stats["total"] >= 10:
+            rate = stats["lost"] / stats["total"]
+            if rate > hardest_rate:
+                hardest_rate = rate
+                hardest_game_str = f"<b>{g}</b> con il {round(rate * 100, 1)}% di sconfitte ({stats['lost']}/{stats['total']} giocate)"
+
+    # Build the message
+    message = "📊 <b>STATISTICHE DI GRUPPO</b> 📊\n\n"
+    message += f"📅 <b>Periodo:</b> dal <code>{min_day}</code> al <code>{max_day}</code> ({day_diff} giorni)\n"
+    message += f"👥 <b>Giocatori registrati:</b> {total_players}\n"
+    message += f"🎮 <b>Giochi tracciati:</b> {tracked_games}\n\n"
+    
+    message += "📈 <b>Attività Generale:</b>\n"
+    message += f"• Partite totali registrate: <code>{total_plays}</code> (media di <code>{avg_plays_per_day}</code> al giorno)\n"
+    message += f"• Media giocate per giocatore: <code>{avg_plays_per_player}</code>\n"
+    message += f"• Partite perse totali: <code>{total_lost}</code> ({lost_percentage}%)\n\n"
+
+    message += f"🔥 <b>Giocatori più attivi:</b>\n{most_active_players}\n\n"
+    message += f"🏆 <b>Medagliere di gruppo (Top Player):</b>\n• {medal_str}\n\n"
+    message += f"👑 <b>Record di Streak:</b>\n• {longest_streak_str}\n\n"
+    message += f"🎮 <b>I giochi più giocati:</b>\n{most_played_games}\n\n"
+    message += f"💔 <b>Il gioco più difficile:</b>\n• {hardest_game_str}\n"
 
     return message
 
