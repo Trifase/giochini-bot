@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>It's giochini!</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+    <style>
+        
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color: #ecf0f1;
+            --card-background: #ffffff;
+        }
+
+        [v-cloak] {
+            display: none !important;
+        }
+
+        body {
+            background-color: var(--background-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px 0;
+        }
+
+        .blue-1 { background-color: #e0f7fa; border-radius: 2px; }
+        .blue-2 { background-color: #b9e2f5; border-radius: 2px; }
+        .blue-3 { background-color: #81d4fa; border-radius: 2px; }
+        .blue-4 { background-color: #1976d2; border-radius: 2px; }
+        .blue-5 { background-color: #0d47a1; border-radius: 2px; }
+
+        .page-title {
+            color: var(--primary-color);
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .filters-container {
+            background: var(--card-background);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-select, .form-control {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus, .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-card {
+            background: var(--card-background);
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-card .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 15px;
+        }
+
+        .game-card .card-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 2px 20px;
+            transition: background-color 0.2s ease;
+        }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .badge {
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-radius: 20px;
+        }
+
+        .loading-spinner {
+            color: var(--secondary-color);
+            width: 4rem;
+            height: 4rem;
+        }
+
+        .alert {
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .empty-state {
+            padding: 2rem;
+            text-align: center;
+            color: #6c757d;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--secondary-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .toggle-label {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            user-select: none;
+        }
+
+        .daily-rankings {
+            position: sticky;
+            top: 1rem;
+        }
+
+        .position-badge {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .list-group-item:first-child .position-badge {
+            background-color: #ffd700;
+            color: #000;
+        }
+
+        .list-group-item:nth-child(2) .position-badge {
+            background-color: #c0c0c0;
+            color: #000;
+        }
+
+        .list-group-item:nth-child(3) .position-badge {
+            background-color: #cd7f32;
+            color: #fff;
+        }
+
+        .game-heatmap-cell {
+            width: 10px;
+            height: 10px;
+            margin: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .game-heatmap-cell:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-card {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 2.5rem;
+            }
+            
+            .filters-container {
+                padding: 15px;
+            }
+            
+            .btn-primary {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .toggle-container {
+                justify-content: center;
+                margin-top: 10px;
+            }
+        }
+
+        /* Add styles for medals */
+        .medal {
+            font-size: 1.2rem;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <script type="importmap">
+      {
+        "imports": {
+          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
+        }
+      }
+    </script>
+    <div id="app" v-cloak>
+        <div class="container">
+            <div class="text-center">
+                <h1 class="page-title">Giochini!</h1>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="filters-container" v-if="initialized">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <select class="form-select" v-model="selectedGame">
+                            <option value="">All Games</option>
+                            <option v-for="game in uniqueGames" :value="game">
+                                {{ game }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="date" class="form-control" v-model="selectedDate" :max="today" />
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100" @click="fetchData" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                            <span v-else>Load Data</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Toggle Switch for hiding empty games -->
+                <div v-if="!selectedGame" class="toggle-container mt-3">
+                    <label class="toggle-switch">
+                        <input type="checkbox" v-model="hideEmptyGames">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Hide games with no data</span>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="isLoading" class="text-center my-5">
+                <div class="spinner-border loading-spinner" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div v-if="error" class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+
+
+
+            <!-- Data Display -->
+            <div v-if="!isLoading && !error && initialized" class="row g-4">
+                <!-- Heat map -->
+                <div class="col-12">
+                    <div class="card game-card">
+                        <div class="card-header">
+                            <h3>📈 Game Activity Heatmap</h3>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="heatmapLoading" class="text-center py-4">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading heatmap...</span>
+                                </div>
+                            </div>
+                            <div v-else-if="heatmapError" class="alert alert-danger" role="alert">
+                                {{ heatmapError }}
+                            </div>
+                            <div v-else class="d-flex flex-column">
+                                <!-- New month labels row -->
+                                <div class="d-flex justify-content-center mb-1">
+                                    <div 
+                                        v-for="(month, index) in getMonthLabels()"
+                                        :key="index"
+                                        class="text-muted small text-center"
+                                        style="width: 12px; font-size: 9px; overflow: visible; white-space: nowrap;"
+                                    >
+                                        {{ month }}
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-center mt-2">
+                                    <div
+                                        v-for="(week, weekIndex) in generateHeatmapGrid()"
+                                        :key="weekIndex"
+                                        class="d-flex flex-column"
+                                    >
+                                        <div
+                                            v-for="(day, dayIndex) in week"
+                                            :key="`${weekIndex}-${dayIndex}`"
+                                            class="game-heatmap-cell"
+                                            :class="getHeatmapColorIntensity(day.count)"
+                                            :title="`${day.date}: ${day.count} games`"
+                                        ></div>
+                                    </div>
+                                </div>
+                               
+                                <div class="d-flex justify-content-between mt-2">
+                                    
+                                    <div class="d-flex align-items-center">
+                                        <small class="text-muted me-2">Less</small>
+                                        <div class="d-flex me-2">
+                                            <div
+                                                v-for="(colorClass, index) in ['blue-2', 'blue-3', 'blue-4', 'blue-5']"
+                                                :key="index"
+                                                class="me-1"
+                                                :style="{
+                                                    width: '10px',
+                                                    height: '10px',
+                                                    margin: '1px'
+                                                }"
+                                                :class="colorClass"
+                                            ></div>
+                                        </div>
+                                        <small class="text-muted">More</small>
+                                    </div>
+                                    <small class="text-muted">
+                                        Total Games: {{ heatmapData.total_games.toLocaleString() }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- New Daily Rankings Panel -->
+                <div class="col-md-3">
+                    <div class="card game-card">
+                        <div class="card-header">
+                            <h3 class="m-0">📊 Rank · {{ dailyRankings.date }}
+                        </div>
+                        <div class="card-body p-0">
+                            <div v-if="loadingRankings" class="text-center py-4">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading rankings...</span>
+                                </div>
+                            </div>
+                            <div v-else-if="rankingsError" class="alert alert-danger m-3" role="alert">
+                                {{ rankingsError }}
+                            </div>
+                            <ul v-else class="list-group list-group-flush">
+                                <li v-for="rank in dailyRankings.rankings" :key="rank.name"
+                                    class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <span class="position-badge me-2">{{ rank.pos }}</span>
+                                        {{ rank.name }}
+                                    </span>
+                                    <span class="badge text-primary rounded-pill">{{ rank.points }} pts</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="row g-4">
+                        <div v-for="game in displayedGames" class="col-md-4">
+                            <div class="game-card card">
+                                <div class="card-header">
+                                    <span><span class="h5">{{ game.emoji }} {{ game.game }}</span> <span style="color: #999">#{{ game.game_day }}</span></span>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush" v-if="game.posizioni.length">
+                                        <li v-for="(item, index) in game.posizioni" 
+                                            class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>
+                                                <a :href="'/giochini/players.html?player=' + encodeURIComponent(item.user_name)" class="d-block text-decoration-none mb-2">
+                                                    <!-- <span class="medal"></span> -->
+                                                    {{ getRankEmoji(index) }} {{ item.user_name }}
+                                                </a>
+                                            </span>
+                                            <span class="badge bg-primary">{{ processTries(game.game, item.tries) }}</span>
+                                        </li>
+                                    </ul>
+                                    <div v-else class="empty-state">
+                                        <p>No data available for this game</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <script type="module">
+        import { createApp } from "vue";
+        
+        createApp({
+            data() {
+                return {
+                    data: [],
+                    selectedGame: "",
+                    selectedDate: new Date().toISOString().split('T')[0],
+                    isLoading: true,
+                    error: null,
+                    today: new Date().toISOString().split('T')[0],
+                    hideEmptyGames: true,
+                    initialized: false,
+                    dailyRankings: {
+                        date: '',
+                        rankings: []
+                    },
+                    loadingRankings: false,
+                    rankingsError: null,
+                    heatmapData: {
+                        total_stats: [],
+                        total_games: 0,
+                        date_range: {
+                            start: '',
+                            end: ''
+                        }
+                    },
+                    heatmapLoading: false,
+                    heatmapError: null
+                };
+            },
+            computed: {
+                uniqueGames() {
+                    return [...new Set(this.data.map(game => game.game))];
+                },
+                filteredGames() {
+                    let filtered = this.data;
+                    if (this.selectedGame) {
+                        filtered = filtered.filter(game => game.game === this.selectedGame);
+                    }
+                    return filtered;
+                },
+                displayedGames() {
+                    if (this.hideEmptyGames && !this.selectedGame) {
+                        return this.filteredGames.filter(game => game.posizioni.length > 0);
+                    }
+                    return this.filteredGames;
+                }
+            },
+            methods: {
+                processTries(game, tries) {
+                    // Convert tries to number if it's a string (except for time-based games)
+                    if (typeof tries === 'string' && 
+                        !['Murdle', 'Queens', 'Tango', 'Crossclimb'].includes(game)) {
+                        tries = Number(tries);
+                    }
+
+                    // Process based on game type
+                    if (game === "HighFive") {
+                        return Math.abs(tries);
+                    }
+                    if (game === "TimeGuesser") {
+                        return 50000 - tries;
+                    }
+                    if (game === "Chronophoto") {
+                        return 5000 - tries;
+                    }
+                    if (game === "FoodGuessr") {
+                        return 15000 - tries;
+                    }
+                    if (game === "Spellcheck") {
+                        return 15 - tries;
+                    }
+                    if (game === "TempoIndovinr") {
+                        return 1000 - tries;
+                    }
+                    if (game === "WhenTaken") {
+                        return 1000 - tries;
+                    }
+                    if (game === "Picsey") {
+                        return 100 - tries;
+                    }
+                    if (game === "NerdleCross") {
+                        return 6 - tries;
+                    }
+                    if (game === "WordGrid") {
+                        return (tries / 10).toFixed(1);
+                    }
+                    if (game === "Reversle") {
+                        return `${(tries / 100).toFixed(2)}s`;
+                    }
+                    if (["Murdle", "Queens", "Tango", "Crossclimb", "Zip"].includes(game)) {
+                        let timeStr = tries.toString();
+                        // Ensure the string is at least 3 characters long
+                        while (timeStr.length < 3) {
+                            timeStr = '0' + timeStr;
+                        }
+                        let minutes = timeStr.slice(0, -2);
+                        let seconds = timeStr.slice(-2);
+                        if (minutes === '') minutes = '0';
+                        return `${minutes}:${seconds}`;
+                    }
+                    if (game === 'Snoop') {
+                        // from 23383 to 02:23.83
+                        // pad the left with zeros so it can be 0:00.00
+                        let triesStr = String(tries).padStart(6, '0');
+                        let hours = triesStr.substring(0, 2);
+                        let minutes = triesStr.substring(2, 4);
+                        let seconds = triesStr.substring(4, 6);
+                        tries = `${hours}:${minutes}.${seconds}`;
+                    }
+                    return tries;
+                },
+
+                getRankEmoji(index) {
+                    switch(index) {
+                        case 0: return "🥇";
+                        case 1: return "🥈";
+                        case 2: return "🥉";
+                        default: return `${index + 1}.`;
+                    }
+                },
+
+                async fetchData() {
+                    this.isLoading = true;
+                    this.error = null;
+                    try {
+                        let url = `/api/classifica/?day=${this.selectedDate}`;
+                        if (this.selectedGame) {
+                            url += `&game=${this.selectedGame}`;
+                        }
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            mode: 'cors',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        this.data = await response.json();
+                    } catch (error) {
+                        this.error = "Failed to load data. Please try again later.";
+                        console.error('Error:', error);
+                    } finally {
+                        this.isLoading = false;
+                        this.initialized = true;
+                    }
+                },
+
+                async fetchDailyRankings() {
+                    this.loadingRankings = true;
+                    this.rankingsError = null;
+                    try {
+                        const response = await fetch(`/api/dailyranking/?day=${this.selectedDate}`);
+                        if (!response.ok) {
+                        throw new Error('Failed to fetch rankings');
+                        }
+                        this.dailyRankings = await response.json();
+                    } catch (error) {
+                        this.rankingsError = 'Error loading daily rankings: ' + error.message;
+                    } finally {
+                        this.loadingRankings = false;
+                    }
+                },
+
+                async fetchHeatmapData() {
+                    this.heatmapLoading = true;
+                    this.heatmapError = null;
+                    try {
+                        const response = await fetch('/api/game-stats/');
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch heatmap data');
+                        }
+                        this.heatmapData = await response.json();
+                    } catch (error) {
+                        this.heatmapError = 'Error loading heatmap: ' + error.message;
+                        console.error('Heatmap fetch error:', error);
+                    } finally {
+                        this.heatmapLoading = false;
+                    }
+                },
+
+                generateHeatmapGrid() {
+                    const today = new Date();
+                    const grid = [];
+
+                    // Create a map of existing data for quick lookup
+                    const dataMap = new Map(
+                        this.heatmapData.total_stats.map(item => [item.day, item.game_count])
+                    );
+                    // console.log('map' + JSON.stringify(this.heatmapData));
+                    // console.log(dataMap);
+
+                    // Generate 365 days (52 weeks * 7 days)
+                    for (let week = 0; week < 52; week++) {
+                        const weekGrid = [];
+                        for (let day = 0; day < 7; day++) {
+                            const currentDate = new Date(today);
+                            // console.log('today: ', today);
+                            // console.log('week: ', week);
+                            // console.log('day: ', day);
+                            currentDate.setDate(today.getDate() - (week * 7 + day));
+                            // console.log('currentDate: ', currentDate);
+                            // console.log('currentDate toISOString: ', currentDate.toISOString());
+                            const year = currentDate.getFullYear();
+                            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                            const dateVal = String(currentDate.getDate()).padStart(2, '0');
+                            const dateString = `${year}-${month}-${dateVal}`;
+                            // console.log('dateString: ', dateString);
+                            // console.log('dataMap.get(dateString): ', dataMap.get(dateString));
+                            const count = dataMap.get(dateString) || 0;
+
+                            weekGrid.push({
+                                date: dateString,
+                                count: count
+                            });
+                        }
+                        grid.push(weekGrid);
+                    }
+
+                    return grid.reverse();
+                },
+
+                getMonthLabels() {
+                    // Get the grid first to ensure we have the same width
+                    const grid = this.generateHeatmapGrid();
+                    const monthAbbreviations = [
+                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                    ];
+
+                    const labels = new Array(grid.length).fill('');
+                    let lastMonth = null;
+                    
+                    grid.forEach((week, weekIndex) => {
+                        if (week[0] && week[0].date) {
+                            const dateObj = new Date(week[0].date);
+                            const month = dateObj.getMonth();
+                            if (month !== lastMonth) {
+                                labels[weekIndex] = monthAbbreviations[month];
+                                lastMonth = month;
+                            }
+                        }
+                    });
+
+                    return labels;
+                },
+
+                getHeatmapColorIntensity(count) {
+                    // More nuanced color scaling based on max game count
+                    const maxCount = Math.max(...this.heatmapData.total_stats.map(item => item.game_count), 1);
+                    const normalizedCount = count / maxCount;
+                    if (count === 0) return 'blue-1';
+                    if (normalizedCount < 0.2) return 'blue-2';
+                    if (normalizedCount < 0.4) return 'blue-3';
+                    if (normalizedCount < 0.6) return 'blue-4';
+                    return 'blue-5';
+                },
+
+
+            },
+            mounted() {
+                this.fetchData();
+                this.fetchDailyRankings();
+                this.fetchHeatmapData();
+            }
+        }).mount("#app");
+    </script>
+</body>
+</html>

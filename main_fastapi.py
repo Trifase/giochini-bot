@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from datetime import date, datetime, timedelta
 from config import ID_GIOCHINI as CHAT_ID
 from games import ALL_GAMES as GAMES
@@ -54,6 +55,7 @@ async def classifica_for_game(day, game_name) -> list:
 
 
 @app.get("/giochini/")
+@app.get("/api/giochini/")
 async def return_info(game_name: str | None = 'all'):
     if game_name == 'all':
         games = []
@@ -67,6 +69,7 @@ async def return_info(game_name: str | None = 'all'):
     return games.get(game_name.lower(), {"error": "game not found"})
 
 @app.get("/classifica/")
+@app.get("/api/classifica/")
 async def classifica(day: str | None = None, game: str | None = 'all'):
     return_list = []
     if not day:
@@ -101,12 +104,27 @@ async def classifica(day: str | None = None, game: str | None = 'all'):
 
 
 @app.get("/stats/")
+@app.get("/api/stats/")
 async def stats(player: str | None = 'all'):
     if not player:
         return {"error": "player not found"}
     return_obj = {}
     total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_name == player).scalar()
     
+    if not total_plays:
+        return {
+            "player": player,
+            "total_plays": 0,
+            "total_time_minutes": 0,
+            "total_loses": 0,
+            "long_streak_game": "N/A",
+            "long_streak_days": 0,
+            "most_played_game": "N/A",
+            "most_played_count": 0,
+            "least_played_game": "N/A",
+            "least_played_count": 0
+        }
+
     long_streak_query = (
         Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
         .where(Punteggio.user_name == player)
@@ -197,6 +215,7 @@ async def stats(player: str | None = 'all'):
 
 
 @app.get("/dailyranking/")
+@app.get("/api/dailyranking/")
 async def dailyranking(day: str | None = None):
     model = "alternate-with-lost"
     if not day:
@@ -216,6 +235,7 @@ async def dailyranking(day: str | None = None):
 
 
 @app.get("/game-stats/")
+@app.get("/api/game-stats/")
 async def get_game_stats(
     player: Optional[str] = None,
     game: Optional[str] = None
@@ -271,3 +291,7 @@ async def get_game_stats(
             "end": datetime.now().date().isoformat()
         }
     }
+
+
+# Serve static files for the website under the root path
+app.mount("/", StaticFiles(directory="www/html/trifase.online", html=True), name="static")
