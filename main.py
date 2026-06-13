@@ -1614,7 +1614,7 @@ def main():
     app.add_handler(CommandHandler("classificona", classificona), 1)
     app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)
     app.add_handler(CommandHandler(["myscore", "score"], myscore), 1)
-    app.add_handler(CommandHandler(["mystats", "mystat", "stats", "statistiche"], mystats), 1)
+    app.add_handler(CommandHandler(["mystats", "mystat", "statistiche"], mystats), 1)
     app.add_handler(CommandHandler(["groupstats", "gstats", "statsgroup"], groupstats_command), 1)
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
