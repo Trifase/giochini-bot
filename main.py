@@ -1103,11 +1103,30 @@ async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def refresh_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id == ADMIN_ID:
         import subprocess
-        await update.message.reply_text("Eseguo git pull...")
         try:
-            result = subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
-            pull_output = result.stdout.strip() or "Già aggiornato."
-            await update.message.reply_text(f"Git pull completato:\n<pre>{pull_output}</pre>", parse_mode="HTML")
+            # Get current HEAD hash before pulling
+            old_head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+            
+            # Execute git pull
+            subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
+            
+            # Get HEAD hash after pulling
+            new_head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+            
+            if old_head == new_head:
+                pull_output = "Già aggiornato."
+            else:
+                # Get list of commit subject lines between the old and new HEAD
+                log_result = subprocess.run(
+                    ["git", "log", f"{old_head}..{new_head}", "--format=%s"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                commits = log_result.stdout.strip().split("\n")
+                pull_output = "\n".join(f"- {commit}" for commit in commits if commit)
+                
+            await update.message.reply_text(f"Git pull completato:\n{pull_output}")
         except Exception as e:
             await update.message.reply_text(f"Errore durante git pull: {e}\nRiavvio comunque...")
         
