@@ -1332,7 +1332,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, parse_mode="HTML", disable_web_page_preview=True)
 
-    medaglie_str = medaglie_count()
+    medaglie_str = medaglie_count(target_date=yesterday)
 
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=medaglie_str, parse_mode="HTML", disable_web_page_preview=True)
 

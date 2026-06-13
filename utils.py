@@ -996,8 +996,10 @@ def new_classifica():
         print(f"{user[1]['nickname']} [{user[1]['total']}]\n{user[1]['gold']*'🥇'}{user[1]['silver']*'🥈'}{user[1]['bronze']*'🥉'}\n")
 
 
-def medaglie_count(monthly=True) -> None:
-    first_of_the_month = datetime.date.today().replace(day=1)
+def medaglie_count(monthly=True, target_date=None) -> str:
+    if target_date is None:
+        target_date = datetime.date.today()
+    first_of_the_month = target_date.replace(day=1)
     month_name = first_of_the_month.strftime("%B")
     message = f"<b>Classifica mensile ({month_name}) delle medaglie:</b>\n\n"
     if not monthly:
