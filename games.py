@@ -2882,7 +2882,7 @@ class Putt(Giochino):
 
     examples = [
         "putt.day #32 ⛳ 11/9 Double bogey\n🟢🟡🟡🟡🔴🟡🟡🟡🟡🟡🟢\nhttps://putt.day",
-        "putt.day #32 ⛳ 9/9 Par\n🟢🟡🟡🟡🟡🟡🟡🟡🟢\nhttps://putt.day",
+        "putt.day #32 ⛳️ 9/9 Par\n🟢🟡🟡🟡🟡🟡🟡🟡🟢\nhttps://putt.day",
         "putt.day #32 ⛳ 7/9 Eagle\n🟢🟢🟢🟢🟢🟢🟢\nhttps://putt.day"
     ]
     expected = [
@@ -2902,7 +2902,7 @@ class Putt(Giochino):
         day_match = re.search(r"putt\.day #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        score_match = re.search(r"⛳\s*(\d+)/9", text)
+        score_match = re.search(r"⛳\ufe0f?\s*(\d+)/9", text)
         self.tries = score_match.group(1) if score_match else None
         self.stars = None
 
