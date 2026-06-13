@@ -2872,6 +2872,42 @@ class Posterdle(Giochino):
 
 
 @dataclass
+class Putt(Giochino):
+    _name = "Putt"
+    _category = "Logica"
+    _date = datetime.date(2026, 6, 13)
+    _day = "32"
+    _emoji = "⛳"
+    _url = "https://putt.day"
+
+    examples = [
+        "putt.day #32 ⛳ 11/9 Double bogey\n🟢🟡🟡🟡🔴🟡🟡🟡🟡🟡🟢\nhttps://putt.day",
+        "putt.day #32 ⛳ 9/9 Par\n🟢🟡🟡🟡🟡🟡🟡🟡🟢\nhttps://putt.day",
+        "putt.day #32 ⛳ 7/9 Eagle\n🟢🟢🟢🟢🟢🟢🟢\nhttps://putt.day"
+    ]
+    expected = [
+        {"day": "32", "name": "Putt", "timestamp": 10, "tries": "11", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "32", "name": "Putt", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "32", "name": "Putt", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["putt.day", "https://putt.day"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"putt\.day #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        score_match = re.search(r"⛳\s*(\d+)/9", text)
+        self.tries = score_match.group(1) if score_match else None
+        self.stars = None
+
+
+@dataclass
 class Queens(Giochino):
     _name = "Queens"
     _category = "Logica"
