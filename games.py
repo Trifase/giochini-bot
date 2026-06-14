@@ -2883,12 +2883,20 @@ class Putt(Giochino):
     examples = [
         "putt.day #32 ⛳ 11/9 Double bogey\n🟢🟡🟡🟡🔴🟡🟡🟡🟡🟡🟢\nhttps://putt.day",
         "putt.day #32 ⛳️ 9/9 Par\n🟢🟡🟡🟡🟡🟡🟡🟡🟢\nhttps://putt.day",
-        "putt.day #32 ⛳ 7/9 Eagle\n🟢🟢🟢🟢🟢🟢🟢\nhttps://putt.day"
+        "putt.day #32 ⛳ 7/9 Eagle\n🟢🟢🟢🟢🟢🟢🟢\nhttps://putt.day",
+        "putt.day #33 ⛳ 14/11 +3\n🟢🟡🟢🔴🔴🟢🟢🟢🟡🟡🟡🟡🟡🟢\nhttps://putt.day/s/5IZQCt0VsaRV",
+        "putt.day #33 ⛳ 11/11 Par · replay\n🟡🟢🟢🟢🟡🟡🟡🟡🟡🟡🟢\nhttps://putt.day/s/VZujOi8twEbt",
+        "putt.day #33 ⛳ 13/11 Double bogey\n🟢🟡🟢🟢🟡🟡🟢🟢🟡🟡🟡🟡🟢\nhttps://putt.day/s/tHCe1nzcwYuj",
+        "putt.day #33 ⛳ 18/11 +7\n🟡🟡🟡🟡🟢🟡🟢🟡🟡🟢🟡🟡🟡🟡🟡🟡🟡🟢\nhttps://putt.day/s/aC7cpsz6aHL8"
     ]
     expected = [
         {"day": "32", "name": "Putt", "timestamp": 10, "tries": "11", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "32", "name": "Putt", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "32", "name": "Putt", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "32", "name": "Putt", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "33", "name": "Putt", "timestamp": 10, "tries": "14", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "33", "name": "Putt", "timestamp": 10, "tries": "11", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "33", "name": "Putt", "timestamp": 10, "tries": "13", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "33", "name": "Putt", "timestamp": 10, "tries": "18", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -2902,7 +2910,7 @@ class Putt(Giochino):
         day_match = re.search(r"putt\.day #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        score_match = re.search(r"⛳\ufe0f?\s*(\d+)/9", text)
+        score_match = re.search(r"\s(\d+)/\d+\s", text)
         self.tries = score_match.group(1) if score_match else None
         self.stars = None
 
