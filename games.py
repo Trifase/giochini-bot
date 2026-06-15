@@ -3008,6 +3008,59 @@ class QueensUltimateMini(Giochino):
 
 
 @dataclass
+class QueensUltimateMax(Giochino):
+    _name = "QueensUltimateMax"
+    _category = "Logica e matematica"
+    _date = datetime.date(2026, 6, 12)
+    _day = "152"
+    _emoji = "👑"
+    _url = "https://queensultimate.com/max"
+
+    examples = [
+        "👑 Queens Ultimate - Daily Max #153\n⏱️ 04:02.18 | 💎 Brilliant\n\n🟥🟥🟧🟧🟧🟧\n🟥🟥🟧🟧🟧🟧\n🟥🟧🟧🟧⬜🟧\n🟩🟩🟦🟦⬜⬜\n🟩🟩🟪🟦⬜⬜\n🟩🟪🟪🟪🟪⬜\n\nCan you beat my time?\nqueensultimate.com/max",
+        "👑 Queens Ultimate - Daily Max #152\n⏱️ 03:42.55 | 💎 Brilliant\n\n🟧🟦🟦🟦🟥🟥\n🟧🟧🟦🟦🟦🟦\n🟧🟧🟩⬜⬜⬜\n🟧🟧🟩🟪🟪⬜\n🟧🟩🟩🟪🟪🟪\n🟧🟪🟪🟪🟪🟪\n\nCan you beat my time?\nqueensultimate.com/max",
+        "👑 Queens Ultimate - Daily Max #149\n⏱️ 03:13.68 | 💎 Brilliant\n\n🟦🟦🟦🟪🟪🟪\n🟦🟦🟩🟧🟪⬜\n🟦🟦🟩🟧🟧⬜\n🟩🟩🟩🟩🟧🟧\n🟩🟩🟩🟥🟥🟧\n🟩🟩🟥🟥🟥🟥\n\nCan you beat my time?\nqueensultimate.com/max",
+        "👑 Queens Ultimate - Daily Max #140\n⏱️ 03:10.74 | 💎 Brilliant\n\n🟥🟥🟪🟪🟪🟪\n🟥🟥🟪🟪🟪🟪\n🟥🟦🟪🟪🟩🟪\n🟧🟦🟪⬜🟩🟩\n🟧🟧⬜⬜⬜🟩\n🟧🟧🟧⬜⬜⬜\n\nCan you beat my time?\nqueensultimate.com/max"
+    ]
+    expected = [
+        {"day": "153", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0402", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "152", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0342", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "149", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0313", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "140", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0310", "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Queens Ultimate - Daily Max", "queensultimate.com/max"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Daily Max #(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})", text)
+        if time_match:
+            minutes = int(time_match.group(1))
+            seconds = int(time_match.group(2))
+            total_seconds = minutes * 60 + seconds
+
+            hints_match = re.search(r"💡\s*Hints:\s*(\d+)", text)
+            if hints_match:
+                hints = int(hints_match.group(1))
+                total_seconds += hints * 10
+
+            final_minutes = total_seconds // 60
+            final_seconds = total_seconds % 60
+            self.tries = f"{final_minutes:02d}{final_seconds:02d}"
+        else:
+            self.tries = None
+
+        self.stars = None
+
+
+@dataclass
 class Redattolo(Giochino):
     _name = "Redattolo"
     _category = "Giochi di parole"

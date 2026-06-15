@@ -491,7 +491,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
         tries = 100 - tries
 
     # So, murdle/Queens points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
-    if game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "QueensUltimateMini", "Wend"]:
+    if game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "QueensUltimateMini", "QueensUltimateMax", "Wend"]:
         tries = str(tries)[:-2] + ":" + str(tries)[-2:]
         if len(tries) == 2: # this fixes the bug where the time is '7' and is displayed as '0:7' instead of '0:07'
             tries = ':0' + tries[-1]
@@ -685,7 +685,7 @@ def personal_stats(user_id: int, correct_game=None, favs_count=0, is_favorite=Fa
         
         plays_count = len(winning_plays)
         if plays_count > 0:
-            if correct_game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "QueensUltimateMini", "Wend"]:
+            if correct_game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "QueensUltimateMini", "QueensUltimateMax", "Wend"]:
                 # Time-based: parse to total seconds
                 total_secs = 0
                 for p in winning_plays:
