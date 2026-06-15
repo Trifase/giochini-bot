@@ -282,7 +282,7 @@ class UnknownGame(Giochino):
 @dataclass
 class Angle(Giochino):
     _name = "Angle"
-    _category = "Logica"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2023, 10, 28)
     _day = "494"
     _emoji = "📐"
@@ -365,7 +365,7 @@ class Angle(Giochino):
 @dataclass
 class Bandle(Giochino):
     _name = "Bandle"
-    _category = "Immagini, giochi e musica"
+    _category = "Musica"
     _date = datetime.date(2024, 3, 3)
     _day = "564"
     _emoji = "🎸"
@@ -453,7 +453,7 @@ class BracketCity(Giochino):
 @dataclass
 class Chrono(Giochino):
     _name = "Chrono"
-    _category = "Logica"
+    _category = "Storia"
     _date = datetime.date(2024, 3, 4)
     _day = "734"
     _emoji = "⏱️"
@@ -516,7 +516,7 @@ class Chrono(Giochino):
 @dataclass
 class Chronophoto(Giochino):
     _name = "Chronophoto"
-    _category = "Immagini, giochi e musica"
+    _category = "Storia"
     _date = datetime.date(2024, 3, 6)
     _day = "100"
     _emoji = "⏳"
@@ -568,7 +568,7 @@ class Chronophoto(Giochino):
 @dataclass
 class Cloudle(Giochino):
     _name = "Cloudle"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2023, 6, 23)
     _day = "449"
     _emoji = "🌦️"
@@ -624,7 +624,7 @@ class Cloudle(Giochino):
 @dataclass
 class CluesBySam(Giochino):
     _name = "CluesBySam"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2025, 9, 9)
     _day = "100"
     _emoji = "🔎"
@@ -729,7 +729,7 @@ class CluesBySam(Giochino):
 @dataclass
 class Colorfle(Giochino):
     _name = "Colorfle"
-    _category = "Immagini, giochi e musica"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2024, 3, 5)
     _day = "679"
     _emoji = "🎨"
@@ -873,7 +873,7 @@ class Contexto(Giochino):
 @dataclass
 class Countryle(Giochino):
     _name = "Countryle"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2025, 8, 25)
     _day = "1284"
     _emoji = "🌐"
@@ -1027,7 +1027,7 @@ class Decipher(Giochino):
 @dataclass
 class Disorderly(Giochino):
     _name = "Disorderly"
-    _category = "Logica"
+    _category = "Miscellanea"
     _date = datetime.date(2025, 5, 1)
     _day = "100"
     _emoji = "📄"
@@ -1087,7 +1087,7 @@ class Disorderly(Giochino):
 @dataclass
 class DominoFit(Giochino):
     _name = "DominoFit"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2024, 2, 18)
     _day = "1"
     _emoji = "🃏"
@@ -1143,7 +1143,7 @@ class DominoFit(Giochino):
 @dataclass
 class Flagle(Giochino):
     _name = "Flagle"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2023, 9, 8)
     _day = "564"
     _emoji = "🏁"
@@ -1199,7 +1199,7 @@ class Flagle(Giochino):
 @dataclass
 class EncloseHorse(Giochino):
     _name = "EncloseHorse"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2026, 1, 7)
     _day = "9"
     _emoji = "🐴"
@@ -1244,7 +1244,7 @@ class EncloseHorse(Giochino):
 @dataclass
 class Flags(Giochino):
     _name = "Flags"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2025, 7, 28)
     _day = "8"
     _emoji = "🏳️‍🌈"
@@ -1287,7 +1287,7 @@ class Flags(Giochino):
 @dataclass
 class FoodGuessr(Giochino):
     _name = "FoodGuessr"
-    _category = "Geografia e Mappe"
+    _category = "Miscellanea"
     _date = datetime.date(2024, 3, 9)
     _day = "200"
     _emoji = "🍝"
@@ -1370,7 +1370,7 @@ class FoodGuessr(Giochino):
 @dataclass
 class Framed(Giochino):
     _name = "Framed"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2023, 6, 23)
     _day = "469"
     _emoji = "🎞"
@@ -1413,7 +1413,7 @@ class Framed(Giochino):
 @dataclass
 class Flickle(Giochino):
     _name = "Flickle"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2025, 3, 14)
     _day = "1067"
     _emoji = "🎬"
@@ -1467,7 +1467,7 @@ class Flickle(Giochino):
 @dataclass
 class FramedOneFrame(Giochino):
     _name = "Framed One Frame"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2024, 12, 11)
     _day = "9"
     _emoji = "🎞"
@@ -1559,7 +1559,7 @@ class Flipple(Giochino):
 @dataclass
 class Geogrid(Giochino):
     _name = "Geogrid"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2024, 5, 21)
     _day = "45"
     _emoji = "🌎"
@@ -1608,7 +1608,7 @@ class Geogrid(Giochino):
 @dataclass
 class Gisnep(Giochino):
     _name = "Gisnep"
-    _category = "Logica"
+    _category = "Giochi di parole"
     _date = datetime.date(2025, 11, 25)
     _day = "475"
     _emoji = "🧩"
@@ -1639,7 +1639,7 @@ class Gisnep(Giochino):
 @dataclass
 class Globle(Giochino):
     _name = "Globle"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2023, 6, 23)
     _day = "200"
     _emoji = "🌍"
@@ -1682,7 +1682,7 @@ class Globle(Giochino):
 @dataclass
 class GuessTheAngle(Giochino):
     _name = "GuessTheAngle"
-    _category = "Logica"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2025, 7, 31)
     _day = "173"
     _emoji = "📐"
@@ -1723,7 +1723,7 @@ class GuessTheAngle(Giochino):
 @dataclass
 class GuessTheFootballClub(Giochino):
     _name = "GuessTheFootballClub"
-    _category = "Immagini, giochi e musica"
+    _category = "Miscellanea"
     _date = datetime.date(2025, 4, 17)
     _day = "80"
     _emoji = "🛡️"
@@ -1755,7 +1755,7 @@ class GuessTheFootballClub(Giochino):
 @dataclass
 class GuessTheGame(Giochino):
     _name = "GuessTheGame"
-    _category = "Immagini, giochi e musica"
+    _category = "Miscellanea"
     _date = datetime.date(2023, 6, 23)
     _day = "405"
     _emoji = "🎮"
@@ -1801,7 +1801,7 @@ class GuessTheGame(Giochino):
 @dataclass
 class GuessTheHouse(Giochino):
     _name = "GuessTheHouse"
-    _category = "Logica"
+    _category = "Miscellanea"
     _date = datetime.date(2025, 7, 31)
     _day = "310"
     _emoji = "🏠"
@@ -1846,7 +1846,7 @@ class GuessTheHouse(Giochino):
 @dataclass
 class GuessTheLogo(Giochino):
     _name = "GuessTheLogo"
-    _category = "Immagini, giochi e musica"
+    _category = "Miscellanea"
     _date = datetime.date(2025, 7, 31)
     _day = "318"
     _emoji = "®"
@@ -1890,7 +1890,7 @@ class GuessTheLogo(Giochino):
 @dataclass
 class GuessTheMovie(Giochino):
     _name = "GuessTheMovie"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2025, 3, 29)
     _day = "178"
     _emoji = "📽"
@@ -1932,7 +1932,7 @@ class GuessTheMovie(Giochino):
 @dataclass
 class GuessThePhrase(Giochino):
     _name = "GuessThePhrase"
-    _category = "Logica"
+    _category = "Giochi di parole"
     _date = datetime.date(2025, 11, 19)
     _day = "160"
     _emoji = "🔡"
@@ -1969,7 +1969,7 @@ class GuessThePhrase(Giochino):
 @dataclass
 class Heardle(Giochino):
     _name = "Heardle"
-    _category = "Immagini, giochi e musica"
+    _category = "Musica"
     _date = datetime.date(2025, 6, 19)
     _day = "100"
     _emoji = "🔊"
@@ -2021,7 +2021,7 @@ class Heardle(Giochino):
 @dataclass
 class Hexcodle(Giochino):
     _name = "Hexcodle"
-    _category = "Immagini, giochi e musica"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2025, 4, 17)
     _day = "616"
     _emoji = "🎨"
@@ -2102,7 +2102,7 @@ class Hexcodle(Giochino):
 @dataclass
 class Lyricle(Giochino):
     _name = "Lyricle"
-    _category = "Immagini, giochi e musica"
+    _category = "Musica"
     _date = datetime.date(2025, 3, 12)
     _day = "1053"
     _emoji = "📜"
@@ -2195,7 +2195,7 @@ class Linxicon(Giochino):
 @dataclass
 class Metaflora(Giochino):
     _name = "Metaflora"
-    _category = "Scienza"
+    _category = "Miscellanea"
     _date = datetime.date(2023, 10, 28)
     _day = "28"
     _emoji = "🌿"
@@ -2241,7 +2241,7 @@ class Metaflora(Giochino):
 @dataclass
 class Metazooa(Giochino):
     _name = "Metazooa"
-    _category = "Scienza"
+    _category = "Miscellanea"
     _date = datetime.date(2023, 10, 7)
     _day = "68"
     _emoji = "🐢"
@@ -2287,7 +2287,7 @@ class Metazooa(Giochino):
 @dataclass
 class Moviedle(Giochino):
     _name = "Moviedle"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2023, 6, 23)
     _day = "200"
     _emoji = "🎥"
@@ -2345,7 +2345,7 @@ class Moviedle(Giochino):
 @dataclass
 class Murdle(Giochino):
     _name = "Murdle"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2023, 6, 23)
     _day = "1"
     _emoji = "🔪"
@@ -2388,7 +2388,7 @@ class Murdle(Giochino):
 @dataclass
 class Nerdle(Giochino):
     _name = "Nerdle"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2023, 9, 21)
     _day = "610"
     _emoji = "🤓"
@@ -2424,7 +2424,7 @@ class Nerdle(Giochino):
 @dataclass
 class NerdleCross(Giochino):
     _name = "NerdleCross"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2023, 12, 12)
     _day = "198"
     _emoji = "🧮"
@@ -2469,7 +2469,7 @@ class NerdleCross(Giochino):
 @dataclass
 class NFLXdle(Giochino):
     _name = "NFLXdle"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2024, 9, 4)
     _day = "100"
     _emoji = "📺"
@@ -2514,7 +2514,7 @@ class NFLXdle(Giochino):
 @dataclass
 class Numble(Giochino):
     _name = "Numble"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2024, 5, 27)
     _day = "834"
     _emoji = "➗"
@@ -2636,7 +2636,7 @@ class Pedantle(Giochino):
 @dataclass
 class Patches(Giochino):
     _name = "Patches"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2026, 3, 18)
     _day = "1"
     _emoji = "🧶"
@@ -2671,7 +2671,7 @@ class Patches(Giochino):
 @dataclass
 class Picsey(Giochino):
     _name = "Picsey"
-    _category = "Immagini, giochi e musica"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2023, 9, 25)
     _day = "100"
     _emoji = "🪟"
@@ -2714,7 +2714,7 @@ class Picsey(Giochino):
 @dataclass
 class Pinpoint(Giochino):
     _name = "Pinpoint"
-    _category = "Logica"
+    _category = "Miscellanea"
     _date = datetime.date(2024, 10, 17)
     _day = "170"
     _emoji = "📌"
@@ -2829,7 +2829,7 @@ class Polygonle(Giochino):
 @dataclass
 class Posterdle(Giochino):
     _name = "Posterdle"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2024, 9, 4)
     _day = "100"
     _emoji = "🍿"
@@ -2874,7 +2874,7 @@ class Posterdle(Giochino):
 @dataclass
 class Putt(Giochino):
     _name = "Putt"
-    _category = "Logica"
+    _category = "Miscellanea"
     _date = datetime.date(2026, 6, 13)
     _day = "32"
     _emoji = "⛳"
@@ -2918,7 +2918,7 @@ class Putt(Giochino):
 @dataclass
 class Queens(Giochino):
     _name = "Queens"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2024, 10, 8)
     _day = "161"
     _emoji = "👑"
@@ -2959,7 +2959,7 @@ class Queens(Giochino):
 @dataclass
 class QueensUltimateMini(Giochino):
     _name = "QueensUltimateMini"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2026, 6, 12)
     _day = "152"
     _emoji = "👑"
@@ -3089,7 +3089,7 @@ class Reversle(Giochino):
 @dataclass
 class Rotaboxes(Giochino):
     _name = "Rotaboxes"
-    _category = "Logica"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2024, 3, 5)
     _day = "497"
     _emoji = "🧩"
@@ -3123,7 +3123,7 @@ class Rotaboxes(Giochino):
 @dataclass
 class Snoop(Giochino):
     _name = "Snoop"
-    _category = "Immagini, giochi e musica"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2025, 5, 17)
     _day = "100"
     _emoji = "🔍"
@@ -3162,7 +3162,7 @@ class Snoop(Giochino):
 @dataclass
 class Spellcheck(Giochino):
     _name = "Spellcheck"
-    _category = "Logica"
+    _category = "Giochi di parole"
     _date = datetime.date(2024, 3, 9)
     _day = "57"
     _emoji = "👂"
@@ -3200,7 +3200,7 @@ class Spellcheck(Giochino):
 @dataclass
 class Spotle(Giochino):
     _name = "Spotle"
-    _category = "Immagini, giochi e musica"
+    _category = "Musica"
     _date = datetime.date(2025, 9, 13)
     _day = "1233"
     _emoji = "🎧"
@@ -3243,7 +3243,7 @@ class Spotle(Giochino):
 @dataclass
 class Spots(Giochino):
     _name = "Spots"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2024, 9, 4)
     _day = "54"
     _emoji = "🟡"
@@ -3387,7 +3387,7 @@ class Strands(Giochino):
 @dataclass
 class Tango(Giochino):
     _name = "Tango"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2024, 10, 10)
     _day = "3"
     _emoji = "🌗"
@@ -3427,7 +3427,7 @@ class Tango(Giochino):
 @dataclass
 class TempoIndovinr(Giochino):
     _name = "TempoIndovinr"
-    _category = "Immagini, giochi e musica"
+    _category = "Storia"
     _date = datetime.date(2023, 11, 17)
     _day = "5"
     _emoji = "🗺️"
@@ -3505,7 +3505,7 @@ class Thirdle(Giochino):
 @dataclass
 class Timdle(Giochino):
     _name = "Timdle"
-    _category = "Logica"
+    _category = "Storia"
     _date = datetime.date(2025, 6, 24)
     _day = "100"
     _emoji = "⏳"
@@ -3549,7 +3549,7 @@ class Timdle(Giochino):
 @dataclass
 class TimdleMusic(Giochino):
     _name = "Timdle Music"
-    _category = "Logica"
+    _category = "Musica"
     _date = datetime.date(2026, 5, 1)
     _day = "1"
     _emoji = "⏳"
@@ -3592,7 +3592,7 @@ class TimdleMusic(Giochino):
 @dataclass
 class TimeGuessr(Giochino):
     _name = "TimeGuessr"
-    _category = "Immagini, giochi e musica"
+    _category = "Storia"
     _date = datetime.date(2023, 11, 27)
     _day = "179"
     _emoji = "📅"
@@ -3628,7 +3628,7 @@ class TimeGuessr(Giochino):
 @dataclass
 class Titleshot(Giochino):
     _name = "Titleshot"
-    _category = "Cinema e Serie TV"
+    _category = "Cinema"
     _date = datetime.date(2025, 7, 28)
     _day = "54"
     _emoji = "🎦"
@@ -3671,7 +3671,7 @@ class Titleshot(Giochino):
 @dataclass
 class Tradle(Giochino):
     _name = "Tradle"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2023, 6, 23)
     _day = "474"
     _emoji = "🚢"
@@ -3715,7 +3715,7 @@ class Tradle(Giochino):
 @dataclass
 class Travle(Giochino):
     _name = "Travle"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2023, 11, 30)
     _day = "351"
     _emoji = "🧭"
@@ -3800,7 +3800,7 @@ class Travle(Giochino):
 @dataclass
 class TravleITA(Giochino):
     _name = "TravleITA"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2024, 2, 29)
     _day = "256"
     _emoji = "👢"
@@ -3859,7 +3859,7 @@ class TravleITA(Giochino):
 @dataclass
 class Unzoomed(Giochino):
     _name = "Unzoomed"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2024, 4, 16)
     _day = "89"
     _emoji = "🔎"
@@ -3934,7 +3934,7 @@ class Waffle(Giochino):
 @dataclass
 class Wend(Giochino):
     _name = "Wend"
-    _category = "Logica"
+    _category = "Giochi di parole"
     _date = datetime.date(2026, 6, 12)
     _day = "4"
     _emoji = "🌀"
@@ -3969,7 +3969,7 @@ class Wend(Giochino):
 @dataclass
 class WhereTaken(Giochino):
     _name = "WhereTaken"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2023, 6, 23)
     _day = "117"
     _emoji = "📸"
@@ -4011,7 +4011,7 @@ class WhereTaken(Giochino):
 @dataclass
 class WhenTaken(Giochino):
     _name = "WhenTaken"
-    _category = "Geografia e Mappe"
+    _category = "Storia"
     _date = datetime.date(2024, 9, 5)
     _day = "191"
     _emoji = "📍"
@@ -4150,7 +4150,7 @@ class WordPeaks(Giochino):
 @dataclass
 class Worldle(Giochino):
     _name = "Worldle"
-    _category = "Geografia e Mappe"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2023, 6, 23)
     _day = "518"
     _emoji = "🗺️"
@@ -4203,7 +4203,7 @@ class Worldle(Giochino):
 @dataclass
 class Zip(Giochino):
     _name = "Zip"
-    _category = "Logica"
+    _category = "Logica e matematica"
     _date = datetime.date(2025, 3, 19)
     _day = "2"
     _emoji = "⚡"
