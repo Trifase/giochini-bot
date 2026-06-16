@@ -74,6 +74,9 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
     if isinstance(date, str) and game == "Murdle":
         date = datetime.datetime.strptime(date, "%m/%d/%Y").date()
 
+    if isinstance(date, str) and game == "Contexto":
+        date = datetime.datetime.strptime(date, "%m/%d/%Y").date()
+
     if isinstance(date, str) and game == "Picsey":
         date = datetime.datetime.strptime(date, "%m.%d.%y").date()
 
@@ -835,12 +838,14 @@ class Contexto(Giochino):
         "I played contexto.me #522 and got it in 39 guesses and 1 hints.\n\n🟩 9\n🟨 9\n🟥🟥🟥 22",
         "I played contexto.me #471 and got it in 42 guesses and 15 hints.\n\n🟩🟩 25\n🟨 12\n🟥🟥 20",
         "I played contexto.me #465 but I gave up in 31 guesses and 10 hints.\n\n🟩🟩🟩 22\n🟨 10\n🟥 9",
+        "I played contexto.me 06/16/2026 and got it in 29 guesses and 2 hints.\n\n🟩🟩🟩 18\n🟨 5\n🟥 8"
     ]
     expected = [
         {"day": "556", "name": "Contexto", "timestamp": 10, "tries": "57", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "522", "name": "Contexto", "timestamp": 10, "tries": 54, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "471", "name": "Contexto", "timestamp": 10, "tries": 267, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "465", "name": "Contexto", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1367", "name": "Contexto", "timestamp": 10, "tries": 59, "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -852,9 +857,13 @@ class Contexto(Giochino):
     def parse(self):
         text = self.raw_text
 
-        # Extract day number
+        # Extract day number or date
         day_match = re.search(r"contexto\.me #(\d+)", text)
-        self.day = day_match.group(1) if day_match else None
+        if day_match:
+            self.day = day_match.group(1)
+        else:
+            date_match = re.search(r"contexto\.me (\d{2}/\d{2}/\d{4})", text)
+            self.day = get_day_from_date(self._date, self._day, "Contexto", date_match.group(1)) if date_match else None
 
         # Check if the user gave up
         if re.search(r"but I gave up", text):
