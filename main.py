@@ -714,14 +714,12 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     else:
                         classifica += "\nLongest streak: current"
 
+                classifica += f"\n\nProgresso giornaliero:"
                 if tot_favs > 0:
-                    classifica += f"\n\n⭐ Oggi hai giocato a {favs_played_today} preferiti su {tot_favs}."
-                    classifica += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")}'
-                    classifica += f"\n\n🎮 Oggi hai giocato a {game_played_today} giochi in totale su {tot_games}."
-                    classifica += f'\n🎮 {print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}'
+                    classifica += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+                    classifica += f'\n🎮 {print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")} {game_played_today}/{tot_games}'
                 else:
-                    classifica += f"\n\nOggi hai giocato a {game_played_today} giochi su {tot_games}."
-                    classifica += f'\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}'
+                    classifica += f'\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")} {game_played_today}/{tot_games}'
 
                 mymsg = await update.message.reply_html(classifica)
 
