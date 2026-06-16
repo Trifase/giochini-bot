@@ -676,6 +676,16 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"], show_lost=True)
             tot_games = len([x for x in GAMES.keys() if not GAMES[x].get("disabled", False)])
             game_played_today = 0
+            
+            favorites = []
+            settings = context.bot_data.get("settings", {})
+            user_id_str = str(result["user_id"])
+            if user_id_str in settings:
+                favorites = settings[user_id_str].get("favs", [])
+            
+            active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
+            tot_favs = len(active_favorites)
+            favs_played_today = 0
 
             # for each game, see if there is a result for the last day of the game, and if there is, count it
             for game in GAMES.keys():
@@ -686,6 +696,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
                 if query:
                     game_played_today += 1
+                    if game in active_favorites:
+                        favs_played_today += 1
 
             if classifica:
                 classifica = f"{message}\n{classifica}"
@@ -701,8 +713,15 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         classifica += f"\nLongest streak: {long_streak}"
                     else:
                         classifica += "\nLongest streak: current"
-                classifica += f"\n\nOggi hai giocato a {game_played_today} giochi su {tot_games}."
-                classifica += f'\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}'
+
+                if tot_favs > 0:
+                    classifica += f"\n\n⭐ Oggi hai giocato a {favs_played_today} preferiti su {tot_favs}."
+                    classifica += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")}'
+                    classifica += f"\n\n🎮 Oggi hai giocato a {game_played_today} giochi in totale su {tot_games}."
+                    classifica += f'\n🎮 {print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}'
+                else:
+                    classifica += f"\n\nOggi hai giocato a {game_played_today} giochi su {tot_games}."
+                    classifica += f'\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")}'
 
                 mymsg = await update.message.reply_html(classifica)
 
