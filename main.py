@@ -845,6 +845,15 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         for game in not_played_regs:
             message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
 
+    active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
+    tot_favs = len(active_favorites)
+    if tot_favs > 0:
+        favs_played_today = len([g for g in played_today if g in active_favorites])
+        emoji_suffix = " 🥳" if favs_played_today == tot_favs else ""
+        message = message.strip()
+        message += f"\n\nProgresso preferiti{emoji_suffix}:"
+        message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+
     if solo_preferiti:
         buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myday_more_{update.effective_user.id}")]]
         keyboard = InlineKeyboardMarkup(buttons)
@@ -900,6 +909,15 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     elif not not_played_today:
         message = "Hai giocato a tutto!"
+
+    active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
+    tot_favs = len(active_favorites)
+    if tot_favs > 0:
+        favs_played_today = len([g for g in played_today if g in active_favorites])
+        emoji_suffix = " 🥳" if favs_played_today == tot_favs else ""
+        message = message.strip()
+        message += f"\n\nProgresso preferiti{emoji_suffix}:"
+        message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
 
     # edit the message
     await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
