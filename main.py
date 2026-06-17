@@ -847,12 +847,13 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
     tot_favs = len(active_favorites)
+    favs_played_today = 0
     if tot_favs > 0:
         favs_played_today = len([g for g in played_today if g in active_favorites])
-        emoji_suffix = " 🥳" if favs_played_today == tot_favs else ""
-        message = message.strip()
-        message += f"\n\nProgresso preferiti{emoji_suffix}:"
-        message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+        if favs_played_today < tot_favs:
+            message = message.strip()
+            message += f"\n\nProgresso preferiti:"
+            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
 
     if solo_preferiti:
         buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myday_more_{update.effective_user.id}")]]
@@ -861,7 +862,11 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
     command_msg = update.message
-    context.job_queue.run_once(delete_post, 60, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}")
+    messages_to_delete = [mymsg, command_msg]
+    if tot_favs > 0 and favs_played_today == tot_favs:
+        emojimsg = await update.message.reply_text("🥳")
+        messages_to_delete.append(emojimsg)
+    context.job_queue.run_once(delete_post, 60, data=messages_to_delete, name=f"myday_delete_{str(update.effective_message.id)}")
 
 
 async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -912,15 +917,19 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
     tot_favs = len(active_favorites)
+    favs_played_today = 0
     if tot_favs > 0:
         favs_played_today = len([g for g in played_today if g in active_favorites])
-        emoji_suffix = " 🥳" if favs_played_today == tot_favs else ""
-        message = message.strip()
-        message += f"\n\nProgresso preferiti{emoji_suffix}:"
-        message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+        if favs_played_today < tot_favs:
+            message = message.strip()
+            message += f"\n\nProgresso preferiti:"
+            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
 
     # edit the message
     await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    if tot_favs > 0 and favs_played_today == tot_favs:
+        emojimsg = await update.effective_message.reply_text("🥳")
+        context.job_queue.run_once(delete_post, 60, data=[emojimsg], name=f"myday_emoji_delete_{str(update.effective_message.id)}")
 
 
 async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
