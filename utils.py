@@ -542,6 +542,12 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == 'EncloseHorse':
         tries = f"{100 - tries}%"
 
+    if game == 'Catfishing':
+        score = (100 - tries) / 10
+        if score % 1 == 0:
+            score = int(score)
+        tries = f"{score}/10"
+
     return tries
 
 

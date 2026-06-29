@@ -454,6 +454,48 @@ class BracketCity(Giochino):
 
 
 @dataclass
+class Catfishing(Giochino):
+    _name = "Catfishing"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 6, 29)
+    _day = "736"
+    _emoji = "🐟"
+    _url = "https://catfishing.net"
+
+    examples = [
+        "catfishing.net\n#709 - 2.5/10\n🐟🐟🥚🐟🥚\n🐟🥚🐈🐟🐟",
+        "catfishing.net\n#736 - 2/10\n🐈🐟🐟🐟🐈\n🐟🐟🐟🐟🐟",
+        "catfishing.net\n#701 - 5/10\n🐟🐈🐈🐟🐟\n🐈🐈🐟🐟🐈",
+        "catfishing.net\n#702 - 1/10\n🐟🐈🐟🐟🐟\n🐟🐟🐟🐟🐟"
+    ]
+    expected = [
+        {"day": "709", "name": "Catfishing", "timestamp": 10, "tries": 75, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "736", "name": "Catfishing", "timestamp": 10, "tries": 80, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "701", "name": "Catfishing", "timestamp": 10, "tries": 50, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "702", "name": "Catfishing", "timestamp": 10, "tries": 90, "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["catfishing.net"]
+        _can_handle_this = all(w in raw_text for w in wordlist)
+        return _can_handle_this
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"#(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        score_match = re.search(r"(\d+(?:\.\d+)?)/10", text)
+        if score_match:
+            score = float(score_match.group(1))
+            self.tries = int(100 - (score * 10))
+        else:
+            self.tries = None
+        self.stars = None
+
+
+@dataclass
 class Chrono(Giochino):
     _name = "Chrono"
     _category = "Storia"
