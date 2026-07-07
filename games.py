@@ -1432,12 +1432,14 @@ class FoxiMax(Giochino):
         "🦊#FoxiMax #1409 5/8 (16 letters)\nhttps://foximax.com/\n\n🟩🟩🟩🟩🟩\n⬜️🟩🟩🟩⬜️\n🟩🟩🟩⬜️🟩\n🟩🟩🟩🟩🟩\n🟩⬜️🟩🟩🟩",
         "🦊#FoxiMax #1409 3/8 (13 letters)\nhttps://foximax.com/\n\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
         "🦊#FoxiMax #1374 7/8\nhttps://foximax.com/\n\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩⬜️\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
+        "🦊#FoxiMax #1410 X/8 (15 letters)\nhttps://www.foximax.com/\n\n🟩🟩🟩🟥🟥\n🟥🟩🟥🟩🟥\n🟥🟩🟩🟩🟩\n🟥🟩🟩🟥🟩\n🟥🟩🟥🟩🟩\n🟥🟩🟩🟩🟩\n⬜🟩🟥🟩⬜\n⬜🟩🟩🟩🟩",
     ]
     expected = [
         {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase", "stars": None},
         {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase", "stars": None},
         {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": None},
         {"day": "1374", "name": "FoxiMax", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase", "stars": None},
+        {"day": "1410", "name": "FoxiMax", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase", "stars": None},
     ]
 
     @staticmethod
@@ -1452,7 +1454,7 @@ class FoxiMax(Giochino):
         day_match = re.search(r"#FoxiMax #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        score_match = re.search(r"#FoxiMax #\d+ (\d+)/8", text)
+        score_match = re.search(r"#FoxiMax #\d+ ([X\d]+)/8", text)
         self.tries = score_match.group(1) if score_match else None
 
         self.stars = None
