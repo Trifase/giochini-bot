@@ -3579,17 +3579,19 @@ class Sumplete(Giochino):
 
     examples = [
         "🧩 #Sumplete Daily 5x5 #1229 ⏱️ 00:28.25\n\n3️⃣4️⃣8️⃣7️⃣7️⃣ 3️⃣8️⃣3️⃣5️⃣4️⃣ 4️⃣2️⃣2️⃣5️⃣1️⃣ 2️⃣6️⃣1️⃣1️⃣8️⃣ 4️⃣7️⃣5️⃣9️⃣2️⃣\n\nCan you beat my time? sumplete.com/",
-        "🧩 #Sumplete Daily 7x7 #1228 ⏱️ 01:15.10\n\nCan you beat my time? sumplete.com/"
+        "🧩 #Sumplete Daily 5x5 #1230 ⏱️ 01:15.10\n\nCan you beat my time? sumplete.com/"
     ]
     expected = [
         {"day": "1229", "name": "Sumplete", "timestamp": 10, "tries": "0028", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "1228", "name": "Sumplete", "timestamp": 10, "tries": "0115", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "1230", "name": "Sumplete", "timestamp": 10, "tries": "0115", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Sumplete", "sumplete.com"]
-        return any(w.lower() in raw_text.lower() for w in wordlist)
+        is_sumplete = any(w.lower() in raw_text.lower() for w in ["sumplete", "sumplete.com"])
+        is_5x5 = "5x5" in raw_text
+        is_not_unlimited = "unlimited" not in raw_text.lower()
+        return is_sumplete and is_5x5 and is_not_unlimited
 
     def parse(self):
         text = self.raw_text
