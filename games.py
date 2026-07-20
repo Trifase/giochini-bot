@@ -140,7 +140,8 @@ class GameFilter(MessageFilter):
         self.data_filter = True
 
     def filter(self, message):
-        if not message.text:
+        text = message.text or message.caption
+        if not text:
             return False
 
         # Iterate all games to find the FIRST that can handle the update.
@@ -149,7 +150,7 @@ class GameFilter(MessageFilter):
         # Returning a dictionary and setting data_filter = true means that PTB will build
         # a context.property (context.giochino) with the selected class. We just grab it on the other end.
         for giochino in ALL_CLASSES:
-            if giochino.can_handle_this(message.text):
+            if giochino.can_handle_this(text):
                 return {"giochino": [giochino]}
         return False
 
@@ -193,7 +194,8 @@ class Giochino:
 
     def __init__(self, update):
         self.update = update
-        self.raw_text = sanitize(self.update.message.text)
+        raw_msg_text = self.update.message.text or self.update.message.caption or ""
+        self.raw_text = sanitize(raw_msg_text)
 
         timestamp = int(datetime.datetime.timestamp(self.update.effective_message.date))
         self.user_name = self.update.message.from_user.full_name
@@ -1513,6 +1515,42 @@ class Flickle(Giochino):
             else:
                 # Find the position of the first green square
                 self.tries = str(punteggio_bonificato.index("🟩") + 1)
+
+
+@dataclass
+class FoxiMax(Giochino):
+    _name = "FoxiMax"
+    _category = "Giochi di parole"
+    _date = datetime.date(2026, 7, 20)
+    _day = "1"
+    _emoji = "🦊"
+    _url = "https://foximax.com"
+
+    examples = [
+        "FoxiMax #1 3/8\nhttps://foximax.com",
+        "FoxiMax #5 5/8\nhttps://foximax.com"
+    ]
+    expected = [
+        {"day": "1", "name": "FoxiMax", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "5", "name": "FoxiMax", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["FoxiMax", "foximax.com"]
+        return any(w.lower() in raw_text.lower() for w in wordlist)
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"FoxiMax\s*#(\d+)", text, re.IGNORECASE)
+        self.day = day_match.group(1) if day_match else None
+
+        score_match = re.search(r"(\d+)/8", text)
+        if score_match:
+            self.tries = score_match.group(1)
+        else:
+            self.tries = None
+        self.stars = None
 
 
 @dataclass
@@ -3486,6 +3524,44 @@ class Strands(Giochino):
         count = 0
         count += text.count("💡")
         self.tries = str(count)
+
+
+@dataclass
+class Sumplete(Giochino):
+    _name = "Sumplete"
+    _category = "Logica e matematica"
+    _date = datetime.date(2026, 7, 19)
+    _day = "1229"
+    _emoji = "🧩"
+    _url = "https://sumplete.com/"
+
+    examples = [
+        "🧩 #Sumplete Daily 5x5 #1229 ⏱️ 00:28.25\n\n3️⃣4️⃣8️⃣7️⃣7️⃣ 3️⃣8️⃣3️⃣5️⃣4️⃣ 4️⃣2️⃣2️⃣5️⃣1️⃣ 2️⃣6️⃣1️⃣1️⃣8️⃣ 4️⃣7️⃣5️⃣9️⃣2️⃣\n\nCan you beat my time? sumplete.com/",
+        "🧩 #Sumplete Daily 7x7 #1228 ⏱️ 01:15.10\n\nCan you beat my time? sumplete.com/"
+    ]
+    expected = [
+        {"day": "1229", "name": "Sumplete", "timestamp": 10, "tries": "0028", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1228", "name": "Sumplete", "timestamp": 10, "tries": "0115", "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Sumplete", "sumplete.com"]
+        return any(w.lower() in raw_text.lower() for w in wordlist)
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"#(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+
+        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})", text)
+        if time_match:
+            minutes = int(time_match.group(1))
+            seconds = int(time_match.group(2))
+            self.tries = f"{minutes:02d}{seconds:02d}"
+        else:
+            self.tries = None
+        self.stars = None
 
 
 @dataclass
