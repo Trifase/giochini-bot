@@ -3802,23 +3802,24 @@ class Timdle(Giochino):
         'TIMDLE Jun 24\n🌟 34/36\n1: 1p     5: 5p\n2: 2p     6: 5p\n3: 3p     7: 7p\n4: 4p     8: 7p\nPlay at https://timdle.com',
         'TIMDLE Jun 27\n😌 31/36\n1: 1p     5: 5p\n2: 1p     6: 4p\n3: 3p     7: 6p\n4: 4p     8: 7p\nPlay at https://timdle.com',
         'TIMDLE #612 · Jul 22\n🤏 35/36\n1: 0p     5: 5p\n2: 2p     6: 6p\n3: 3p     7: 7p\n4: 4p     8: 8p\nPlay at https://timdle.com/daily',
+        'Timdle #612 · Jul 22\n🌟 34/36\n🟨🟩🟩🟩🟩🟩🟩🟨\ntimdle.com/daily',
     ]
     expected = [
         {"day": "100", "name": "Timdle", "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "103", "name": "Timdle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "128", "name": "Timdle", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "128", "name": "Timdle", "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["TIMDLE", "timdle.com/daily"]
-        _can_handle_this = all(w in raw_text for w in wordlist) and "Music" not in raw_text
-        return _can_handle_this
+        text_lower = raw_text.lower()
+        return "timdle" in text_lower and "timdle.com" in text_lower and "music" not in text_lower
 
     def parse(self):
         text = self.raw_text
 
-        match_date = re.search(r"TIMDLE\s+(?:#\d+\s*[·•\-]?\s*)?([A-Za-z]+\s+\d{1,2})", text)
+        match_date = re.search(r"TIMDLE\s+(?:#\d+\s*[·•\-]?\s*)?([A-Za-z]+\s+\d{1,2})", text, re.IGNORECASE)
         if match_date:
             date_str = match_date.group(1)
             current_year = datetime.datetime.now().year
@@ -3854,14 +3855,13 @@ class TimdleMusic(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["TIMDLE Music", "Play at https://timdle.com/music"]
-        _can_handle_this = all(w in raw_text for w in wordlist)
-        return _can_handle_this
+        text_lower = raw_text.lower()
+        return "timdle" in text_lower and "music" in text_lower and "timdle.com" in text_lower
 
     def parse(self):
         text = self.raw_text
 
-        match_date = re.search(r"TIMDLE Music\s+(?:#\d+\s*[·•\-]?\s*)?([A-Za-z]+\s+\d{1,2})", text)
+        match_date = re.search(r"TIMDLE Music\s+(?:#\d+\s*[·•\-]?\s*)?([A-Za-z]+\s+\d{1,2})", text, re.IGNORECASE)
         if match_date:
             date_str = match_date.group(1)
             current_year = datetime.datetime.now().year
