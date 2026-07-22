@@ -548,6 +548,9 @@ def process_tries(game: str, tries: int | str) -> int | str:
             score = int(score)
         tries = f"{score}/10"
 
+    if game == 'Geozee' or game == 'MinuteCryptic':
+        tries = -int(tries)
+
     return tries
 
 
