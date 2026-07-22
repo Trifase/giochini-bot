@@ -1703,6 +1703,46 @@ class Geogrid(Giochino):
 
 
 @dataclass
+class Geozee(Giochino):
+    _name = "Geozee"
+    _category = "Bandiere e geografia"
+    _date = datetime.date(2026, 7, 9)
+    _day = "1"
+    _emoji = "🌍"
+    _url = "https://geozee.earth"
+
+    examples = [
+        "Geozee #14 — 576/828 · top 70% 🌍\n🇲🇳🇬🇫🇨🇲🇷🇴🇵🇪🇸🇲🇨🇼🇧🇯🇮🇩\n\n🟩🟥🟩\n🟩🟥🟥\n🟩🟩🟩\n\nhttps://geozee.earth?ref=share",
+        "Geozee #14 — 546/828 · top 76% 🌍\n🇲🇳🇬🇫🇨🇲🇷🇴🇵🇪🇸🇲🇨🇼🇧🇯🇮🇩\n\n🟩🟥🟩\n🟩🟩🟥\n🟥🟩🟩\n\nhttps://geozee.earth?ref=share",
+        "Geozee #14 — 672/828 · top 40% 🌍\n🇲🇳🇬🇫🇨🇲🇷🇴🇵🇪🇸🇲🇨🇼🇧🇯🇮🇩\n\n🟩🟥🟩\n🟩🟩🟩\n🟥🟩🟩\n\nhttps://geozee.earth?ref=share"
+    ]
+    expected = [
+        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -57600828, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -54600828, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -67200828, "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Geozee", "geozee.earth"]
+        return any(w.lower() in raw_text.lower() for w in wordlist)
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Geozee\s*#(\d+)", text, re.IGNORECASE)
+        self.day = str(int(day_match.group(1))) if day_match else None
+
+        score_match = re.search(r"(\d+)/(\d+)", text)
+        if score_match:
+            numerator = int(score_match.group(1))
+            denominator = int(score_match.group(2))
+            self.tries = -(numerator * 100000 + denominator)
+        else:
+            self.tries = None
+        self.stars = None
+
+
+@dataclass
 class Gisnep(Giochino):
     _name = "Gisnep"
     _category = "Giochi di parole"

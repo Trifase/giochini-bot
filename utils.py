@@ -557,6 +557,12 @@ def process_tries(game: str, tries: int | str) -> int | str:
         else:
             tries = f"{purple} 🟣"
 
+    if game == 'Geozee':
+        tries = int(tries)
+        numerator = -tries // 100000
+        denominator = -tries % 100000
+        tries = f"{numerator}/{denominator}"
+
     return tries
 
 
