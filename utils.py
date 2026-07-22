@@ -548,6 +548,15 @@ def process_tries(game: str, tries: int | str) -> int | str:
             score = int(score)
         tries = f"{score}/10"
 
+    if game == 'MinuteCryptic':
+        tries = int(tries)
+        purple = -tries // 100
+        yellow = -tries % 100
+        if yellow > 0:
+            tries = f"{purple} 🟣, {yellow} 🟡"
+        else:
+            tries = f"{purple} 🟣"
+
     return tries
 
 

@@ -2440,6 +2440,61 @@ class Moviedle(Giochino):
 
 
 @dataclass
+class MinuteCryptic(Giochino):
+    _name = "MinuteCryptic"
+    _category = "Giochi di parole"
+    _date = datetime.date(2026, 1, 1)
+    _day = "1"
+    _emoji = "🧩"
+    _url = "https://www.minutecryptic.com/"
+
+    examples = [
+        "Minute Cryptic - 22 July, 2026\n\"After golf, he picked up ball and tee, then left?\" (5)\n🟣🟣🟣🟣🟣🟣🟣🟣\n🏆 0 hints – 2 under the community par (74.213 solvers so far).\nhttps://www.minutecryptic.com/?utm_source=share",
+        "Minute Cryptic - 22 July, 2026\n\"After golf, he picked up ball and tee, then left?\" (5)\n⚪️⚪️⚪️🟡🟡🟡🟡🟡\n🏋️ 8 hints – 6 over the community par (72.738 solvers so far).\nhttps://www.minutecryptic.com/?utm_source=share",
+        "Minute Cryptic - 22 July, 2026\n\"After golf, he picked up ball and tee, then left?\" (5)\n⚪️⚪️🟣🟣🟣🟣🟣🟣\n🤝 2 hints – matched the community par (72.738 solvers so far).\nhttps://www.minutecryptic.com/?utm_source=share"
+    ]
+    expected = [
+        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -800, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -5, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -600, "user_id": 456481297, "user_name": "Trifase"}
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Minute Cryptic", "minutecryptic.com"]
+        return any(w.lower() in raw_text.lower() for w in wordlist)
+
+    def parse(self):
+        text = self.raw_text
+        
+        date_match = re.search(r"Minute Cryptic\s*-\s*(\d+\s+[a-zA-Z]+,\s+\d{4})", text, re.IGNORECASE)
+        if date_match:
+            date_str = date_match.group(1)
+            months = {
+                "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+                "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
+            }
+            parsed_match = re.search(r"(\d+)\s+([a-zA-Z]+),\s+(\d{4})", date_str)
+            if parsed_match:
+                day_val = int(parsed_match.group(1))
+                month_name = parsed_match.group(2).lower()
+                year_val = int(parsed_match.group(3))
+                month_val = months.get(month_name, 1)
+                parsed_date = datetime.date(year_val, month_val, day_val)
+                self.day = str((parsed_date - self._date).days + 1)
+            else:
+                self.day = None
+        else:
+            self.day = None
+
+        purple_count = text.count("🟣")
+        yellow_count = text.count("🟡")
+        
+        self.tries = -(purple_count * 100 + yellow_count)
+        self.stars = None
+
+
+@dataclass
 class Murdle(Giochino):
     _name = "Murdle"
     _category = "Logica e matematica"
