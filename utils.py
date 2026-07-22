@@ -84,7 +84,7 @@ class Classifica:
         # Ordina per tries (crescente) e poi per extra (decrescente)
         sorted_giocate = sorted(
             [g for g in self.giocate if not g.lost],
-            key=lambda g: (g.tries, -float(g.extra))
+            key=lambda g: (g.tries, -float(g.extra) if g.extra else 0.0)
         )
         
         last_tries = None
@@ -547,21 +547,6 @@ def process_tries(game: str, tries: int | str) -> int | str:
         if score % 1 == 0:
             score = int(score)
         tries = f"{score}/10"
-
-    if game == 'MinuteCryptic':
-        tries = int(tries)
-        purple = -tries // 100
-        yellow = -tries % 100
-        if yellow > 0:
-            tries = f"{purple} 🟣, {yellow} 🟡"
-        else:
-            tries = f"{purple} 🟣"
-
-    if game == 'Geozee':
-        tries = int(tries)
-        numerator = -tries // 100000
-        denominator = -tries % 100000
-        tries = f"{numerator}/{denominator}"
 
     return tries
 

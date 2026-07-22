@@ -1717,9 +1717,9 @@ class Geozee(Giochino):
         "Geozee #14 — 672/828 · top 40% 🌍\n🇲🇳🇬🇫🇨🇲🇷🇴🇵🇪🇸🇲🇨🇼🇧🇯🇮🇩\n\n🟩🟥🟩\n🟩🟩🟩\n🟥🟩🟩\n\nhttps://geozee.earth?ref=share"
     ]
     expected = [
-        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -57600828, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -54600828, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -67200828, "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -576, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -546, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "14", "name": "Geozee", "timestamp": 10, "tries": -672, "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -1735,8 +1735,7 @@ class Geozee(Giochino):
         score_match = re.search(r"(\d+)/(\d+)", text)
         if score_match:
             numerator = int(score_match.group(1))
-            denominator = int(score_match.group(2))
-            self.tries = -(numerator * 100000 + denominator)
+            self.tries = -numerator
         else:
             self.tries = None
         self.stars = None
@@ -2494,9 +2493,9 @@ class MinuteCryptic(Giochino):
         "Minute Cryptic - 22 July, 2026\n\"After golf, he picked up ball and tee, then left?\" (5)\n⚪️⚪️🟣🟣🟣🟣🟣🟣\n🤝 2 hints – matched the community par (72.738 solvers so far).\nhttps://www.minutecryptic.com/?utm_source=share"
     ]
     expected = [
-        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -800, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -5, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -600, "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -8, "user_id": 456481297, "user_name": "Trifase", "stars": "0"},
+        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase", "stars": "5"},
+        {"day": "203", "name": "MinuteCryptic", "timestamp": 10, "tries": -6, "user_id": 456481297, "user_name": "Trifase", "stars": "0"}
     ]
 
     @staticmethod
@@ -2530,8 +2529,8 @@ class MinuteCryptic(Giochino):
         purple_count = text.count("🟣")
         yellow_count = text.count("🟡")
         
-        self.tries = -(purple_count * 100 + yellow_count)
-        self.stars = None
+        self.tries = -purple_count
+        self.stars = str(yellow_count)
 
 
 @dataclass
