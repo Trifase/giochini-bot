@@ -1423,7 +1423,7 @@ class FoodGuessr(Giochino):
 @dataclass
 class FoxiMax(Giochino):
     _name = "FoxiMax"
-    _category = "Parole"
+    _category = "Giochi di Parole"
     _date = datetime.date(2026, 7, 6)
     _day = "1409"
     _emoji = "🦊"
@@ -1460,6 +1460,7 @@ class FoxiMax(Giochino):
         self.tries = score_match.group(1) if score_match else None
 
         self.stars = None
+
 
 
 @dataclass
@@ -1558,42 +1559,7 @@ class Flickle(Giochino):
                 # Find the position of the first green square
                 self.tries = str(punteggio_bonificato.index("🟩") + 1)
 
-
-@dataclass
-class FoxiMax(Giochino):
-    _name = "FoxiMax"
-    _category = "Giochi di parole"
-    _date = datetime.date(2026, 7, 20)
-    _day = "1"
-    _emoji = "🦊"
-    _url = "https://foximax.com"
-
-    examples = [
-        "FoxiMax #1 3/8\nhttps://foximax.com",
-        "FoxiMax #5 5/8\nhttps://foximax.com"
-    ]
-    expected = [
-        {"day": "1", "name": "FoxiMax", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "5", "name": "FoxiMax", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase"}
-    ]
-
-    @staticmethod
-    def can_handle_this(raw_text):
-        wordlist = ["FoxiMax", "foximax.com"]
-        return any(w.lower() in raw_text.lower() for w in wordlist)
-
-    def parse(self):
-        text = self.raw_text
-        day_match = re.search(r"FoxiMax\s*#(\d+)", text, re.IGNORECASE)
-        self.day = day_match.group(1) if day_match else None
-
-        score_match = re.search(r"(\d+)/8", text)
-        if score_match:
-            self.tries = score_match.group(1)
-        else:
-            self.tries = None
-        self.stars = None
-
+   
 
 @dataclass
 class FramedOneFrame(Giochino):
