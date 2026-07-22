@@ -1724,8 +1724,8 @@ class Geozee(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Geozee", "geozee.earth"]
-        return any(w.lower() in raw_text.lower() for w in wordlist)
+        # Must contain "Geozee #" to prevent false positive matches on bot commands like "/c geozee"
+        return "geozee #" in raw_text.lower()
 
     def parse(self):
         text = self.raw_text
@@ -2500,8 +2500,9 @@ class MinuteCryptic(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Minute Cryptic", "minutecryptic.com"]
-        return any(w.lower() in raw_text.lower() for w in wordlist)
+        # Require "minute cryptic -" or the sharing URL with utm_source to avoid false matches on commands like "/c minutecryptic"
+        text_lower = raw_text.lower()
+        return "minute cryptic -" in text_lower or "minutecryptic.com/?utm_source" in text_lower
 
     def parse(self):
         text = self.raw_text

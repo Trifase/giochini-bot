@@ -626,6 +626,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     if result:  # should always be the case
+        if result.get("day") is None:
+            logging.warning(f"Parsed result with null day for game {giochino._name}: {update.message.text}")
+            return
+
         query = Punteggio.select().where(
             Punteggio.day == str_as_int(result["day"]),
             Punteggio.game == result["name"],
