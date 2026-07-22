@@ -3811,7 +3811,7 @@ class Timdle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["TIMDLE", "Play at https://timdle.com"]
+        wordlist = ["TIMDLE", "timdle.com/daily"]
         _can_handle_this = all(w in raw_text for w in wordlist) and "Music" not in raw_text
         return _can_handle_this
 
