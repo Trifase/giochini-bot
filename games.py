@@ -54,7 +54,7 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date, "%B %d, %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
-    if isinstance(date, str) and game == "Timdle":
+    if isinstance(date, str) and (game == "Timdle" or game == "Timdle Music"):
         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
         date = datetime.datetime.strptime(date, "%b %d %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
@@ -3801,10 +3801,12 @@ class Timdle(Giochino):
     examples = [
         'TIMDLE Jun 24\n🌟 34/36\n1: 1p     5: 5p\n2: 2p     6: 5p\n3: 3p     7: 7p\n4: 4p     8: 7p\nPlay at https://timdle.com',
         'TIMDLE Jun 27\n😌 31/36\n1: 1p     5: 5p\n2: 1p     6: 4p\n3: 3p     7: 6p\n4: 4p     8: 7p\nPlay at https://timdle.com',
+        'TIMDLE #612 · Jul 22\n🤏 35/36\n1: 0p     5: 5p\n2: 2p     6: 6p\n3: 3p     7: 7p\n4: 4p     8: 8p\nPlay at https://timdle.com/daily',
     ]
     expected = [
         {"day": "100", "name": "Timdle", "timestamp": 10, "tries": 2, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "103", "name": "Timdle", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "128", "name": "Timdle", "timestamp": 10, "tries": 1, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -3816,13 +3818,14 @@ class Timdle(Giochino):
     def parse(self):
         text = self.raw_text
 
-        match_date = re.search(r"TIMDLE (\w+ \d{1,2})", text)
-        current_year = datetime.datetime.now().year
-    
+        match_date = re.search(r"TIMDLE\s+(?:#\d+\s*[·•\-]?\s*)?([A-Za-z]+\s+\d{1,2})", text)
         if match_date:
             date_str = match_date.group(1)
-        current_day = f"{date_str} {current_year}"
-        self.day = get_day_from_date(self._date, self._day, "Timdle", current_day)
+            current_year = datetime.datetime.now().year
+            current_day = f"{date_str} {current_year}"
+            self.day = get_day_from_date(self._date, self._day, "Timdle", current_day)
+        else:
+            self.day = None
 
         match_points = re.search(r"(\d+)/36", text)
 
@@ -3858,13 +3861,14 @@ class TimdleMusic(Giochino):
     def parse(self):
         text = self.raw_text
 
-        match_date = re.search(r"TIMDLE Music (\w+ \d{1,2})", text)
-        current_year = datetime.datetime.now().year
-    
+        match_date = re.search(r"TIMDLE Music\s+(?:#\d+\s*[·•\-]?\s*)?([A-Za-z]+\s+\d{1,2})", text)
         if match_date:
             date_str = match_date.group(1)
-        current_day = f"{date_str} {current_year}"
-        self.day = get_day_from_date(self._date, self._day, "Timdle", current_day)
+            current_year = datetime.datetime.now().year
+            current_day = f"{date_str} {current_year}"
+            self.day = get_day_from_date(self._date, self._day, "Timdle Music", current_day)
+        else:
+            self.day = None
 
         match_points = re.search(r"(\d+)/36", text)
 
