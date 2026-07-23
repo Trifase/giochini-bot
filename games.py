@@ -1423,7 +1423,7 @@ class FoodGuessr(Giochino):
 @dataclass
 class FoxiMax(Giochino):
     _name = "FoxiMax"
-    _category = "Giochi di Parole"
+    _category = "Giochi di parole"
     _date = datetime.date(2026, 7, 6)
     _day = "1409"
     _emoji = "🦊"
