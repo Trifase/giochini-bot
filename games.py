@@ -11,7 +11,14 @@ from telegram.ext.filters import MessageFilter
 
 
 
+_SAMPLE_BOT = None
+
+
 def generate_sample_update(text):
+    global _SAMPLE_BOT
+    if _SAMPLE_BOT is None:
+        _SAMPLE_BOT = Bot("123456789")
+
     updict = {
         "message": {
             "channel_chat_created": False,
@@ -28,8 +35,7 @@ def generate_sample_update(text):
     }
 
     # Creo un fake update
-    bot = Bot("123456789")
-    upd = Update.de_json(updict, bot)
+    upd = Update.de_json(updict, _SAMPLE_BOT)
     return upd
 
 
