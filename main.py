@@ -54,6 +54,7 @@ from utils import (
     Classifica,
     Giocata,
     GameStatus,
+    GameAnchor,
     correct_name,
     daily_ranking,
     get_day_from_date,
@@ -991,6 +992,113 @@ async def show_disabled_games(update: Update, context: ContextTypes.DEFAULT_TYPE
     await delete_original_command(update, context, 30)
 
 
+async def cmd_setanchor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Admin-only command
+    if update.effective_user.id != ADMIN_ID:
+        return
+
+    args = context.args
+
+    # If no arguments or help requested, show detailed help message
+    if not args or args[0].lower() in ["-h", "--help", "help"]:
+        help_text = (
+            "⚓️ <b>Gestione Ancoraggio Giochi</b> (<code>/setanchor</code> / <code>/setdate</code>)\n\n"
+            "Uso del comando:\n"
+            "• <code>/setanchor &lt;gioco&gt; &lt;giorno&gt; [data]</code>\n"
+            "• <code>/setanchor list</code> — Mostra tutti gli ancoraggi personalizzati\n"
+            "• <code>/setanchor reset &lt;gioco&gt;</code> — Rimuove l'ancoraggio personalizzato\n\n"
+            "<b>Esempi:</b>\n"
+            "• <code>/setanchor Geozee 18</code>\n"
+            "  <i>Imposta il giorno #18 per Geozee alla data di OGGI.</i>\n"
+            "• <code>/setanchor Timdle 128 2026-07-22</code>\n"
+            "  <i>Imposta il giorno #128 per Timdle alla data specificata (YYYY-MM-DD oppure DD/MM/YYYY).</i>"
+        )
+        await update.message.reply_html(help_text)
+        return
+
+    subcmd = args[0].lower()
+
+    if subcmd == "list":
+        anchors = list(GameAnchor.select())
+        if not anchors:
+            await update.message.reply_text("Nessun ancoraggio personalizzato attivo nel database.")
+            return
+
+        msg = "⚓️ <b>Ancoraggi Personalizzati Attivi:</b>\n\n"
+        for a in anchors:
+            msg += f"• <b>{a.game_name}</b>: Giorno #{a.anchor_day} = Data {a.anchor_date}\n"
+        await update.message.reply_html(msg)
+        return
+
+    if subcmd == "reset":
+        if len(args) < 2:
+            await update.message.reply_text("Uso: /setanchor reset <gioco>")
+            return
+
+        raw_game = " ".join(args[1:])
+        target_game = correct_name(raw_game)
+        if not target_game:
+            await update.message.reply_text(f"Gioco '{raw_game}' non trovato.")
+            return
+
+        deleted = GameAnchor.delete().where(GameAnchor.game_name == target_game).execute()
+        if deleted:
+            await update.message.reply_html(f"✅ Ancoraggio personalizzato rimosso per <b>{target_game}</b>. Torna ai default.")
+        else:
+            await update.message.reply_html(f"Nessun ancoraggio personalizzato trovato per <b>{target_game}</b>.")
+        return
+
+    target_date = datetime.date.today()
+    parsed_custom_date = None
+    potential_date_str = args[-1]
+
+    for date_fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            parsed_custom_date = datetime.datetime.strptime(potential_date_str, date_fmt).date()
+            break
+        except ValueError:
+            pass
+
+    if parsed_custom_date:
+        target_date = parsed_custom_date
+        remaining = args[:-1]
+    else:
+        remaining = args
+
+    if not remaining:
+        await update.message.reply_text("Specificare un giorno valido. Uso: /setanchor <gioco> <giorno> [data]")
+        return
+
+    day_str = remaining[-1]
+    if not day_str.isdigit():
+        await update.message.reply_text(f"Numero di giorno non valido: '{day_str}'. Uso: /setanchor <gioco> <giorno> [data]")
+        return
+
+    parsed_day = day_str
+    raw_game = " ".join(remaining[:-1])
+
+    if not raw_game:
+        await update.message.reply_text("Specificare il nome del gioco. Uso: /setanchor <gioco> <giorno> [data]")
+        return
+
+    target_game = correct_name(raw_game)
+    if not target_game:
+        await update.message.reply_text(f"Gioco '{raw_game}' non trovato.")
+        return
+
+    GameAnchor.replace(
+        game_name=target_game,
+        anchor_date=target_date,
+        anchor_day=str(parsed_day),
+        updated_at=datetime.datetime.now()
+    ).execute()
+
+    await update.message.reply_html(
+        f"✅ Ancoraggio aggiornato per <b>{target_game}</b>:\n"
+        f"Giorno <b>#{parsed_day}</b> impostato alla data <b>{target_date.strftime('%Y-%m-%d')}</b>."
+    )
+
+
 async def check_unused_games(context: ContextTypes.DEFAULT_TYPE) -> None:
     today = datetime.date.today()
     cutoff_days = 20
@@ -1604,6 +1712,7 @@ async def post_init(app: Application) -> None:
     Punti.create_table()
     Medaglia.create_table()
     GameStatus.create_table()
+    GameAnchor.create_table()
     # Setting.create_table()
     
     sync_disabled_games()
@@ -1700,6 +1809,7 @@ def main():
     app.add_handler(CommandHandler(["listdisabled", "disabledlist", "showdisabled", "disabled"], show_disabled_games), 1)
     app.add_handler(CommandHandler(["checkunused", "unusedcheck", "nongiocati", "unused", "checkunusedgames"], manual_check_unused), 1)
     app.add_handler(CommandHandler(["checkdisable", "forcecheckdisable"], manual_auto_disable), 1)
+    app.add_handler(CommandHandler(["setanchor", "setdate"], cmd_setanchor), 1)
     app.add_handler(CommandHandler("restart", restart_bot), 1)
     app.add_handler(CommandHandler("refresh", refresh_bot), 1)
 

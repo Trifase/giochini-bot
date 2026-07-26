@@ -43,6 +43,14 @@ def time_from_emoji(input_string: str) -> str:
 
 
 def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
+    try:
+        from utils import GameAnchor
+        anchor = GameAnchor.get_or_none(GameAnchor.game_name == game)
+        if anchor:
+            game_date = anchor.anchor_date
+            game_day = str(anchor.anchor_day)
+    except Exception:
+        pass
 
     if isinstance(date, str) and game == "Globle":
         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")

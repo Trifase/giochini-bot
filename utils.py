@@ -66,6 +66,17 @@ class GameStatus(peewee.Model):
     class Meta:
         database = Punteggio._meta.database
 
+
+class GameAnchor(peewee.Model):
+    game_name = peewee.CharField(primary_key=True)
+    anchor_date = peewee.DateField()
+    anchor_day = peewee.CharField()
+    updated_at = peewee.DateTimeField(default=datetime.datetime.now)
+
+    class Meta:
+        database = Punteggio._meta.database
+        table_name = "game_anchors"
+
 @dataclass
 class Classifica:
     game: str = ""
