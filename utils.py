@@ -564,6 +564,12 @@ def process_tries(game: str, tries: int | str) -> int | str:
             return "X"
         tries = -int(tries)
 
+    if game == "Color":
+        if str(tries) in ['9999999', 'X']:
+            return "X"
+        val = abs(int(tries)) / 100.0
+        return f"{val:.2f}"
+
     return tries
 
 

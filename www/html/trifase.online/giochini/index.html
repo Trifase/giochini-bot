@@ -535,6 +535,10 @@
                     if (game === "HighFive" || game === "DontWordle") {
                         return Math.abs(tries);
                     }
+                    if (game === "Color") {
+                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
+                        return (Math.abs(tries) / 100).toFixed(2);
+                    }
                     if (game === "TimeGuesser") {
                         return 50000 - tries;
                     }

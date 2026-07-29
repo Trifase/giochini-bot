@@ -826,6 +826,53 @@ class Colorfle(Giochino):
 
 
 @dataclass
+class Color(Giochino):
+    _name = "Color"
+    _category = "Osservazione e percezione"
+    _date = datetime.date(2026, 7, 1)
+    _day = "100"
+    _emoji = "🎨"
+    _url = "https://dialed.gg"
+
+    examples = [
+        "Color Daily — Jul 29\n45.17/50 🟩🟩🟨🟩🟨\nhttps://dialed.gg/?d=1&s=45.17",
+    ]
+    expected = [
+        {"day": "128", "name": "Color", "timestamp": 10, "tries": -4517, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "color daily" in text_lower and "color2 daily" not in text_lower and "dialed.gg" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        date_match = re.search(r"Color Daily\s+[—\-]\s*([a-zA-Z]+)\s+(\d+)", text, re.IGNORECASE)
+        if date_match:
+            month_str = date_match.group(1).lower()[:3]
+            day_num = int(date_match.group(2))
+            months = {
+                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12
+            }
+            month_num = months.get(month_str, datetime.date.today().month)
+            year_num = datetime.date.today().year
+            parsed_date = datetime.date(year_num, month_num, day_num)
+            self.day = get_day_from_date(self._date, self._day, "Color", parsed_date)
+        else:
+            self.day = get_day_from_date(self._date, self._day, "Color", datetime.date.today())
+
+        score_match = re.search(r"(\d+(?:\.\d+)?)\s*/\s*50", text)
+        if score_match:
+            score = float(score_match.group(1))
+            self.tries = -round(score * 100)
+        else:
+            self.tries = None
+        self.stars = None
+
+
+@dataclass
 class Connections(Giochino):
     _name = "Connections"
     _category = "Giochi di parole"
