@@ -552,10 +552,12 @@ async def top_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def send_long_message(bot_token: str, chat_id: int | str, message: str, reply_to_message_id: int | None = None) -> dict:
     url = f"https://api.telegram.org/bot{bot_token}/sendRichMessage"
 
+    formatted_message = message.replace("\n", "<br>")
+
     payload = {
         "chat_id": chat_id,
         "rich_message": {
-            "html": message
+            "html": formatted_message
         },
     }
 
