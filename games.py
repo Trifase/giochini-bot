@@ -1152,6 +1152,48 @@ class Disorderly(Giochino):
 
 
 @dataclass
+class DontWordle(Giochino):
+    _name = "DontWordle"
+    _category = "Giochi di parole"
+    _date = datetime.date(2026, 7, 29)
+    _day = "1527"
+    _emoji = "🛑"
+    _url = "https://dontwordle.com"
+
+    examples = [
+        "Don't Wordle 1527 - SURVIVED\nHooray! I didn't Wordle today! I didn't even use a hint!\n⬜️⬜️⬜️🟨⬜️1354\n⬜️🟨⬜️🟨🟨44\n🟩🟩🟨⬜️⬜️6\n🟩🟩⬜️⬜️🟩3\n🟩🟩🟩⬜️🟩2\n🟩🟩🟩⬜️🟩1\nUndos used: 0\n\n  1 words remaining\nx 10 unused letters\n= 10 total score\n\nhttps://dontwordle.com",
+        "Don't Wordle 1527 - WORDLED\nI must admit that I Wordled!\n⬜️⬜️⬜️🟨⬜️1354\n⬜️🟨⬜️🟨🟨44\n🟩🟩🟨⬜️⬜️6\n🟩🟩⬜️⬜️🟩3\n🟩🟩🟩🟩🟩0\n⬛️⬛️⬛️⬛️⬛️\nUndos used: 1\n\nhttps://dontwordle.com",
+        "Don't Wordle 1527 - SURVIVED\nHooray! I didn't Wordle today! I didn't even use a hint!\n⬜️⬜️⬜️⬜️⬜️6901\n⬜️⬜️⬜️⬜️⬜️3019\n⬜️⬜️⬜️⬜️🟩139\n⬜️⬜️🟩🟨🟩7\n🟩🟩🟩⬜️🟩4\n🟩🟩🟩⬜️🟩3\nUndos used: 0\n\n  3 words remaining\nx 9 unused letters\n= 27 total score\n\nhttps://dontwordle.com",
+    ]
+    expected = [
+        {"day": "1527", "name": "DontWordle", "timestamp": 10, "tries": -10, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1527", "name": "DontWordle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1527", "name": "DontWordle", "timestamp": 10, "tries": -27, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        wordlist = ["Don't Wordle", "dontwordle.com"]
+        return all(w in raw_text for w in wordlist)
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Don't Wordle\s+#?(\d+)", text, re.IGNORECASE)
+        self.day = str(int(day_match.group(1))) if day_match else None
+
+        if "WORDLED" in text:
+            self.tries = "X"
+        else:
+            score_match = re.search(r"=\s*(\d+)\s+total score", text, re.IGNORECASE)
+            if score_match:
+                score = int(score_match.group(1))
+                self.tries = -score
+            else:
+                self.tries = None
+        self.stars = None
+
+
+@dataclass
 class DominoFit(Giochino):
     _name = "DominoFit"
     _category = "Logica e matematica"
