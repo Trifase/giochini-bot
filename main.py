@@ -549,9 +549,31 @@ async def top_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(text=message, parse_mode="HTML", disable_web_page_preview=True)
 
 
+async def send_long_message(bot_token: str, chat_id: int | str, message: str, reply_to_message_id: int | None = None) -> dict:
+    url = f"https://api.telegram.org/bot{bot_token}/sendRichMessage"
+
+    payload = {
+        "chat_id": chat_id,
+        "rich_message": {
+            "html": message
+        },
+    }
+
+    if reply_to_message_id is not None:
+        payload["reply_parameters"] = {"message_id": reply_to_message_id}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, json=payload, timeout=30.0)
+        response_data = response.json()
+
+    if not response_data.get("ok"):
+        raise RuntimeError(f"Telegram API Error: {response_data}")
+
+    return response_data
+
+
 async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chunks = []
-    current_chunk = ""
+    messaggio = ""
     print(f"ci sono in totale {len(GAMES.keys())} giochi")
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
@@ -559,17 +581,16 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, show_lost=True)
 
         if classifica:
-            if len(current_chunk) + len(classifica) + 2 > 3500:
-                chunks.append(current_chunk.strip())
-                current_chunk = classifica + "\n\n"
-            else:
-                current_chunk += classifica + "\n\n"
+            messaggio += classifica + "\n\n"
 
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
-    for chunk in chunks:
-        await update.message.reply_text(chunk, parse_mode="HTML", disable_web_page_preview=True)
+    if messaggio:
+        reply_to_id = update.effective_message.message_id if update.effective_message else None
+        await send_long_message(
+            bot_token=TOKEN,
+            chat_id=update.effective_chat.id,
+            message=messaggio.strip(),
+            reply_to_message_id=reply_to_id,
+        )
     return
 
 
