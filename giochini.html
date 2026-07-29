@@ -357,7 +357,7 @@
                     if (game === "HighFive" || game === "DontWordle") {
                         return Math.abs(tries);
                     }
-                    if (game === "Color") {
+                    if (game === "Color" || game === "Color2") {
                         if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
                         return (Math.abs(tries) / 100).toFixed(2);
                     }
