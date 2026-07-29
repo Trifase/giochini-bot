@@ -1,4 +1,5 @@
 import datetime
+import html
 import json
 import locale
 import logging
@@ -375,9 +376,10 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.forward(ID_BOTCENTRAL)
 
 
+    tb_escaped = html.escape(tb_string[:4000])
     await context.bot.send_message(
         chat_id=ID_BOTCENTRAL,
-        text=f'<pre><code class="language-python">{tb_string[:4000]}</code></pre>',
+        text=f'<pre><code class="language-python">{tb_escaped}</code></pre>',
         parse_mode="HTML",
     )
 
@@ -548,20 +550,26 @@ async def top_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    messaggio = ""
+    chunks = []
+    current_chunk = ""
     print(f"ci sono in totale {len(GAMES.keys())} giochi")
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
             continue
         classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, show_lost=True)
 
-        # print(make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, data=True))
-
         if classifica:
-            messaggio += classifica + "\n"
+            if len(current_chunk) + len(classifica) + 2 > 3500:
+                chunks.append(current_chunk.strip())
+                current_chunk = classifica + "\n\n"
+            else:
+                current_chunk += classifica + "\n\n"
 
-    if messaggio:
-        await update.message.reply_text(messaggio, parse_mode="HTML")
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
+    for chunk in chunks:
+        await update.message.reply_text(chunk, parse_mode="HTML", disable_web_page_preview=True)
     return
 
 
