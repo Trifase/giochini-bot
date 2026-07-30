@@ -4398,9 +4398,9 @@ class Waffle(Giochino):
         "#waffle629 X/5\n\n🟩🟩🟩🟩🟩\n🟩⬜️🟩⬜️🟩\n🟩🟩🟩🟩🟩\n🟩⬜️🟩⬜️🟩\n🟩⬛️🟩⬛️🟩\n\n💔 streak: 0\nwafflegame.net",
     ]
     expected = [
-        {"day": "807", "name": "Waffle", "stars": 1, "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "807", "name": "Waffle", "stars": 5, "timestamp": 10, "tries": 10, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "629", "name": "Waffle", "stars": 0, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "807", "name": "Waffle", "stars": None, "timestamp": 10, "tries": 14, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "807", "name": "Waffle", "stars": None, "timestamp": 10, "tries": 10, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "629", "name": "Waffle", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -4414,7 +4414,7 @@ class Waffle(Giochino):
         matches = re.search(r"#waffle(\d+) (\d+|X)/5", text)
         self.day = matches.group(1) if matches else None
         self.tries = 15 - int(matches.group(2)) if matches.group(2) != "X" else "X"
-        self.stars = text.count(b"\xe2\xad\x90".decode("utf-8"))
+        self.stars = None
 
 
 @dataclass
