@@ -617,8 +617,8 @@ async def week_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             bars = "|" * num_bars
         else:
             bars = ""
-        user_suffix = f" [{u_cnt}]" if u_cnt > 0 else ""
-        chart_lines.append(f"{day_name}: {bars} ({cnt}){user_suffix}")
+        user_suffix = f" 👤 {u_cnt}" if u_cnt > 0 else ""
+        chart_lines.append(f"{day_name}: {bars} 🎮 {cnt}{user_suffix}")
 
     chart_str = "\n".join(chart_lines)
 
