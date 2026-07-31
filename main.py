@@ -569,6 +569,8 @@ async def week_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     DAY_NAMES_IT = {0: "Lu", 1: "Ma", 2: "Me", 3: "Gi", 4: "Ve", 5: "Sa", 6: "Do"}
 
     counts_by_date = {d: 0 for d in days}
+    users_by_date = {d: set() for d in days}
+    total_unique_users = set()
     game_counts = defaultdict(int)
     user_names = {}
     user_play_counts = defaultdict(int)
@@ -589,6 +591,8 @@ async def week_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         if p_date and p_date in counts_by_date:
             counts_by_date[p_date] += 1
+            users_by_date[p_date].add(p.user_id)
+            total_unique_users.add(p.user_id)
             total_plays += 1
             if p.lost:
                 total_lost += 1
@@ -606,13 +610,15 @@ async def week_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     for d in days:
         cnt = counts_by_date[d]
+        u_cnt = len(users_by_date[d])
         day_name = DAY_NAMES_IT[d.weekday()]
         if max_count > 0 and cnt > 0:
             num_bars = max(1, int(round((cnt / max_count) * max_bars)))
             bars = "|" * num_bars
         else:
             bars = ""
-        chart_lines.append(f"{day_name}: {bars} ({cnt})")
+        user_suffix = f" [{u_cnt}]" if u_cnt > 0 else ""
+        chart_lines.append(f"{day_name}: {bars} ({cnt}){user_suffix}")
 
     chart_str = "\n".join(chart_lines)
 
@@ -630,6 +636,7 @@ async def week_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         top_user_str = f"<b>{top_user_name}</b> ({top_user_cnt} giocate)"
 
     lost_pct = round(total_lost / total_plays * 100, 1) if total_plays else 0.0
+    total_users_count = len(total_unique_users)
 
     start_str = days[0].strftime("%d/%m")
     end_str = days[-1].strftime("%d/%m")
@@ -640,6 +647,7 @@ async def week_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     msg += f"<code>{chart_str}</code>\n\n"
     msg += f"ℹ️ <b>Riepilogo settimana:</b>\n"
     msg += f"• Totale giocate: <code>{total_plays}</code>\n"
+    msg += f"• Totale giocatori: <code>{total_users_count}</code>\n"
     msg += f"• Partite perse: <code>{total_lost}</code> (<code>{lost_pct}%</code>)\n"
     msg += f"• Gioco più giocato: {top_game_str}\n"
     msg += f"• Giocatore più attivo: {top_user_str}\n"
