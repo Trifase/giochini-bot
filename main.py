@@ -1,4 +1,5 @@
 import datetime
+from collections import defaultdict
 import html
 import json
 import locale
@@ -443,6 +444,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "📌 /top_medaglie - Mostra il medagliere all time",
         "",
         "📌 /mystats - Mostra le tue statistiche",
+        "📌 /weekstat - Mostra le statistiche degli ultimi 7 giorni",
         "📌 /favs - Mostra e setta i giochi preferiti",
         "📌 /topgames - Mostra i giochi più giocati",
         "📌 /list - Mostra la lista di tutti i giochi supportati",
@@ -547,6 +549,102 @@ async def top_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message += classifica
 
     await update.message.reply_text(text=message, parse_mode="HTML", disable_web_page_preview=True)
+
+
+async def week_stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id
+    today = datetime.date.today()
+    start_date = today - datetime.timedelta(days=6)
+
+    days = [start_date + datetime.timedelta(days=i) for i in range(7)]
+
+    query = (
+        Punteggio.select(Punteggio.date, Punteggio.game, Punteggio.user_id, Punteggio.user_name, Punteggio.lost)
+        .where(
+            Punteggio.chat_id == chat_id,
+            Punteggio.date >= start_date
+        )
+    )
+
+    DAY_NAMES_IT = {0: "Lu", 1: "Ma", 2: "Me", 3: "Gi", 4: "Ve", 5: "Sa", 6: "Do"}
+
+    counts_by_date = {d: 0 for d in days}
+    game_counts = defaultdict(int)
+    user_names = {}
+    user_play_counts = defaultdict(int)
+    total_plays = 0
+    total_lost = 0
+
+    for p in query:
+        p_date = None
+        if isinstance(p.date, datetime.datetime):
+            p_date = p.date.date()
+        elif isinstance(p.date, datetime.date):
+            p_date = p.date
+        elif isinstance(p.date, str):
+            try:
+                p_date = datetime.datetime.strptime(p.date[:10], "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
+        if p_date and p_date in counts_by_date:
+            counts_by_date[p_date] += 1
+            total_plays += 1
+            if p.lost:
+                total_lost += 1
+            game_counts[p.game] += 1
+            user_names[p.user_id] = p.user_name
+            user_play_counts[p.user_id] += 1
+
+    if total_plays == 0:
+        await update.message.reply_text("Non ci sono ancora giocate registrate negli ultimi 7 giorni.")
+        return
+
+    max_count = max(counts_by_date.values())
+    max_bars = 20
+    chart_lines = []
+
+    for d in days:
+        cnt = counts_by_date[d]
+        day_name = DAY_NAMES_IT[d.weekday()]
+        if max_count > 0 and cnt > 0:
+            num_bars = max(1, int(round((cnt / max_count) * max_bars)))
+            bars = "|" * num_bars
+        else:
+            bars = ""
+        chart_lines.append(f"{day_name}: {bars} ({cnt})")
+
+    chart_str = "\n".join(chart_lines)
+
+    top_game_str = "N/D"
+    if game_counts:
+        top_game_name = max(game_counts, key=game_counts.get)
+        top_game_cnt = game_counts[top_game_name]
+        top_game_str = f"<b>{top_game_name}</b> ({top_game_cnt} giocate)"
+
+    top_user_str = "N/D"
+    if user_play_counts:
+        top_user_id = max(user_play_counts, key=user_play_counts.get)
+        top_user_name = user_names[top_user_id]
+        top_user_cnt = user_play_counts[top_user_id]
+        top_user_str = f"<b>{top_user_name}</b> ({top_user_cnt} giocate)"
+
+    lost_pct = round(total_lost / total_plays * 100, 1) if total_plays else 0.0
+
+    start_str = days[0].strftime("%d/%m")
+    end_str = days[-1].strftime("%d/%m")
+
+    msg = f"📊 <b>STATISTICHE DEGLI ULTIMI 7 GIORNI</b> 📊\n"
+    msg += f"<i>(Da {DAY_NAMES_IT[days[0].weekday()]} {start_str} a {DAY_NAMES_IT[days[-1].weekday()]} {end_str})</i>\n\n"
+    msg += f"📈 <b>Giocate giornaliere:</b>\n"
+    msg += f"<code>{chart_str}</code>\n\n"
+    msg += f"ℹ️ <b>Riepilogo settimana:</b>\n"
+    msg += f"• Totale giocate: <code>{total_plays}</code>\n"
+    msg += f"• Partite perse: <code>{total_lost}</code> (<code>{lost_pct}%</code>)\n"
+    msg += f"• Gioco più giocato: {top_game_str}\n"
+    msg += f"• Giocatore più attivo: {top_user_str}\n"
+
+    await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
 async def send_long_message(bot_token: str, chat_id: int | str, message: str, reply_to_message_id: int | None = None) -> dict:
@@ -1761,6 +1859,7 @@ async def post_init(app: Application) -> None:
         ('myscore', 'Mostra il tuo punteggio di oggi'),
         ('mystats', 'Le tue statistiche'),
         ('groupstats', 'Le statistiche del gruppo'),
+        ('weekstat', 'Statistiche degli ultimi 7 giorni'),
         ('favs', 'Mostra e setta i giochi preferiti'),
         ('dailyranking', 'Mostra i punteggi del giorno corrente'),
         ('classifica', 'Mostra la classifica'),
@@ -1804,6 +1903,7 @@ def main():
     app.add_handler(CommandHandler(["myscore", "score"], myscore), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "statistiche"], mystats), 1)
     app.add_handler(CommandHandler(["groupstats", "gstats", "statsgroup"], groupstats_command), 1)
+    app.add_handler(CommandHandler(["weekstat", "weekstats", "wstat", "week"], week_stats_command), 1)
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
