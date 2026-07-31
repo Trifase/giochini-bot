@@ -2618,6 +2618,43 @@ class Metazooa(Giochino):
 
 
 @dataclass
+class MoreLess(Giochino):
+    _name = "MoreLess"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 7, 31)
+    _day = "337"
+    _emoji = "📊"
+    _url = "https://less.gg/moreless"
+
+    examples = [
+        "More/Less #337 — 22/25\n\n🟩🟩🟩🟩🟩 Google Searches\n🟥🟩🟥🟩🟩 Spotify Streams\n🟩🟩🟩🟩🟩 Movie Ratings\n🟩🟩🟩🟩🟩 Prices\n🟥🟩🟩🟩🟩 Trivia\n\nhttps://less.gg/moreless",
+        "More/Less #337 — 20/25\n\n🟥🟩🟩🟩🟩 Google Searches\n🟥🟩🟩🟥🟩 Spotify Streams\n🟩🟩🟩🟥🟩 Movie Ratings\n🟩🟥🟩🟩🟩 Prices\n🟩🟩🟩🟩🟩 Trivia\n\nhttps://less.gg/moreless",
+    ]
+    expected = [
+        {"day": "337", "name": "MoreLess", "timestamp": 10, "tries": -22, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "337", "name": "MoreLess", "timestamp": 10, "tries": -20, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "more/less #" in text_lower or "less.gg/moreless" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"More/Less\s*#(\d+)", text, re.IGNORECASE)
+        self.day = str(int(day_match.group(1))) if day_match else None
+
+        score_match = re.search(r"(\d+)/25", text)
+        if score_match:
+            score = int(score_match.group(1))
+            self.tries = -score
+        else:
+            self.tries = None
+        self.stars = None
+
+
+@dataclass
 class Moviedle(Giochino):
     _name = "Moviedle"
     _category = "Cinema"
