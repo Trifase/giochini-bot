@@ -1564,6 +1564,48 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.job_queue.run_once(delete_post, 30, data=[mymsg, command_msg], name=f"myscore_delete_{str(update.effective_message.id)}")
 
 
+async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    AVAILABLE_MODELS = {
+        "default": "Default (solo vincenti, worst-rank)",
+        "no_limit_with_lost_rank_based": "Default (solo vincenti, worst-rank)",
+        "no_limit_with_lost": "No limit (include persi)",
+        "alternate": "Alternate (max 3pt, solo vincenti)",
+        "alternate-with-lost": "Alternate (max 3pt, include persi)",
+        "standard": "Standard (3-2-1 fisso)",
+    }
+
+    selected_model = "no_limit_with_lost"
+    if context.args:
+        arg_model = context.args[0].lower()
+        if arg_model in AVAILABLE_MODELS:
+            selected_model = arg_model
+
+    today = datetime.date.today()
+    classifica_stelle = daily_ranking(selected_model, today)
+
+    model_label = AVAILABLE_MODELS.get(selected_model, selected_model)
+
+    if not classifica_stelle:
+        await update.message.reply_text(f"Nessuna giocata registrata oggi per la simulazione con modello <b>{model_label}</b>.", parse_mode="HTML")
+        return
+
+    msg = f"🧪 <b>Simulazione Classifica di Oggi</b>\n"
+    msg += f"⚙️ Modello: <code>{selected_model}</code> ({model_label})\n\n"
+
+    for position, user_id, user_name, stelle in classifica_stelle:
+        stelle_val = int(stelle)
+        stelle_str = f"  {stelle_val}" if stelle_val < 10 else f"{stelle_val}"
+        msg += f"<code>{stelle_str}</code>⭐ <b>{user_name}</b>\n"
+
+    msg += f"\n<i>Prova altri modelli:</i>\n"
+    msg += f"• <code>/simuladaily no_limit_with_lost</code>\n"
+    msg += f"• <code>/simuladaily default</code>\n"
+    msg += f"• <code>/simuladaily alternate-with-lost</code>\n"
+    msg += f"• <code>/simuladaily standard</code>"
+
+    await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
+
+
 async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat.id != ID_GIOCHINI:
         return
@@ -1915,6 +1957,7 @@ def main():
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
+    app.add_handler(CommandHandler(["simuladaily", "simula"], simula_daily), 1)
 
     # app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
 

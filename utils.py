@@ -370,10 +370,6 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
                 Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
                 .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
-            )
-
-        model = 'default'
-
         if not query:
             continue
 
