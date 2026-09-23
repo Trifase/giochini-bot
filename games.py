@@ -2457,7 +2457,9 @@ class Hundo(Giochino):
     @staticmethod
     def can_handle_this(raw_text):
         text_lower = raw_text.lower()
-        return "hundo " in text_lower or "hundo.today" in text_lower
+        if "/500" not in text_lower:
+            return False
+        return "hundo.today" in text_lower or bool(re.search(r"\bhundo\s+\d{4}-\d{2}-\d{2}", text_lower))
 
     def parse(self):
         text = self.raw_text
