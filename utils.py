@@ -568,6 +568,11 @@ def process_tries(game: str, tries: int | str) -> int | str:
         val = abs(int(tries)) / 100.0
         return f"{val:.2f}"
 
+    if game in ["TimeGuessr", "TimeGuesser", "Geoguessr"]:
+        if str(tries) in ['9999999', 'X']:
+            return "X"
+        tries = 50000 - int(tries)
+
     return tries
 
 

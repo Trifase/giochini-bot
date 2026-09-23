@@ -539,7 +539,8 @@
                         if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
                         return (Math.abs(tries) / 100).toFixed(2);
                     }
-                    if (game === "TimeGuesser") {
+                    if (game === "TimeGuessr" || game === "TimeGuesser" || game === "Geoguessr") {
+                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
                         return 50000 - tries;
                     }
                     if (game === "Chronophoto") {
