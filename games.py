@@ -73,7 +73,7 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date, "%b %d %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
-    if isinstance(date, str) and game == "HighFive":
+    if isinstance(date, str) and (game == "HighFive" or game == "Hundo"):
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
     if isinstance(date, str) and game == "Moviedle":
@@ -2430,6 +2430,51 @@ class Hexcodle(Giochino):
 #             self.tries = str(0 - score)
 
 #         self.stars = None
+
+
+@dataclass
+class Hundo(Giochino):
+    _name = "Hundo"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 9, 23)
+    _day = "100"
+    _emoji = "💯"
+    _url = "https://hundo.today"
+
+    examples = [
+        "HUNDO 2026-09-23  •  16/500\n\n🟨 ▏ 3\n🟨 ▏ 3\n🟧 ▏ 6\n🟨 ▏ 3\n🟨 ▏ 1\n\nhttps://hundo.today/d/ADUAAwMGAwE",
+        "HUNDO 2026-09-23  •  135/500\n\n🟨 ▏ 2\n🟪 ▍ 33\n🟪 ▋ 49\n🟥 ▎ 22\n🟪 ▍ 29\n\nhttps://hundo.today/d/ADUBAiExFh0",
+        "HUNDO 2026-09-21  •  65/500\n\n🟥 ▎ 15\n🟧 ▏ 10\n🟥 ▎ 17\n🟥 ▎ 22\n🟨 ▏ 1\n\nhttps://hundo.today/d/ADMBDwoRFgE",
+        "HUNDO 2026-09-21  •  126/500\n\n🟧 ▏ 9\n🟪 ▍ 27\n🟥 ▎ 15\n🟪 ▍ 30\n🟪 ▌ 45\n\nhttps://hundo.today/d/ADMBCRsPHi0",
+    ]
+    expected = [
+        {"day": "100", "name": "Hundo", "stars": None, "timestamp": 10, "tries": 16, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "Hundo", "stars": None, "timestamp": 10, "tries": 135, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "98", "name": "Hundo", "stars": None, "timestamp": 10, "tries": 65, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "98", "name": "Hundo", "stars": None, "timestamp": 10, "tries": 126, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "hundo " in text_lower or "hundo.today" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", text)
+        if date_match:
+            parsed_date = datetime.datetime.strptime(date_match.group(1), "%Y-%m-%d").date()
+            self.day = get_day_from_date(self._date, self._day, "Hundo", parsed_date)
+        else:
+            self.day = get_day_from_date(self._date, self._day, "Hundo", datetime.date.today())
+
+        score_match = re.search(r"(\d+)/500", text)
+        if score_match:
+            self.tries = int(score_match.group(1))
+        else:
+            self.tries = None
+
+        self.stars = None
 
 
 @dataclass
