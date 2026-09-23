@@ -868,6 +868,13 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 await mymsg.reply_to_message.set_reaction(reaction="✍")
                 if giochino.win_message:
                     await mymsg.reply_to_message.reply_html(giochino.win_message)
+
+                completed_key = f"favs_completed_{datetime.date.today()}_{result['user_id']}"
+                if tot_favs > 0 and favs_played_today == tot_favs and result["name"] in active_favorites:
+                    if not context.bot_data.get(completed_key, False):
+                        context.bot_data[completed_key] = True
+                        await update.message.reply_html(f"🎉 Complimenti {result['user_name']}! Hai completato tutti i tuoi {tot_favs} giochi preferiti di oggi! 🥳")
+
                 context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
 
             else:
