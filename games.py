@@ -2484,7 +2484,7 @@ class Krillion(Giochino):
     _date = datetime.date(2026, 9, 23)
     _day = "70"
     _emoji = "🦐"
-    _url = "https://krillion.io"
+    _url = "https://krillion.io/"
 
     examples = [
         "Krillion #70 🦐\n385\n\n🫧🐟🏮🏮🦑🏮🐟\n",
