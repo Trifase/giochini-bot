@@ -2478,6 +2478,48 @@ class Hundo(Giochino):
 
 
 @dataclass
+class Krillion(Giochino):
+    _name = "Krillion"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 9, 23)
+    _day = "70"
+    _emoji = "🦐"
+    _url = "https://krillion.io"
+
+    examples = [
+        "Krillion #70 🦐\n385\n\n🫧🐟🏮🏮🦑🏮🐟\n",
+        "Krillion #70 🦐\n320\n\n🏮🏮⬛🦑🦑🐟⬛\n",
+        "Krillion #68 🦐\n230\n\n🦑🫧🦑⬛🦑🫧🐟\n",
+        "Krillion #61 🦐\n205\n\n🦑⬛️🫧🏮🫧🐟🫧\n",
+    ]
+    expected = [
+        {"day": "70", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -385, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "70", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -320, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "68", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -230, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "61", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -205, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "krillion #" in text_lower or "krillion.io" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Krillion\s*#(\d+)", text, re.IGNORECASE)
+        self.day = str(int(day_match.group(1))) if day_match else None
+
+        score_match = re.search(r"Krillion\s*#\d+[^\n]*\s*\n\s*(\d+)", text, re.IGNORECASE)
+        if score_match:
+            score = int(score_match.group(1))
+            self.tries = -score
+        else:
+            self.tries = None
+
+        self.stars = None
+
+
+@dataclass
 class Lyricle(Giochino):
     _name = "Lyricle"
     _category = "Musica"
