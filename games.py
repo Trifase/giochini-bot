@@ -2629,13 +2629,15 @@ class Linxicon(Giochino):
         "Game #851\nShortest path: 8 (Avg. 😍\nTotal words: 13 (Avg. 13)\n\n🟦🟦🟪🟦🟪🟪🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon",
         "Game #851\nShortest path: 7 (Avg. 6)\nTotal words: 9 (Avg. 6.7)\n\n🟦🟦🟪🟪🟥🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon",
         "Game #851\nShortest path: 4 (Avg. 5.7)\nTotal words: 6 (Avg. 11.8)\n\n🟦🟦🟥🟥 | 🔥 2\n\nhttps://linxicon.com\n#Linxicon",
-        "Game #849\nShortest path: 6 (Avg. 6)\nTotal words: 25 (Avg. 25)\n\n🟦🟦🟪🟥🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon"
+        "Game #849\nShortest path: 6 (Avg. 6)\nTotal words: 25 (Avg. 25)\n\n🟦🟦🟪🟥🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon",
+        "Linxicon #955\nShortest path: 8 (Avg. 6.5)\nTotal words: 16 (Avg. 20.5)\n\n🟦🟦🟪🟪🟥🟪🟥🟥 | 🔥 1\n\nhttps://linxicon.com\n#Linxicon"
     ]
     expected = [
         {"day": "851", "name": "Linxicon", "timestamp": 10, "tries": "13", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "851", "name": "Linxicon", "timestamp": 10, "tries": "9", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "851", "name": "Linxicon", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "849", "name": "Linxicon", "timestamp": 10, "tries": "25", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "849", "name": "Linxicon", "timestamp": 10, "tries": "25", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "955", "name": "Linxicon", "timestamp": 10, "tries": "16", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -2646,7 +2648,7 @@ class Linxicon(Giochino):
 
     def parse(self):
         text = self.raw_text
-        day_match = re.search(r"Game #(\d+)", text)
+        day_match = re.search(r"(?:Game|Linxicon)\s*#(\d+)", text, re.IGNORECASE)
         self.day = day_match.group(1) if day_match else None
 
         words_match = re.search(r"Total words:\s*(\d+)", text)
