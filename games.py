@@ -421,6 +421,46 @@ class Bandle(Giochino):
             self.tries = punti
 
 
+@dataclass
+class Borderline(Giochino):
+    _name = "Borderline"
+    _category = "Geografia"
+    _date = datetime.date(2026, 9, 24)
+    _day = "267"
+    _emoji = "🌍"
+    _url = "https://borderline.world"
+
+    examples = [
+        "🌍 Borderline #267 — 1,686/5,000\n⬛️🟩⬛️🟧⬛️\n🏅 beat 5% of players\nborderline.world/s",
+        "🌍 Borderline #267 — 2,930/5,000\n🟩🟩⬛️⬛️🟨\n🏅 beat 30% of players\nborderline.world/s",
+        "Can you find Malawi? 🌍 Borderline #267\n🟩🟩🟩🟩🟨  4,650/5,000\n🏅 beat 70% of players\nborderline.world/c/454",
+    ]
+    expected = [
+        {"day": "267", "name": "Borderline", "stars": None, "timestamp": 10, "tries": -1686, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "267", "name": "Borderline", "stars": None, "timestamp": 10, "tries": -2930, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "267", "name": "Borderline", "stars": None, "timestamp": 10, "tries": -4650, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "borderline #" in text_lower or "borderline.world" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Borderline\s*#(\d+)", text, re.IGNORECASE)
+        self.day = str(int(day_match.group(1))) if day_match else None
+
+        score_match = re.search(r"(\d[\d,.]*)\s*/\s*5[,.]?000", text)
+        if score_match:
+            score_str = score_match.group(1).replace(",", "").replace(".", "")
+            score = int(score_str)
+            self.tries = -score
+        else:
+            self.tries = None
+
+        self.stars = None
+
 
 @dataclass
 class BracketCity(Giochino):
