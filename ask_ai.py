@@ -43,8 +43,9 @@ Tabella 'medaglie':
 Regole per la query:
 1. Restituisci SOLO ed esclusivamente la query SQL pura, senza blocchi markdown (no ```sql), senza spiegazioni.
 2. Per calcolare il 1° posto di una giornata, usa:
-   ROW_NUMBER() OVER (PARTITION BY game, day ORDER BY tries ASC, timestamp ASC) = 1
-3. Usa solo sintassi SQLite standard.
+   ROW_NUMBER() OVER (PARTITION BY game, day ORDER BY tries ASC, timestamp ASC) AS pos
+3. Nelle CTE (clausole WITH) o sottoquery, ricordati SEMPRE di includere sia 'user_name' che 'user_id' e tutte le colonne usate poi nelle clausole esterne o nei GROUP BY.
+4. Usa solo sintassi SQLite standard.
 """
 
 
@@ -256,8 +257,23 @@ async def process_ask_query(db_path: str, user_prompt: str) -> Tuple[str, str]:
     raw_sql = await call_llm(gen_sql_prompt, system_instruction=DB_SCHEMA_PROMPT)
     sql_query = clean_sql_output(raw_sql)
 
-    # Passo 2: Esecuzione su SQLite locale
-    columns, rows = execute_readonly_sql(db_path, sql_query)
+    # Passo 2: Esecuzione su SQLite locale (con auto-correzione se SQLite fallisce)
+    try:
+        columns, rows = execute_readonly_sql(db_path, sql_query)
+    except Exception as sql_err:
+        logger.warning(f"Query SQL fallita ({sql_err}), richiedo correzione all'LLM...")
+        fix_prompt = f"""La query SQL precedente:
+{sql_query}
+
+Ha prodotto questo errore in SQLite:
+{sql_err}
+
+Correggi la query tenendo conto dello schema SQLite.
+Assicurati che tutte le colonne usate nelle query esterne o nei GROUP BY siano selezionate anche nelle clausole WITH/CTE o sottoquery.
+Restituisci SOLO la query SQL corretta pura, senza spiegazioni."""
+        fixed_raw = await call_llm(fix_prompt, system_instruction=DB_SCHEMA_PROMPT)
+        sql_query = clean_sql_output(fixed_raw)
+        columns, rows = execute_readonly_sql(db_path, sql_query)
 
     # Passo 3: LLM formatta la risposta discorsiva per Telegram
     format_prompt = f"""L'utente ha fatto questa domanda sulle statistiche dei giochi:
