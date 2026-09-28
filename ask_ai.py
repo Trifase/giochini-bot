@@ -67,6 +67,44 @@ def get_api_credentials() -> Tuple[Optional[str], str]:
     return None, ""
 
 
+_AVAILABLE_GEMINI_MODELS: List[str] = []
+
+
+async def get_available_gemini_models(client: httpx.AsyncClient, api_key: str, preferred_model: str) -> List[str]:
+    """Interroga l'API di Gemini per ottenere i modelli effettivamente disponibili per l'account."""
+    global _AVAILABLE_GEMINI_MODELS
+    if _AVAILABLE_GEMINI_MODELS:
+        return _AVAILABLE_GEMINI_MODELS
+
+    models = [preferred_model] if preferred_model else []
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+        resp = await client.get(url, timeout=10.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            discovered = []
+            for m in data.get("models", []):
+                name = m.get("name", "").replace("models/", "")
+                methods = m.get("supportedGenerationMethods", [])
+                if "generateContent" in methods:
+                    discovered.append(name)
+
+            if discovered:
+                def sort_key(name: str) -> tuple:
+                    # 0: preferred, 1: flash, 2: other
+                    priority = 0 if name == preferred_model else (1 if "flash" in name.lower() else 2)
+                    return (priority, name)
+
+                discovered.sort(key=sort_key)
+                _AVAILABLE_GEMINI_MODELS = discovered
+                logger.info(f"Modelli Gemini disponibili: {_AVAILABLE_GEMINI_MODELS}")
+                return _AVAILABLE_GEMINI_MODELS
+    except Exception as e:
+        logger.warning(f"Errore durante ListModels di Gemini: {e}")
+
+    return models or ["gemini-3.8-flash"]
+
+
 async def call_llm(prompt: str, system_instruction: str = "") -> str:
     """Esegue una chiamata all'LLM (Gemini o OpenAI) tramite HTTP."""
     api_key, provider = get_api_credentials()
@@ -75,17 +113,14 @@ async def call_llm(prompt: str, system_instruction: str = "") -> str:
             "Nessuna API key configurata. Imposta GEMINI_API_KEY o OPENAI_API_KEY in config.py o nelle variabili d'ambiente."
         )
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=35.0) as client:
         if provider == "gemini":
             configured_model = (
                 getattr(config, "GEMINI_MODEL", None)
                 or os.environ.get("GEMINI_MODEL")
                 or "gemini-3.8-flash"
             )
-            candidate_models = [configured_model]
-            for fallback in ("gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"):
-                if fallback not in candidate_models:
-                    candidate_models.append(fallback)
+            candidate_models = await get_available_gemini_models(client, api_key, configured_model)
 
             payload = {
                 "contents": [
@@ -101,7 +136,7 @@ async def call_llm(prompt: str, system_instruction: str = "") -> str:
             }
 
             last_error = None
-            for model_name in candidate_models:
+            for model_name in candidate_models[:4]:  # Prova fino a 4 modelli validi
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
                 for attempt in range(2):
                     try:
@@ -113,9 +148,9 @@ async def call_llm(prompt: str, system_instruction: str = "") -> str:
                                 raise RuntimeError(f"Gemini non ha restituito risposte: {data}")
                             return candidates[0]["content"]["parts"][0]["text"].strip()
                         elif resp.status_code in (503, 429):
-                            last_error = f"Errore Gemini API ({resp.status_code}) su {model_name}: {resp.text}"
-                            logger.warning(f"Gemini {model_name} ha risposto {resp.status_code}, ritento o passo al fallback...")
-                            await asyncio.sleep(1.5)
+                            last_error = f"Gemini ({model_name}) sovraccarico (HTTP {resp.status_code})."
+                            logger.warning(f"Gemini {model_name} HTTP {resp.status_code}, attesa 2s prima di riprovare...")
+                            await asyncio.sleep(2.0)
                             continue
                         else:
                             last_error = f"Errore Gemini API ({resp.status_code}) su {model_name}: {resp.text}"
