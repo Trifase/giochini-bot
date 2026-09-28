@@ -11,6 +11,7 @@ ADMIN_ID = 0
 
 # LLM API configuration for /ask command (Gemini or OpenAI)
 GEMINI_API_KEY = ""
+GEMINI_MODEL = "gemini-3.8-flash"  # Default: gemini-3.8-flash
 OPENAI_API_KEY = ""
 
 db = peewee.SqliteDatabase(DBPATH)

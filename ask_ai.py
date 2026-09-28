@@ -76,7 +76,12 @@ async def call_llm(prompt: str, system_instruction: str = "") -> str:
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         if provider == "gemini":
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+            gemini_model = (
+                getattr(config, "GEMINI_MODEL", None)
+                or os.environ.get("GEMINI_MODEL")
+                or "gemini-3.8-flash"
+            )
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
             payload = {
                 "contents": [
                     {
