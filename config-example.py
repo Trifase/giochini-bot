@@ -9,10 +9,12 @@ ID_BOTCENTRAL = 0
 BACKUP_DEST = 0
 ADMIN_ID = 0
 
-# LLM API configuration for /ask command (Gemini or OpenAI)
+# LLM API configuration for /ask command (OpenAI or Gemini)
+LLM_PROVIDER = "openai"  # "openai" oppure "gemini"
+OPENAI_API_KEY = "sk-..."  # Chiave OpenAI (default model: gpt-4o-mini)
+OPENAI_MODEL = "gpt-4o-mini"
 GEMINI_API_KEY = ""
-GEMINI_MODEL = "gemini-3.8-flash"  # Default: gemini-3.8-flash
-OPENAI_API_KEY = ""
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 db = peewee.SqliteDatabase(DBPATH)
 db_test = peewee.SqliteDatabase(DBPATH_TEST)

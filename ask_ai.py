@@ -50,13 +50,16 @@ Regole per la query:
 
 
 def get_api_credentials() -> Tuple[Optional[str], str]:
-    """Ritorna (api_key, provider), dove provider può essere 'gemini' o 'openai'."""
-    gemini_key = (
-        getattr(config, "GEMINI_API_KEY", None)
-        or os.environ.get("GEMINI_API_KEY")
-    )
-    if gemini_key:
-        return gemini_key, "gemini"
+    """Ritorna (api_key, provider), dove provider può essere 'openai' o 'gemini'."""
+    explicit_provider = getattr(config, "LLM_PROVIDER", None) or os.environ.get("LLM_PROVIDER")
+    if explicit_provider:
+        explicit_provider = str(explicit_provider).lower().strip()
+        if explicit_provider == "openai":
+            key = getattr(config, "OPENAI_API_KEY", None) or os.environ.get("OPENAI_API_KEY")
+            return key, "openai"
+        elif explicit_provider == "gemini":
+            key = getattr(config, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
+            return key, "gemini"
 
     openai_key = (
         getattr(config, "OPENAI_API_KEY", None)
@@ -64,6 +67,13 @@ def get_api_credentials() -> Tuple[Optional[str], str]:
     )
     if openai_key:
         return openai_key, "openai"
+
+    gemini_key = (
+        getattr(config, "GEMINI_API_KEY", None)
+        or os.environ.get("GEMINI_API_KEY")
+    )
+    if gemini_key:
+        return gemini_key, "gemini"
 
     return None, ""
 
