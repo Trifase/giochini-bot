@@ -154,7 +154,7 @@ async def call_llm(prompt: str, system_instruction: str = "") -> str:
             }
 
             last_error = None
-            for model_name in candidate_models[:4]:
+            for model_name in candidate_models[:8]:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
                 try:
                     resp = await client.post(url, json=payload)
