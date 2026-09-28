@@ -2,6 +2,7 @@ import os
 import re
 import sqlite3
 import logging
+import asyncio
 from typing import Optional, Tuple, List, Any
 import httpx
 
@@ -76,12 +77,16 @@ async def call_llm(prompt: str, system_instruction: str = "") -> str:
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         if provider == "gemini":
-            gemini_model = (
+            configured_model = (
                 getattr(config, "GEMINI_MODEL", None)
                 or os.environ.get("GEMINI_MODEL")
                 or "gemini-3.8-flash"
             )
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
+            candidate_models = [configured_model]
+            for fallback in ("gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"):
+                if fallback not in candidate_models:
+                    candidate_models.append(fallback)
+
             payload = {
                 "contents": [
                     {
@@ -94,14 +99,32 @@ async def call_llm(prompt: str, system_instruction: str = "") -> str:
                     "temperature": 0.1,
                 }
             }
-            resp = await client.post(url, json=payload)
-            if resp.status_code != 200:
-                raise RuntimeError(f"Errore Gemini API ({resp.status_code}): {resp.text}")
-            data = resp.json()
-            candidates = data.get("candidates", [])
-            if not candidates:
-                raise RuntimeError(f"Gemini non ha restituito risposte: {data}")
-            return candidates[0]["content"]["parts"][0]["text"].strip()
+
+            last_error = None
+            for model_name in candidate_models:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                for attempt in range(2):
+                    try:
+                        resp = await client.post(url, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            candidates = data.get("candidates", [])
+                            if not candidates:
+                                raise RuntimeError(f"Gemini non ha restituito risposte: {data}")
+                            return candidates[0]["content"]["parts"][0]["text"].strip()
+                        elif resp.status_code in (503, 429):
+                            last_error = f"Errore Gemini API ({resp.status_code}) su {model_name}: {resp.text}"
+                            logger.warning(f"Gemini {model_name} ha risposto {resp.status_code}, ritento o passo al fallback...")
+                            await asyncio.sleep(1.5)
+                            continue
+                        else:
+                            last_error = f"Errore Gemini API ({resp.status_code}) su {model_name}: {resp.text}"
+                            break
+                    except Exception as e:
+                        last_error = str(e)
+                        await asyncio.sleep(1.0)
+
+            raise RuntimeError(last_error or "Tutti i tentativi con i modelli Gemini sono falliti.")
 
         elif provider == "openai":
             base_url = getattr(config, "OPENAI_BASE_URL", None) or os.environ.get("OPENAI_BASE_URL") or "https://api.openai.com/v1"
