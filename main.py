@@ -1268,13 +1268,8 @@ async def cmd_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         from ask_ai import process_ask_query
         db_path = Punteggio._meta.database.database
         explanation, sql_query = await process_ask_query(db_path, prompt)
-
-        final_msg = (
-            f"{explanation}\n\n"
-            f"🔍 <i>Query SQL:</i>\n"
-            f"<pre><code class=\"language-sql\">{sql_query}</code></pre>"
-        )
-        await status_msg.edit_text(final_msg, parse_mode="HTML")
+        logger.info(f"Query SQL eseguita per /ask ('{prompt}'): {sql_query}")
+        await status_msg.edit_text(explanation, parse_mode="HTML")
     except Exception as e:
         logger.error(f"Errore comando /ask: {e}", exc_info=True)
         await status_msg.edit_text(
