@@ -9,6 +9,10 @@ ID_BOTCENTRAL = 0
 BACKUP_DEST = 0
 ADMIN_ID = 0
 
+# LLM API configuration for /ask command (Gemini or OpenAI)
+GEMINI_API_KEY = ""
+OPENAI_API_KEY = ""
+
 db = peewee.SqliteDatabase(DBPATH)
 db_test = peewee.SqliteDatabase(DBPATH_TEST)
 

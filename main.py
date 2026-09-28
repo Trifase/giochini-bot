@@ -1243,6 +1243,46 @@ async def cmd_setanchor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
+async def cmd_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Admin-only command
+    if update.effective_user.id != ADMIN_ID:
+        return
+
+    prompt = " ".join(context.args).strip() if context.args else ""
+    if not prompt:
+        help_text = (
+            "🤖 <b>Assistente Statistiche Giochini (<code>/ask</code>)</b>\n\n"
+            "Fai una domanda in linguaggio naturale sulle statistiche e i punteggi del database!\n\n"
+            "<b>Esempi:</b>\n"
+            "• <code>/ask chi ha vinto più volte a Geozee?</code>\n"
+            "• <code>/ask percentuale di vittorie a Wordle per giocatore (minimo 10 partite)</code>\n"
+            "• <code>/ask quali sono i 5 giochi con più partite registrate?</code>\n"
+            "• <code>/ask chi ha la serie (streak) più lunga attiva?</code>"
+        )
+        await update.message.reply_html(help_text)
+        return
+
+    status_msg = await update.message.reply_html("🧠 <i>Analizzo la richiesta ed elaboro i dati...</i>")
+
+    try:
+        from ask_ai import process_ask_query
+        db_path = Punteggio._meta.database.database
+        explanation, sql_query = await process_ask_query(db_path, prompt)
+
+        final_msg = (
+            f"{explanation}\n\n"
+            f"🔍 <i>Query SQL:</i>\n"
+            f"<pre><code class=\"language-sql\">{sql_query}</code></pre>"
+        )
+        await status_msg.edit_text(final_msg, parse_mode="HTML")
+    except Exception as e:
+        logger.error(f"Errore comando /ask: {e}", exc_info=True)
+        await status_msg.edit_text(
+            f"❌ <b>Si è verificato un errore durante l'elaborazione:</b>\n<code>{e}</code>",
+            parse_mode="HTML"
+        )
+
+
 async def check_unused_games(context: ContextTypes.DEFAULT_TYPE) -> None:
     today = datetime.date.today()
     cutoff_days = 20
@@ -1999,6 +2039,7 @@ def main():
     app.add_handler(CommandHandler(["checkunused", "unusedcheck", "nongiocati", "unused", "checkunusedgames"], manual_check_unused), 1)
     app.add_handler(CommandHandler(["checkdisable", "forcecheckdisable"], manual_auto_disable), 1)
     app.add_handler(CommandHandler(["setanchor", "setdate"], cmd_setanchor), 1)
+    app.add_handler(CommandHandler("ask", cmd_ask), 1)
     app.add_handler(CommandHandler("restart", restart_bot), 1)
     app.add_handler(CommandHandler("refresh", refresh_bot), 1)
 
