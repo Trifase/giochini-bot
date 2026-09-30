@@ -2097,8 +2097,8 @@ class GuessTheAngle(Giochino):
 class GuessTheFootballClub(Giochino):
     _name = "GuessTheFootballClub"
     _category = "Miscellanea"
-    _date = datetime.date(2025, 4, 17)
-    _day = "80"
+    _date = datetime.date(2026, 9, 30)
+    _day = "240"
     _emoji = "🛡️"
     _url = "https://playfootball.games/guess-the-football-club/"
 
