@@ -424,7 +424,7 @@ class Bandle(Giochino):
 @dataclass
 class Borderline(Giochino):
     _name = "Borderline"
-    _category = "Geografia"
+    _category = "Bandiere e geografia"
     _date = datetime.date(2026, 9, 24)
     _day = "267"
     _emoji = "🌍"
@@ -3772,7 +3772,7 @@ class Snoop(Giochino):
 @dataclass
 class SizeItUp(Giochino):
     _name = "Size It Up"
-    _category = "Miscellanea"
+    _category = "Osservazione e percezione"
     _date = datetime.date(2026, 9, 1)
     _day = "100"
     _emoji = "📏"

@@ -14,12 +14,13 @@ Before writing code, extract:
 - **Game Name**: CamelCase class name (e.g. `MoreLess`, `DontWordle`).
 - **Category**: One of existing categories:
   - `"Giochi di parole"`
-  - `"Geografia"`
+  - `"Bandiere e geografia"`
   - `"Cinema"`
   - `"Musica"`
   - `"Miscellanea"`
   - `"Osservazione e percezione"`
   - `"Logica e matematica"`
+  - `"Storia"`
 - **Anchor Date & Day**:
   - `_date = datetime.date(YYYY, M, D)`
   - `_day = "N"` (string)
