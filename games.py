@@ -3846,6 +3846,63 @@ class Spellcheck(Giochino):
 
 
 @dataclass
+class Songless(Giochino):
+    _name = "Songless"
+    _category = "Musica"
+    _date = datetime.date(2026, 10, 2)
+    _day = "400"
+    _emoji = "🎶"
+    _url = "https://less.gg/songless"
+
+    examples = [
+        "Songless #400\n\n⬜️🟥🟩⬛️⬛️ [All]\n🟩⬛️⬛️⬛️⬛️ [Rock]\n⬜️🟥🟥🟩⬛️ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
+        "Songless #379\n\n🟩⬛️⬛️⬛️⬛️⬛️ [All]\n⬜️🟩⬛️⬛️⬛️⬛️ [Rock]\n⬜️🟥🟩⬛️⬛️⬛️ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
+        "Songless #368\n\n🟩⬛️⬛️⬛️⬛️⬛️ [All]\n⬜️🟩⬛️⬛️⬛️⬛️ [Rock]\n⬜️🟩⬛️⬛️⬛️⬛️ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
+        "Songless #335\n\n🟥🟩⬛️⬛️⬛️⬛️ [All]\n🟩⬛️⬛️⬛️⬛️⬛️ [Rock]\n⬜️⬜️⬜️⬜️⬜️⬜️ [Hip Hop]\nPlay Today's Game: https://less.gg/songless",
+    ]
+    expected = [
+        {"day": "400", "name": "Songless", "stars": None, "timestamp": 10, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "379", "name": "Songless", "stars": None, "timestamp": 10, "tries": 6, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "368", "name": "Songless", "stars": None, "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "335", "name": "Songless", "stars": None, "timestamp": 10, "tries": 10, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "songless #" in text_lower or ("songless" in text_lower and "less.gg/songless" in text_lower)
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Songless\s*#(\d+)", text, re.IGNORECASE)
+        self.day = day_match.group(1) if day_match else None
+
+        genres = [r"\[All\]", r"\[Rock\]", r"\[Hip Hop\]"]
+        total_tries = 0
+        has_any_green = False
+
+        for genre in genres:
+            m = re.search(rf"([^\n]+)\s*{genre}", text, re.IGNORECASE)
+            if m:
+                line = m.group(1).strip()
+                squares = [c for c in line if c in "🟩🟥⬜⬛\U0001f7e9\U0001f7e5\u2b1c\u2b1b"]
+                green_idx = next((i + 1 for i, c in enumerate(squares) if c in "🟩\U0001f7e9"), None)
+                if green_idx is not None:
+                    has_any_green = True
+                    total_tries += green_idx
+                else:
+                    penalty = len(squares) + 1 if squares else 7
+                    total_tries += penalty
+
+        if not has_any_green:
+            self.tries = "X"
+        else:
+            self.tries = total_tries
+
+        self.stars = None
+
+
+@dataclass
 class Spotle(Giochino):
     _name = "Spotle"
     _category = "Musica"

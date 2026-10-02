@@ -62,7 +62,7 @@ Il bot analizza automaticamente i messaggi contenenti i risultati condivisi dai 
 
 ## 🎲 Elenco dei Giochi Supportati
 
-Il bot supporta **98 giochi**, suddivisi in 8 categorie:
+Il bot supporta **99 giochi**, suddivisi in 8 categorie:
 
 ### 🌍 Bandiere e geografia (13)
 - 🌍 [Borderline](https://borderline.world)
@@ -151,10 +151,11 @@ Il bot supporta **98 giochi**, suddivisi in 8 categorie:
 - 📌 [Pinpoint](https://lnkd.in/pinpoint)
 - ⛳ [Putt](https://putt.day)
 
-### 🎵 Musica (5)
+### 🎵 Musica (6)
 - 🎸 [Bandle](https://bandle.app/)
 - 🔊 [Heardle](https://heardle.it)
 - 📜 [Lyricle](https://lyricle.app)
+- 🎶 [Songless](https://less.gg/songless)
 - 🎧 [Spotle](https://spotle.io/)
 - ⏳ [Timdle Music](https://www.timdle.com/music)
 
