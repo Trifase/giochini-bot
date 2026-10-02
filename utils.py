@@ -487,6 +487,12 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == "Spellcheck":
         tries = 15 - tries
 
+    # For Waffle, scores are stars/swaps remaining out of 5. Max swaps is 15 so we save them as differences from max.
+    if game == "Waffle":
+        if str(tries) in ['9999999', 'X']:
+            return "X"
+        tries = 15 - int(tries)
+
     # For TempoIndovinr, scores are points, the more the better. Max points is 1_000 so we save them as differences from max.
     if game == "TempoIndovinr":
         tries = 1_000 - tries

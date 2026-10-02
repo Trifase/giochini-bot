@@ -552,6 +552,10 @@
                     if (game === "Spellcheck") {
                         return 15 - tries;
                     }
+                    if (game === "Waffle") {
+                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
+                        return 15 - tries;
+                    }
                     if (game === "TempoIndovinr") {
                         return 1000 - tries;
                     }
