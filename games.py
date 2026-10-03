@@ -3859,12 +3859,14 @@ class Songless(Giochino):
         "Songless #379\n\n🟩⬛️⬛️⬛️⬛️⬛️ [All]\n⬜️🟩⬛️⬛️⬛️⬛️ [Rock]\n⬜️🟥🟩⬛️⬛️⬛️ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
         "Songless #368\n\n🟩⬛️⬛️⬛️⬛️⬛️ [All]\n⬜️🟩⬛️⬛️⬛️⬛️ [Rock]\n⬜️🟩⬛️⬛️⬛️⬛️ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
         "Songless #335\n\n🟥🟩⬛️⬛️⬛️⬛️ [All]\n🟩⬛️⬛️⬛️⬛️⬛️ [Rock]\n⬜️⬜️⬜️⬜️⬜️⬜️ [Hip Hop]\nPlay Today's Game: https://less.gg/songless",
+        "Songless #401\n\n🟥⬜⬜⬜⬜ [All]\n⬜🟨🟩⬛⬛ [Rock]\n⬜⬜⬜⬜⬜ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
     ]
     expected = [
         {"day": "400", "name": "Songless", "stars": None, "timestamp": 10, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "379", "name": "Songless", "stars": None, "timestamp": 10, "tries": 6, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "368", "name": "Songless", "stars": None, "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "335", "name": "Songless", "stars": None, "timestamp": 10, "tries": 10, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "401", "name": "Songless", "stars": None, "timestamp": 10, "tries": 15, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -3885,7 +3887,7 @@ class Songless(Giochino):
             m = re.search(rf"([^\n]+)\s*{genre}", text, re.IGNORECASE)
             if m:
                 line = m.group(1).strip()
-                squares = [c for c in line if c in "🟩🟥⬜⬛\U0001f7e9\U0001f7e5\u2b1c\u2b1b"]
+                squares = [c for c in line if c in "🟩🟨🟥⬜⬛🟧🟦🟪\U0001f7e0\U0001f7e1\U0001f7e2\U0001f7e3\U0001f7e4\U0001f7e5\U0001f7e6\U0001f7e7\U0001f7e8\U0001f7e9\u2b1c\u2b1b"]
                 green_idx = next((i + 1 for i, c in enumerate(squares) if c in "🟩\U0001f7e9"), None)
                 if green_idx is not None:
                     has_any_green = True
