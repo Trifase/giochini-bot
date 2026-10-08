@@ -2094,35 +2094,40 @@ class GuessTheAngle(Giochino):
         self.stars = None
 
 @dataclass
-class GuessTheFootballClub(Giochino):
-    _name = "GuessTheFootballClub"
+class WhoAteAllThePies(Giochino):
+    _name = "WhoAteAllThePies"
     _category = "Miscellanea"
-    _date = datetime.date(2026, 9, 30)
-    _day = "240"
-    _emoji = "🛡️"
-    _url = "https://playfootball.games/guess-the-football-club/"
+    _date = datetime.date(2026, 10, 8)
+    _day = "2"
+    _emoji = "🥧"
+    _url = "https://playfootball.games/who-ate-all-the-pies/"
 
     examples = [
-        "'#GuessTheFootballClub 80 X/6\n\n🛡️🟢⬆️⬇️⚪⚪\n🛡️🟢⬇️⬇️⚪⚪\n🛡️⚪⬆️⬇️⚪⚪\n🛡️🟢⬇️⬇️⚪⚪\n🛡️🟢⬆️⬇️⚪⚪\n🛡️🟢⬆️⬇️⚪⚪\n\n#PlayFootballGames\n\nhttps://playfootball.games/guess-the-football-club/'",
-        "'#GuessTheFootballClub 78 3/6\n\n🛡️⚪⬆️⬇️⚪⚪\n🛡️⚪⬆️⬇️⚪⚪\n🎉🟢🟢🟢🟢🟢\n\n#PlayFootballGames\n https://playfootball.games/guess-the-football-club/'",
+        "#WhoAteAllThePies 2 3/6\n\n🥧⚪️⬆️⬆️⚪️⚪️\n🥧🟢⬆️⬆️⚪️⚪️\n🎉🟢🟢🟢🟢🟢\n\n#PlayFootballGames\n\nhttps://playfootball.games/who-ate-all-the-pies/",
+        "#WhoAteAllThePies 2 X/6\n\n🥧⚪️⬆️⬆️⚪️⚪️\n🥧🟢⬆️⬆️⚪️⚪️\n🥧⚪️⬆️⬆️⚪️⚪️\n🥧🟢⬆️⬆️⚪️⚪️\n🥧⚪️⬆️⬆️⚪️⚪️\n🥧🟢⬆️⬆️⚪️⚪️\n\n#PlayFootballGames\n\nhttps://playfootball.games/who-ate-all-the-pies/",
+        "#GuessTheFootballClub 80 X/6\n\n🛡️🟢⬆️⬇️⚪⚪\n🛡️🟢⬇️⬇️⚪⚪\n🛡️⚪⬆️⬇️⚪⚪\n🛡️🟢⬇️⬇️⚪⚪\n🛡️🟢⬆️⬇️⚪⚪\n🛡️🟢⬆️⬇️⚪⚪\n\n#PlayFootballGames\n\nhttps://playfootball.games/guess-the-football-club/",
+        "#GuessTheFootballClub 78 3/6\n\n🛡️⚪⬆️⬇️⚪⚪\n🛡️⚪⬆️⬇️⚪⚪\n🎉🟢🟢🟢🟢🟢\n\n#PlayFootballGames\n https://playfootball.games/guess-the-football-club/",
     ]
     expected = [
-        {"day": "80", "name": "GuessTheFootballClub", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "78", "name": "GuessTheFootballClub", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "WhoAteAllThePies", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "WhoAteAllThePies", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "80", "name": "WhoAteAllThePies", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "78", "name": "WhoAteAllThePies", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["#GuessTheFootballClub", "#PlayFootballGames", "https://playfootball.games/guess-the-football-club/"]
-        _can_handle_this = all(w in raw_text for w in wordlist)
-        return _can_handle_this
+        has_tag = "#WhoAteAllThePies" in raw_text or "#GuessTheFootballClub" in raw_text
+        has_brand = "#PlayFootballGames" in raw_text or "playfootball.games" in raw_text
+        return has_tag and has_brand
 
     def parse(self):
         text = self.raw_text
 
-        match = re.search(r"#GuessTheFootballClub (\d+) (\d+|X)/6", text)
+        match = re.search(r"#(?:WhoAteAllThePies|GuessTheFootballClub) (\d+) (\d+|X)/6", text)
         self.day = match.group(1) if match else None
         self.tries = match.group(2) if match else None
+        self.stars = None
 
 
 @dataclass
