@@ -73,7 +73,7 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date, "%b %d %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
-    if isinstance(date, str) and (game == "HighFive" or game == "Hundo"):
+    if isinstance(date, str) and (game == "HighFive" or game == "Hundo" or game == "HigherLower"):
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
     if isinstance(date, str) and game == "Moviedle":
@@ -2475,6 +2475,51 @@ class Hexcodle(Giochino):
 #             self.tries = str(0 - score)
 
 #         self.stars = None
+
+
+@dataclass
+class HigherLower(Giochino):
+    _name = "HigherLower"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 10, 13)
+    _day = "1"
+    _emoji = "↕️"
+    _url = "https://playhigherlower.com/daily"
+
+    examples = [
+        "Play Higher Lower — Daily Challenge — Olympic Medal Count — 2026-10-13 — Score: 0\nhttps://playhigherlower.com/daily",
+        "Play Higher Lower — Daily Challenge — Most Streamed Songs — 2026-10-13 — Score: 7\nhttps://playhigherlower.com/daily",
+        "Play Higher Lower — Daily Challenge — Box Office Movies — 2026-10-14 — Score: 15\nhttps://playhigherlower.com/daily",
+    ]
+    expected = [
+        {"day": "1", "name": "HigherLower", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "HigherLower", "timestamp": 10, "tries": -7, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "HigherLower", "timestamp": 10, "tries": -15, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return (
+            "play higher lower" in text_lower
+            and "daily challenge" in text_lower
+            and "playhigherlower.com/daily" in text_lower
+        )
+
+    def parse(self):
+        text = self.raw_text
+        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", text)
+        if date_match:
+            self.day = get_day_from_date(self._date, self._day, self._name, date_match.group(1))
+        else:
+            self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
+
+        score_match = re.search(r"Score:\s*(\d+)", text, re.IGNORECASE)
+        if score_match:
+            self.tries = -int(score_match.group(1))
+        else:
+            self.tries = None
+        self.stars = None
 
 
 @dataclass
