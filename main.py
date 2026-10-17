@@ -57,6 +57,8 @@ from utils import (
     Giocata,
     GameStatus,
     GameAnchor,
+    PuntiBonus,
+    POOP_MEDAL,
     correct_name,
     daily_ranking,
     get_day_from_date,
@@ -78,6 +80,7 @@ from utils import (
 # Logging setup
 logger = logging.getLogger()
 
+os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -1243,6 +1246,138 @@ async def cmd_setanchor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
+async def cmd_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Admin-only command
+    if update.effective_user.id != ADMIN_ID:
+        return
+
+    args = context.args
+    reply_msg = update.message.reply_to_message
+
+    # Reset / Clear subcommands
+    if args and args[0].lower() in ["reset", "clear"]:
+        today = datetime.date.today()
+        PuntiBonus.create_table(safe=True)
+        if len(args) > 1:
+            target = args[1].lstrip("@")
+            deleted = PuntiBonus.delete().where(
+                PuntiBonus.date == today,
+                (PuntiBonus.user_name.contains(target) | (PuntiBonus.user_id.cast('TEXT') == target))
+            ).execute()
+            await update.message.reply_text(f"Azzerati {deleted} record di bonus per '{target}' di oggi.")
+        else:
+            deleted = PuntiBonus.delete().where(PuntiBonus.date == today).execute()
+            await update.message.reply_text(f"Azzerati tutti i bonus/malus di oggi ({deleted} record rimossi).")
+        return
+
+    target_user_id = None
+    target_user_name = None
+    delta = None
+    reason = None
+
+    if reply_msg and reply_msg.from_user:
+        # Modo Reply: /bonus +2 [motivo] o /bonus -1 [motivo]
+        if not args:
+            await update.message.reply_text(
+                "ℹ️ <b>Uso via reply:</b> <code>/bonus &lt;+punti/-punti&gt; [motivo]</code>\n"
+                "<i>Es:</i> <code>/bonus +2 Premio quiz</code>",
+                parse_mode="HTML"
+            )
+            return
+
+        try:
+            delta = int(args[0])
+        except ValueError:
+            await update.message.reply_text("❌ Il valore dei punti deve essere un numero intero (es. +2 o -1).")
+            return
+
+        target_user_id = reply_msg.from_user.id
+        target_user_name = reply_msg.from_user.full_name or reply_msg.from_user.first_name
+        if len(args) > 1:
+            reason = " ".join(args[1:])
+
+    else:
+        # Modo Argomenti: /bonus @utente +2 [motivo] o /bonus <user_id> +2 [motivo]
+        if not args or len(args) < 2:
+            await update.message.reply_text(
+                "ℹ️ <b>Uso del comando:</b>\n"
+                "• In risposta a un messaggio: <code>/bonus &lt;+punti/-punti&gt; [motivo]</code>\n"
+                "• Diretto: <code>/bonus &lt;@username o user_id&gt; &lt;+punti/-punti&gt; [motivo]</code>\n"
+                "• Reset: <code>/bonus reset [@username]</code>\n"
+                "<i>Es:</i> <code>/bonus @Mario +2 Premio quiz</code>",
+                parse_mode="HTML"
+            )
+            return
+
+        user_param = args[0]
+        try:
+            delta = int(args[1])
+        except ValueError:
+            await update.message.reply_text("❌ Il valore dei punti deve essere un numero intero (es. +2 o -1).")
+            return
+
+        if len(args) > 2:
+            reason = " ".join(args[2:])
+
+        # Ricerca utente
+        if user_param.isdigit():
+            target_user_id = int(user_param)
+            p_found = Punteggio.select(Punteggio.user_name).where(Punteggio.user_id == target_user_id).order_by(Punteggio.timestamp.desc()).first()
+            target_user_name = p_found.user_name if p_found else f"User {target_user_id}"
+        else:
+            uname = user_param.lstrip("@")
+            p_found = Punteggio.select(Punteggio.user_id, Punteggio.user_name).where(Punteggio.user_name.contains(uname)).order_by(Punteggio.timestamp.desc()).first()
+            if not p_found:
+                p_found = Punti.select(Punti.user_id, Punti.user_name).where(Punti.user_name.contains(uname)).order_by(Punti.date.desc()).first()
+
+            if p_found:
+                target_user_id = p_found.user_id
+                target_user_name = p_found.user_name
+            else:
+                await update.message.reply_text(f"❌ Utente '{user_param}' non trovato nel database. Prova a rispondere (reply) direttamente a un suo messaggio.")
+                return
+
+    today = datetime.date.today()
+    PuntiBonus.create_table(safe=True)
+    PuntiBonus.create(
+        date=today,
+        user_id=target_user_id,
+        user_name=target_user_name,
+        punti=delta,
+        reason=reason,
+        assigned_by=update.effective_user.id,
+        timestamp=int(time.time()),
+    )
+
+    sign = "+" if delta > 0 else ""
+    reason_str = f" per <i>{html.escape(reason)}</i>" if reason else ""
+    await update.message.reply_text(
+        f"⭐ Punti aggiornati per <b>{html.escape(target_user_name)}</b>: <b>{sign}{delta}</b>{reason_str}.",
+        parse_mode="HTML"
+    )
+
+
+async def cmd_bonus_oggi(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    today = datetime.date.today()
+    PuntiBonus.create_table(safe=True)
+    bonuses = (
+        PuntiBonus.select()
+        .where(PuntiBonus.date == today)
+        .order_by(PuntiBonus.timestamp.asc())
+    )
+    if not bonuses:
+        await update.message.reply_text("Nessun punto bonus/malus registrato oggi.")
+        return
+
+    msg = f"⭐ <b>Bonus e Malus di oggi ({today.strftime('%Y-%m-%d')}):</b>\n\n"
+    for b in bonuses:
+        sign = "+" if b.punti > 0 else ""
+        reason_str = f" — <i>{html.escape(b.reason)}</i>" if b.reason else ""
+        msg += f"• <b>{html.escape(b.user_name)}</b>: <code>{sign}{b.punti}</code>{reason_str}\n"
+
+    await update.message.reply_text(msg, parse_mode="HTML")
+
+
 async def cmd_ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Admin-only command
     if update.effective_user.id != ADMIN_ID:
@@ -1634,10 +1769,12 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     msg = f"🧪 <b>Simulazione Classifica di Oggi</b>\n"
     msg += f"⚙️ Modello: <code>{selected_model}</code> ({model_label})\n\n"
 
-    for position, user_id, user_name, stelle in classifica_stelle:
+    for position, user_id, user_name, stelle, *rest in classifica_stelle:
+        bonus = rest[0] if rest else 0
         stelle_val = int(stelle)
         stelle_str = f"  {stelle_val}" if stelle_val < 10 else f"{stelle_val}"
-        msg += f"<code>{stelle_str}</code>⭐ <b>{user_name}</b>\n"
+        bonus_str = f" ({'+' if bonus > 0 else ''}{bonus})" if bonus != 0 else ""
+        msg += f"<code>{stelle_str}</code>⭐ <b>{user_name}</b>{bonus_str}\n"
 
     msg += f"\n<i>Prova altri modelli:</i>\n"
     msg += f"• <code>/simuladaily no_limit_with_lost</code>\n"
@@ -1674,19 +1811,25 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
 
-    for position, user_id, user_name, stelle in classifica_stelle:
-        user_id = int(user_id)
-    # for user, stars in cambiamenti:
-    #     user_id, user_name = user.split("_|_")
-        if int(stelle) < 10:
-            stelle = f"  {stelle  }"
+    min_score = min([s for _, _, _, s, *_ in classifica_stelle]) if classifica_stelle else None
+    award_poop = len(classifica_stelle) >= 4
 
-        message += f"{stelle}{STAR_SYMBOL} {user_name}\n"
+    for position, user_id, user_name, stelle, *rest in classifica_stelle:
+        bonus = rest[0] if rest else 0
+        user_id = int(user_id)
+        stelle_val = int(stelle)
+        stelle_formatted = f"  {stelle_val}" if stelle_val < 10 else f"{stelle_val}"
+        bonus_str = f" ({'+' if bonus > 0 else ''}{bonus})" if bonus != 0 else ""
+
+        is_last = award_poop and (stelle_val == min_score) and (position > 3)
+        poop_str = f" {POOP_MEDAL.strip()}" if is_last else ""
+
+        message += f"{stelle_formatted}{STAR_SYMBOL} {user_name}{bonus_str}{poop_str}\n"
 
         if not context.bot_data.get("manual_riassunto", None):
-            Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=stelle)
+            Punti.create(date=yesterday, user_id=user_id, user_name=user_name, punti=stelle_val)
 
-            if position <= 3:
+            if position <= 3 or is_last:
                 Medaglia.create(
                     date=yesterday,
                     timestamp=int(time.time()),
@@ -1696,6 +1839,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
                     gold=1 if position == 1 else None,
                     silver=1 if position == 2 else None,
                     bronze=1 if position == 3 else None,
+                    last=1 if is_last else None,
                 )
 
     # for position, user_id, user_name, stelle in classifica_stelle:
@@ -1775,14 +1919,13 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
     message = "Ecco la classifica temporanea di oggi:\n\n"
 
-    for position, user_id, user_name, stelle in classifica_stelle:
-    # for user, stars in cambiamenti:
-        # user_id, user_name = user.split("_|_")
-        # user_id = int(user_id)
-        if int(stelle) < 10:
-            stelle = f"  {stelle  }"
+    for position, user_id, user_name, stelle, *rest in classifica_stelle:
+        bonus = rest[0] if rest else 0
+        stelle_val = int(stelle)
+        stelle_formatted = f"  {stelle_val}" if stelle_val < 10 else f"{stelle_val}"
+        bonus_str = f" ({'+' if bonus > 0 else ''}{bonus})" if bonus != 0 else ""
 
-        message += f"{stelle}{STAR_SYMBOL} {user_name}\n"
+        message += f"{stelle_formatted}{STAR_SYMBOL} {user_name}{bonus_str}\n"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
@@ -1931,6 +2074,7 @@ async def unknown_command_handler(update: Update, context: ContextTypes.DEFAULT_
 async def post_init(app: Application) -> None:
     Punteggio.create_table()
     Punti.create_table()
+    PuntiBonus.create_table()
     Medaglia.create_table()
     GameStatus.create_table()
     GameAnchor.create_table()
@@ -1955,6 +2099,7 @@ async def post_init(app: Application) -> None:
         ('favs', 'Mostra e setta i giochi preferiti'),
         ('dailyranking', 'Mostra i punteggi del giorno corrente'),
         ('classifica', 'Mostra la classifica'),
+        ('bonusoggi', 'Mostra i bonus/malus del giorno corrente'),
         ('medaglie', 'Mostra il medagliere mensile'),
         ('top', 'Mostra la classifica all time'),
         ('top_medaglie', 'Mostra il medagliere all time'),
@@ -2000,6 +2145,8 @@ def main():
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
     app.add_handler(CommandHandler(["simuladaily", "simula"], simula_daily), 1)
+    app.add_handler(CommandHandler(["bonus", "stelle", "stelline", "malus"], cmd_bonus), 1)
+    app.add_handler(CommandHandler(["bonusoggi", "bonuslist"], cmd_bonus_oggi), 1)
 
     # app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
 
@@ -2048,4 +2195,5 @@ def main():
     app.run_polling(drop_pending_updates=False, allowed_updates=Update.ALL_TYPES)
 
 
-main()
+if __name__ == "__main__":
+    main()

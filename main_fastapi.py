@@ -225,10 +225,9 @@ async def dailyranking(day: str | None = None):
     classifica_stelle = daily_ranking(model, dates)
     rankings = []
     # pos = 1
-    for position, user_id, user_name, stelle in classifica_stelle:
-    # for user, points in cambiamenti:
-        # _, user_name = user.split("_|_")
-        rankings.append({'name': user_name, 'points': stelle, 'pos': position})
+    for position, user_id, user_name, stelle, *rest in classifica_stelle:
+        bonus = rest[0] if rest else 0
+        rankings.append({'name': user_name, 'points': stelle, 'pos': position, 'bonus': bonus})
         # pos += 1
     return {'date': dates.strftime("%Y-%m-%d"), 'rankings': rankings}
 

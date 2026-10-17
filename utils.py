@@ -9,6 +9,10 @@ from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from config import ID_GIOCHINI, MEDALS, TOKEN, STAR_SYMBOL, ELSE_MEDAL, Medaglia, Punteggio
+try:
+    from config import POOP_MEDAL
+except ImportError:
+    POOP_MEDAL = "💩 "
 from games import ALL_GAMES as GAMES
 from games import get_day_from_date
 
@@ -76,6 +80,21 @@ class GameAnchor(peewee.Model):
     class Meta:
         database = Punteggio._meta.database
         table_name = "game_anchors"
+
+
+class PuntiBonus(peewee.Model):
+    id = peewee.AutoField()
+    date = peewee.DateField()
+    user_id = peewee.IntegerField()
+    user_name = peewee.TextField()
+    punti = peewee.IntegerField()
+    reason = peewee.TextField(null=True)
+    assigned_by = peewee.IntegerField(null=True)
+    timestamp = peewee.IntegerField()
+
+    class Meta:
+        database = Punteggio._meta.database
+        table_name = "punti_bonus"
 
 @dataclass
 class Classifica:
@@ -390,26 +409,52 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
             if user_id in player_scores:
                 player_scores[user_id]["stars"] += stars
             else:
-                player_scores[user_id] = {"user_name": user_name, "stars": stars}
+                player_scores[user_id] = {"user_name": user_name, "stars": stars, "bonus": 0}
 
-        # for clg in cl.giocate:
-        #     name = f"{clg.user_id}_|_{clg.user_name}"
-        #     points[name] += clg.stelle
+    # Query daily bonus/malus
+    try:
+        PuntiBonus.create_table(safe=True)
+        bonus_query = (
+            PuntiBonus.select(
+                PuntiBonus.user_id,
+                PuntiBonus.user_name,
+                peewee.fn.SUM(PuntiBonus.punti).alias("totale_bonus"),
+            )
+            .where(PuntiBonus.date == from_day)
+            .group_by(PuntiBonus.user_id)
+        )
 
-    aggregated_list = [(uid, data['user_name'], data['stars']) for uid, data in player_scores.items()]
+        for b in bonus_query:
+            delta = int(b.totale_bonus or 0)
+            uid = b.user_id
+            if uid in player_scores:
+                player_scores[uid]["bonus"] = delta
+                player_scores[uid]["stars"] = max(0, player_scores[uid]["stars"] + delta)
+            else:
+                player_scores[uid] = {
+                    "user_name": b.user_name,
+                    "stars": max(0, delta),
+                    "bonus": delta,
+                }
+    except Exception as e:
+        print(f"Error querying PuntiBonus: {e}")
+
+    for uid in player_scores:
+        player_scores[uid].setdefault("bonus", 0)
+
+    aggregated_list = [(uid, data['user_name'], data['stars'], data['bonus']) for uid, data in player_scores.items()]
     sorted_players = sorted(aggregated_list, key=lambda player: player[2], reverse=True)
     final_ranking = []
     last_score = -1
     current_pos = 0
-    for i, (user_id, name, stars) in enumerate(sorted_players):
+    for i, (user_id, name, stars, bonus) in enumerate(sorted_players):
 
         # If the score changes from the previous player, the rank is the new position (i + 1)
         if stars != last_score:
             current_pos = i + 1
-            current_pos = i + 1
         
         # Append the final tuple with the correct rank
-        final_ranking.append((current_pos, user_id, name, stars))
+        final_ranking.append((current_pos, user_id, name, stars, bonus))
         
         last_score = stars
 
@@ -818,7 +863,8 @@ def personal_stats(user_id: int, correct_game=None, favs_count=0, is_favorite=Fa
             Medaglia.select(
                 peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.gold, 0)).alias("g"),
                 peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.silver, 0)).alias("s"),
-                peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.bronze, 0)).alias("b")
+                peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.bronze, 0)).alias("b"),
+                peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.last, 0)).alias("l"),
             )
             .where(Medaglia.user_id == user_id)
         ).first()
@@ -828,9 +874,10 @@ def personal_stats(user_id: int, correct_game=None, favs_count=0, is_favorite=Fa
             g = int(medals_query.g or 0)
             s = int(medals_query.s or 0)
             b = int(medals_query.b or 0)
-            total_medals = g + s + b
+            l = int(medals_query.l or 0)
+            total_medals = g + s + b + l
             if total_medals > 0:
-                medals_str = f"{total_medals} ({g}🥇, {s}🥈, {b}🥉)"
+                medals_str = f"{total_medals} ({g}🥇, {s}🥈, {b}🥉, {l}{POOP_MEDAL.strip()})"
 
         message = "👤 <b>LE TUE STATISTICHE PERSONALI</b> 👤\n\n"
         message += "📊 <b>Panoramica Attività:</b>\n"
@@ -1231,6 +1278,7 @@ def medaglie_count(monthly=True, target_date=None) -> str:
             peewee.fn.SUM(Medaglia.gold).alias("gold"),
             peewee.fn.SUM(Medaglia.silver).alias("silver"),
             peewee.fn.SUM(Medaglia.bronze).alias("bronze"),
+            peewee.fn.SUM(Medaglia.last).alias("last"),
         )
         .where(Medaglia.date >= first_of_the_month)
         .group_by(Medaglia.user_id)
@@ -1247,7 +1295,12 @@ def medaglie_count(monthly=True, target_date=None) -> str:
         return message
 
     for q in query:
-        message += f"{q.user_name} ({int(q.gold or 0)}/{int(q.silver or 0)}/{int(q.bronze or 0)}):\n{int(q.gold or 0)*MEDALS[1][:-1]}{int(q.silver or 0)*MEDALS[2][:-1]}{int(q.bronze or 0)*MEDALS[3][:-1]}\n"
+        gold = int(q.gold or 0)
+        silver = int(q.silver or 0)
+        bronze = int(q.bronze or 0)
+        last = int(q.last or 0)
+        medals_icons = f"{gold*MEDALS[1][:-1]}{silver*MEDALS[2][:-1]}{bronze*MEDALS[3][:-1]}{last*POOP_MEDAL.strip()}"
+        message += f"{q.user_name} ({gold}/{silver}/{bronze}/{last}):\n{medals_icons}\n"
     return message
 
 
@@ -1375,7 +1428,7 @@ def get_all_scoring():
         # Get the scores for this day
         classifica_stelle = daily_ranking(model, from_day=date)
 
-        for position, user_id, user_name, stelle in classifica_stelle:
+        for position, user_id, user_name, stelle, *rest in classifica_stelle:
         # for user, points in cambiamenti:
         #     user_id, user_name = user.split("_|_")
             user_id = int(user_id)

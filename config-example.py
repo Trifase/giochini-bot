@@ -16,6 +16,11 @@ OPENAI_MODEL = "gpt-4o-mini"
 GEMINI_API_KEY = ""
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 
+HEARTBEAT_ID = ""
+STAR_SYMBOL = "⭐"
+ELSE_MEDAL = "✔️ "
+POOP_MEDAL = "💩 "
+
 db = peewee.SqliteDatabase(DBPATH)
 db_test = peewee.SqliteDatabase(DBPATH_TEST)
 
@@ -51,6 +56,21 @@ class Punti(peewee.Model):
         database = db
         table_name = "punti"
         primary_key = peewee.CompositeKey("date", "user_id")
+
+
+class PuntiBonus(peewee.Model):
+    id = peewee.AutoField()
+    date = peewee.DateField()
+    user_id = peewee.IntegerField()
+    user_name = peewee.TextField()
+    punti = peewee.IntegerField()
+    reason = peewee.TextField(null=True)
+    assigned_by = peewee.IntegerField(null=True)
+    timestamp = peewee.IntegerField()
+
+    class Meta:
+        database = db
+        table_name = "punti_bonus"
 
 
 class Medaglia(peewee.Model):
