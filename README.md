@@ -62,7 +62,7 @@ Il bot analizza automaticamente i messaggi contenenti i risultati condivisi dai 
 
 ## 🎲 Elenco dei Giochi Supportati
 
-Il bot supporta **99 giochi**, suddivisi in 8 categorie:
+Il bot supporta **102 giochi**, suddivisi in 8 categorie:
 
 ### 🌍 Bandiere e geografia (13)
 - 🌍 [Borderline](https://borderline.world)
@@ -135,14 +135,15 @@ Il bot supporta **99 giochi**, suddivisi in 8 categorie:
 - 🌗 [Tango](https://lnkd.in/tango)
 - ⚡ [Zip](https://lnkd.in/zip)
 
-### 🎲 Miscellanea (14)
+### 🎲 Miscellanea (16)
 - 🐟 [Catfishing](https://catfishing.net)
 - 📄 [Disorderly](https://playdisorderly.com/)
+- 🎒 [Farflung](https://farflung.game)
 - 🍝 [FoodGuessr](https://foodguessr.com)
-- 🛡️ [GuessTheFootballClub](https://playfootball.games/guess-the-football-club/)
 - 🎮 [GuessTheGame](https://guessthe.game)
 - 🏠 [GuessTheHouse](https://guessthe.house)
 - ® [GuessTheLogo](https://guessthelogo.wtf)
+- ↕️ [HigherLower](https://www.higherlowergame.com/)
 - 💯 [Hundo](https://hundo.today)
 - 🦐 [Krillion](https://krillion.io/)
 - 🌿 [Metaflora](https://flora.metazooa.com/game)
@@ -150,6 +151,7 @@ Il bot supporta **99 giochi**, suddivisi in 8 categorie:
 - 📊 [MoreLess](https://less.gg/moreless)
 - 📌 [Pinpoint](https://lnkd.in/pinpoint)
 - ⛳ [Putt](https://putt.day)
+- 🥧 [WhoAteAllThePies](https://whoateallthepies.uk/)
 
 ### 🎵 Musica (6)
 - 🎸 [Bandle](https://bandle.app/)
@@ -159,13 +161,14 @@ Il bot supporta **99 giochi**, suddivisi in 8 categorie:
 - 🎧 [Spotle](https://spotle.io/)
 - ⏳ [Timdle Music](https://www.timdle.com/music)
 
-### 👁️ Osservazione e percezione (11)
+### 👁️ Osservazione e percezione (12)
 - 📐 [Angle](https://angle.wtf)
 - 🎨 [Color](https://dialed.gg)
 - 🎨 [Color2](https://dialed.gg/color2)
 - 🎨 [Colorfle](https://colorfle.com)
 - 📐 [GuessTheAngle](https://guesstheangle.wtf)
 - 🎨 [Hexcodle](https://hexcodle.com)
+- 🎯 [Perceptle](https://perceptle.com)
 - 🪟 [Picsey](https://picsey.io)
 - 🧩 [Rotaboxes](https://rotaboxes.com)
 - 📏 [Size It Up](https://magnitudle.com/size-it-up)

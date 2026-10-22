@@ -1701,6 +1701,46 @@ class FoxiMax(Giochino):
 
 
 @dataclass
+class Farflung(Giochino):
+    _name = "Farflung"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 10, 22)
+    _day = "18"
+    _emoji = "🎒"
+    _url = "https://farflung.game"
+
+    examples = [
+        "Farflung #18 · 195/500 km\nMiss · Rare · Miss · Uncommon · Rare\nhttps://farflung.game/s/fqpfgh?e=18",
+        "Farflung #16 · 395/500 km\nRare · Farflung · Uncommon · Rare · Farflung\nhttps://farflung.game/s/35mncg?e=16",
+        "Farflung #14 · 280/500 km\nRare · Rare · Rare · Rare · Miss\nhttps://farflung.game/s/xvj97g?e=14",
+    ]
+    expected = [
+        {"day": "18", "name": "Farflung", "stars": None, "timestamp": 10, "tries": -195, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "16", "name": "Farflung", "stars": None, "timestamp": 10, "tries": -395, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "14", "name": "Farflung", "stars": None, "timestamp": 10, "tries": -280, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "farflung #" in text_lower or "farflung.game" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Farflung\s*#(\d+)", text, re.IGNORECASE)
+        self.day = day_match.group(1) if day_match else None
+
+        score_match = re.search(r"(\d+)\s*/\s*500\s*km", text, re.IGNORECASE)
+        if score_match:
+            score = int(score_match.group(1))
+            self.tries = -score
+        else:
+            self.tries = None
+
+        self.stars = None
+
+
+@dataclass
 class Framed(Giochino):
     _name = "Framed"
     _category = "Cinema"
@@ -3273,6 +3313,46 @@ class Patches(Giochino):
         matches_time = re.search(r"(\d+):(\d+)", text)
         self.day = matches_day.group(1) if matches_day else None
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
+
+
+@dataclass
+class Perceptle(Giochino):
+    _name = "Perceptle"
+    _category = "Osservazione e percezione"
+    _date = datetime.date(2026, 10, 22)
+    _day = "97"
+    _emoji = "🎯"
+    _url = "https://perceptle.com"
+
+    examples = [
+        "Perceptle #94 - B (79)\n🔢 77  🎯 95  📐 98  🥁 28  ✂️ 98\nhttps://perceptle.com",
+        "Perceptle #95 - F (25)\n🔢 32  🎯 1  📐 0  🥁 0  ✂️ 94\nhttps://perceptle.com",
+        "Perceptle #95 - D (41)\n🔢 21  🎯 5  📐 84  🥁 3  ✂️ 91\nhttps://perceptle.com",
+    ]
+    expected = [
+        {"day": "94", "name": "Perceptle", "stars": None, "timestamp": 10, "tries": -79, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "95", "name": "Perceptle", "stars": None, "timestamp": 10, "tries": -25, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "95", "name": "Perceptle", "stars": None, "timestamp": 10, "tries": -41, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "perceptle #" in text_lower or "perceptle.com" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"Perceptle\s*#(\d+)", text, re.IGNORECASE)
+        self.day = day_match.group(1) if day_match else None
+
+        score_match = re.search(r"\(([0-9]+)\)", text)
+        if score_match:
+            score = int(score_match.group(1))
+            self.tries = -score
+        else:
+            self.tries = None
+
+        self.stars = None
 
 
 @dataclass
