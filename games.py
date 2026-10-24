@@ -1951,9 +1951,9 @@ class Geogrid(Giochino):
         '🟩🟩🟩\n❌🟩🟩\n🟩❌❌\nScore: 399.7 | Rank: 2.124/2.949\nElite Among Mortals 🎖\nOrdinary among #geogridgame savants, extraordinary among mere mortals.\nBoard #475 | ♾️ Mode: Off\nhttps://geogridgame.com'
     ]
     expected = [
-        {"day": "524", "name": "Geogrid", "timestamp": 10, "tries": "80", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "447", "name": "Geogrid", "timestamp": 10, "tries": "722", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "475", "name": "Geogrid", "timestamp": 10, "tries": "399", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "524", "name": "Geogrid", "timestamp": 10, "tries": "8070", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "447", "name": "Geogrid", "timestamp": 10, "tries": "72220", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "475", "name": "Geogrid", "timestamp": 10, "tries": "39970", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1973,8 +1973,8 @@ class Geogrid(Giochino):
         score_match = re.search(r"Score: ([0-9.,]+)", text)
         if score_match:
             # Convert to integer by removing decimal and thousands separators
-            score = int(float(score_match.group(1)))
-            self.tries = "X" if score == 900 else str(score)
+            score_float = float(score_match.group(1).replace(",", "."))
+            self.tries = "X" if score_float >= 900 else str(round(score_float * 100))
 
         self.stars = None
 
@@ -3658,9 +3658,9 @@ class QueensUltimateMini(Giochino):
         "👑 Queens Ultimate - Daily Mini #134\n⏱️ 00:52.41 | 💡 Hints: 1\n\n🟦🟧⬜️⬜️🟪🟪\n\nCan you beat my time?\nqueensultimate.com"
     ]
     expected = [
-        {"day": "152", "name": "QueensUltimateMini", "timestamp": 10, "tries": "0108", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "0107", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "0102", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "152", "name": "QueensUltimateMini", "timestamp": 10, "tries": "010875", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "010773", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "010241", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -3674,20 +3674,23 @@ class QueensUltimateMini(Giochino):
         day_match = re.search(r"Daily Mini #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})", text)
+        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})(?:\.(\d{2}))?", text)
         if time_match:
             minutes = int(time_match.group(1))
             seconds = int(time_match.group(2))
-            total_seconds = minutes * 60 + seconds
+            cents = int(time_match.group(3)) if time_match.group(3) else 0
+            total_cents = (minutes * 60 + seconds) * 100 + cents
 
             hints_match = re.search(r"💡\s*Hints:\s*(\d+)", text)
             if hints_match:
                 hints = int(hints_match.group(1))
-                total_seconds += hints * 10
+                total_cents += hints * 1000
 
+            total_seconds = total_cents // 100
             final_minutes = total_seconds // 60
             final_seconds = total_seconds % 60
-            self.tries = f"{final_minutes:02d}{final_seconds:02d}"
+            final_cents = total_cents % 100
+            self.tries = f"{final_minutes:02d}{final_seconds:02d}{final_cents:02d}"
         else:
             self.tries = None
 
@@ -3710,10 +3713,10 @@ class QueensUltimateMax(Giochino):
         "👑 Queens Ultimate - Daily Max #140\n⏱️ 03:10.74 | 💎 Brilliant\n\n🟥🟥🟪🟪🟪🟪\n🟥🟥🟪🟪🟪🟪\n🟥🟦🟪🟪🟩🟪\n🟧🟦🟪⬜🟩🟩\n🟧🟧⬜⬜⬜🟩\n🟧🟧🟧⬜⬜⬜\n\nCan you beat my time?\nqueensultimate.com/max"
     ]
     expected = [
-        {"day": "153", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0402", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "152", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0342", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "149", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0313", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "140", "name": "QueensUltimateMax", "timestamp": 10, "tries": "0310", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "153", "name": "QueensUltimateMax", "timestamp": 10, "tries": "040218", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "152", "name": "QueensUltimateMax", "timestamp": 10, "tries": "034255", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "149", "name": "QueensUltimateMax", "timestamp": 10, "tries": "031368", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "140", "name": "QueensUltimateMax", "timestamp": 10, "tries": "031074", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -3727,20 +3730,23 @@ class QueensUltimateMax(Giochino):
         day_match = re.search(r"Daily Max #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})", text)
+        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})(?:\.(\d{2}))?", text)
         if time_match:
             minutes = int(time_match.group(1))
             seconds = int(time_match.group(2))
-            total_seconds = minutes * 60 + seconds
+            cents = int(time_match.group(3)) if time_match.group(3) else 0
+            total_cents = (minutes * 60 + seconds) * 100 + cents
 
             hints_match = re.search(r"💡\s*Hints:\s*(\d+)", text)
             if hints_match:
                 hints = int(hints_match.group(1))
-                total_seconds += hints * 10
+                total_cents += hints * 1000
 
+            total_seconds = total_cents // 100
             final_minutes = total_seconds // 60
             final_seconds = total_seconds % 60
-            self.tries = f"{final_minutes:02d}{final_seconds:02d}"
+            final_cents = total_cents % 100
+            self.tries = f"{final_minutes:02d}{final_seconds:02d}{final_cents:02d}"
         else:
             self.tries = None
 
@@ -4235,8 +4241,8 @@ class Sumplete(Giochino):
         "🧩 #Sumplete Daily 5x5 #1230 ⏱️ 01:15.10\n\nCan you beat my time? sumplete.com/"
     ]
     expected = [
-        {"day": "1229", "name": "Sumplete", "timestamp": 10, "tries": "0028", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "1230", "name": "Sumplete", "timestamp": 10, "tries": "0115", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "1229", "name": "Sumplete", "timestamp": 10, "tries": "002825", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1230", "name": "Sumplete", "timestamp": 10, "tries": "011510", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -4251,11 +4257,12 @@ class Sumplete(Giochino):
         day_match = re.search(r"#(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})", text)
+        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})(?:\.(\d{2}))?", text)
         if time_match:
             minutes = int(time_match.group(1))
             seconds = int(time_match.group(2))
-            self.tries = f"{minutes:02d}{seconds:02d}"
+            cents = int(time_match.group(3)) if time_match.group(3) else 0
+            self.tries = f"{minutes:02d}{seconds:02d}{cents:02d}"
         else:
             self.tries = None
         self.stars = None
@@ -4937,10 +4944,10 @@ class WordGrid(Giochino):
         "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.0\nwordgrid.clevergoat.com 🐐",
         "Word Grid #11\n🟨🟪🦄\n🦄🟦🟨\n🦄🦄🟦\nRarity: 6.1\nwordgrid.clevergoat.com 🐐",
     ]
-    # Remember: tries are multiplied by 10
+    # Remember: tries are multiplied by 100
     expected = [
-        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "60", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "61", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "600", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "11", "name": "WordGrid", "timestamp": 10, "tries": "610", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -4953,9 +4960,10 @@ class WordGrid(Giochino):
         text = self.raw_text
         match_day = re.search(r"#(\d+)", text)
         self.day = match_day.group(1) if match_day else None
-        match_rarity = re.search(r"Rarity: (\d+\.\d+)", text)
+        match_rarity = re.search(r"Rarity:\s*(\d+(?:\.\d+)?)", text)
         # The point is always a flat with a decimal. We will multiply by 10 to get a whole int, and then will divide by then when displaying it in the classifica.
-        self.tries = str(int(float(match_rarity.group(1)) * 10))
+        self.tries = str(round(float(match_rarity.group(1)) * 100)) if match_rarity else None
+        self.stars = None
 
 
 @dataclass

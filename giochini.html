@@ -349,7 +349,7 @@
                 processTries(game, tries) {
                     // Convert tries to number if it's a string (except for time-based games)
                     if (typeof tries === 'string' && 
-                        !['Murdle', 'Queens', 'Tango', 'Crossclimb'].includes(game)) {
+                        !['Murdle', 'Queens', 'Tango', 'Crossclimb', 'Zip', 'Gisnep', 'Patches', 'Wend', 'Snoop', 'Sumplete', 'QueensUltimateMini', 'QueensUltimateMax'].includes(game)) {
                         tries = Number(tries);
                     }
 
@@ -390,13 +390,19 @@
                     if (game === "NerdleCross") {
                         return 6 - tries;
                     }
-                    if (game === "WordGrid") {
-                        return (tries / 10).toFixed(1);
+                    if (game === "WordGrid" || game === "Geogrid") {
+                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
+                        let val = Number(tries) / 100;
+                        if (Math.round(val * 10) / 10 === Math.round(val * 100) / 100) {
+                            return val.toFixed(1);
+                        } else {
+                            return val.toFixed(2);
+                        }
                     }
                     if (game === "Reversle") {
                         return `${(tries / 100).toFixed(2)}s`;
                     }
-                    if (["Murdle", "Queens", "Tango", "Crossclimb"].includes(game)) {
+                    if (["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "Wend"].includes(game)) {
                         let timeStr = tries.toString();
                         // Ensure the string is at least 3 characters long
                         while (timeStr.length < 3) {
@@ -406,6 +412,13 @@
                         let seconds = timeStr.slice(-2);
                         if (minutes === '') minutes = '0';
                         return `${minutes}:${seconds}`;
+                    }
+                    if (["Snoop", "Sumplete", "QueensUltimateMini", "QueensUltimateMax"].includes(game)) {
+                        let triesStr = String(tries).padStart(6, '0');
+                        let mins = triesStr.substring(0, 2);
+                        let secs = triesStr.substring(2, 4);
+                        let cents = triesStr.substring(4, 6);
+                        return `${mins}:${secs}.${cents}`;
                     }
                     return tries;
                 },

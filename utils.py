@@ -551,29 +551,36 @@ def process_tries(game: str, tries: int | str) -> int | str:
         tries = 100 - tries
 
     # So, murdle/Queens points are time. I store time (for exampe: 5:12) as an int (512) so I can order them. Here I convert them back to string, putting a semicolon two chars from the end.
-    if game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "QueensUltimateMini", "QueensUltimateMax", "Wend", "Sumplete"]:
+    if game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "Wend"]:
         tries = str(tries)[:-2] + ":" + str(tries)[-2:]
         if len(tries) == 2: # this fixes the bug where the time is '7' and is displayed as '0:7' instead of '0:07'
             tries = ':0' + tries[-1]
         if tries.startswith(':'):
             tries = '0' + tries
     
-    if game == 'Snoop': 
+    if game in ['Snoop', 'Sumplete', 'QueensUltimateMini', 'QueensUltimateMax']: 
         # from 023383 to 02:23.83
         # zfill on the left, so it can be 0:00.00
         tries = str(tries).zfill(6)
-        hours = tries[0:2]
-        minutes = tries[2:4]
-        seconds = tries[4:6]
-        tries = f"{hours}:{minutes}.{seconds}"
+        mins = tries[0:2]
+        secs = tries[2:4]
+        cents = tries[4:6]
+        tries = f"{mins}:{secs}.{cents}"
 
     # For NerdleCross, scores are points, the more the better. Max points is 6 so we save them as differences from max.
     if game == "NerdleCross":
         tries = 6 - tries
 
     # For WordGrid, the point is a float with one decimal. I store multiplying by 10 as ints, so i just need to divide by ten and round it to one decimal.
-    if game == "WordGrid":
-        tries = round(tries / 10, 1)
+    if game in ["WordGrid", "Geogrid"]:
+        if str(tries) in ['9999999', 'X']:
+            return "X"
+        val = int(tries) / 100.0
+        if round(val, 2) == round(val, 1):
+            return f"{val:.1f}"
+        else:
+            return f"{val:.2f}"
+
 
     # For Reversle, the point is a float with 2 decimals. I store multiplying by 10 as ints, so i just need to divide by 100 an round it to 2 decimals.
     if game == "Reversle":
@@ -767,7 +774,7 @@ def personal_stats(user_id: int, correct_game=None, favs_count=0, is_favorite=Fa
         
         plays_count = len(winning_plays)
         if plays_count > 0:
-            if correct_game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "QueensUltimateMini", "QueensUltimateMax", "Wend"]:
+            if correct_game in ["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "Wend"]:
                 # Time-based: parse to total seconds
                 total_secs = 0
                 for p in winning_plays:
@@ -782,23 +789,24 @@ def personal_stats(user_id: int, correct_game=None, favs_count=0, is_favorite=Fa
                 avg_mins = int(avg_secs // 60)
                 avg_remaining_secs = int(avg_secs % 60)
                 avg_score_str = f"• Media punteggio/tempo: <code>{avg_mins}:{avg_remaining_secs:02d}</code>\n"
-            elif correct_game == "Snoop":
-                # Snoop format: HHMMSS
-                total_secs = 0
+            elif correct_game in ["Snoop", "Sumplete", "QueensUltimateMini", "QueensUltimateMax"]:
+                # Format: MMSScc (minutes, seconds, centiseconds)
+                total_cents = 0
                 for p in winning_plays:
                     try:
                         val = int(p.tries)
-                        hours = val // 10000
-                        mins = (val % 10000) // 100
-                        secs = val % 100
-                        total_secs += hours * 3600 + mins * 60 + secs
+                        mins = val // 10000
+                        secs = (val % 10000) // 100
+                        cents = val % 100
+                        total_cents += (mins * 60 + secs) * 100 + cents
                     except (ValueError, TypeError):
                         pass
-                avg_secs = total_secs / plays_count
-                avg_hours = int(avg_secs // 3600)
-                avg_mins = int((avg_secs % 3600) // 60)
-                avg_remaining_secs = int(avg_secs % 60)
-                avg_score_str = f"• Media punteggio/tempo: <code>{avg_hours:02d}:{avg_mins:02d}.{avg_remaining_secs:02d}</code>\n"
+                avg_total_cents = round(total_cents / plays_count)
+                avg_total_secs = avg_total_cents // 100
+                avg_cents = avg_total_cents % 100
+                avg_mins = int(avg_total_secs // 60)
+                avg_secs = int(avg_total_secs % 60)
+                avg_score_str = f"• Media punteggio/tempo: <code>{avg_mins:02d}:{avg_secs:02d}.{avg_cents:02d}</code>\n"
             else:
                 # Standard numeric tries
                 total_processed = 0
