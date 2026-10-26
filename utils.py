@@ -111,10 +111,17 @@ class Classifica:
     last: str = ""
 
     def order_and_position(self):
+        def get_extra_sort_key(g):
+            if g.extra:
+                return -float(g.extra)
+            elif g.game == "FoxiMax":
+                return 999.0
+            return 0.0
+
         # Ordina per tries (crescente) e poi per extra (decrescente)
         sorted_giocate = sorted(
             [g for g in self.giocate if not g.lost],
-            key=lambda g: (g.tries, -float(g.extra) if g.extra else 0.0)
+            key=lambda g: (g.tries, get_extra_sort_key(g))
         )
         
         last_tries = None
@@ -388,7 +395,7 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
         query = (
                 Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
                 .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+                .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
             )
 
         if not query:

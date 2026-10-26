@@ -1687,7 +1687,7 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     Punteggio.game == game,
                     Punteggio.chat_id == update.effective_chat.id
                 )
-                .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+                .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
             )
             
             # Create a Classifica object to calculate positions and stars

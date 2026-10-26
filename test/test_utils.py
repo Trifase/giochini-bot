@@ -188,3 +188,30 @@ def test_poop_medal_assignment_threshold():
     award_poop_3 = len(ranking_3) >= 4
     poop_winners_3 = [uid for pos, uid, name, s, *_ in ranking_3 if award_poop_3 and s == min([s for _, _, _, s, *_ in ranking_3]) and pos > 3]
     assert poop_winners_3 == []
+
+def test_foximax_tiebreaking_with_letters():
+    from utils import Classifica, Giocata
+
+    cl = Classifica()
+    cl.game = "FoxiMax"
+    cl.day = "1409"
+
+    # Charlie: 3 tries, 13 letters
+    # Alice: 5 tries, 16 letters
+    # Bob: 5 tries, 18 letters
+    # David: 5 tries, no letters (extra=0)
+    cl.giocate = [
+        Giocata(user_id=1, user_name="Alice", game="FoxiMax", tries=5, extra=-16),
+        Giocata(user_id=2, user_name="Bob", game="FoxiMax", tries=5, extra=-18),
+        Giocata(user_id=3, user_name="Charlie", game="FoxiMax", tries=3, extra=-13),
+        Giocata(user_id=4, user_name="David", game="FoxiMax", tries=5, extra=0),
+    ]
+
+    cl.order_and_position()
+
+    positions = {g.user_name: g.posizione for g in cl.giocate}
+    assert positions["Charlie"] == 1
+    assert positions["Alice"] == 2
+    assert positions["Bob"] == 3
+    assert positions["David"] == 4
+

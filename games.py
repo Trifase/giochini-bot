@@ -1665,6 +1665,7 @@ class FoxiMax(Giochino):
     _day = "1409"
     _emoji = "🦊"
     _url = "https://foximax.com"
+    has_extra = True
 
     examples = [
         "🦊#FoxiMax #1409 6/8 (18 letters)\nhttps://foximax.com/\n\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩⬜🟩🟩🟩\n⬜🟩🟩🟩⬜\n🟩🟩🟩🟩🟩\n🟩🟩⬜🟩⬜",
@@ -1674,9 +1675,9 @@ class FoxiMax(Giochino):
         "🦊#FoxiMax #1410 X/8 (15 letters)\nhttps://www.foximax.com/\n\n🟩🟩🟩🟥🟥\n🟥🟩🟥🟩🟥\n🟥🟩🟩🟩🟩\n🟥🟩🟩🟥🟩\n🟥🟩🟥🟩🟩\n🟥🟩🟩🟩🟩\n⬜🟩🟥🟩⬜\n⬜🟩🟩🟩🟩",
     ]
     expected = [
-        {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase", "stars": None},
-        {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase", "stars": None},
-        {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": None},
+        {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "6", "user_id": 456481297, "user_name": "Trifase", "stars": -18},
+        {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "5", "user_id": 456481297, "user_name": "Trifase", "stars": -16},
+        {"day": "1409", "name": "FoxiMax", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase", "stars": -13},
         {"day": "1374", "name": "FoxiMax", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase", "stars": None},
         {"day": "1410", "name": "FoxiMax", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase", "stars": None},
     ]
@@ -1696,7 +1697,11 @@ class FoxiMax(Giochino):
         score_match = re.search(r"#FoxiMax #\d+ ([X\d]+)/8", text)
         self.tries = score_match.group(1) if score_match else None
 
-        self.stars = None
+        letters_match = re.search(r"\((\d+)\s*(?:letters|lettere)\)", text, re.IGNORECASE)
+        if letters_match and self.tries != "X":
+            self.stars = -int(letters_match.group(1))
+        else:
+            self.stars = None
 
 
 

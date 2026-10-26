@@ -41,7 +41,7 @@ async def classifica_for_game(day, game_name) -> list:
             Punteggio.chat_id == CHAT_ID,
             Punteggio.lost == False,
         )
-        .order_by(Punteggio.tries, Punteggio.extra.desc(), Punteggio.timestamp)
+        .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
         .limit(10)
     )
     for p in list(query):
