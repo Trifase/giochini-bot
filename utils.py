@@ -268,8 +268,26 @@ class Classifica:
         if not self.aggregate:
             classifica += self.header + "\n"
 
-        for posiz in self.giocate:
-            classifica += posiz.to_string(self.aggregate) + "\n"
+        if self.aggregate:
+            for posiz in self.giocate:
+                classifica += posiz.to_string(self.aggregate) + "\n"
+        else:
+            valid_giocate = [g for g in self.giocate if not g.lost]
+            lost_giocate = [g for g in self.giocate if g.lost]
+
+            positions = defaultdict(list)
+            for g in valid_giocate:
+                positions[g.posizione].append(g)
+
+            for pos in sorted(positions.keys()):
+                group = positions[pos]
+                first = group[0]
+                stelle = f"{first.stelle}{STAR_SYMBOL}" if first.stelle > 0 else ""
+                names = ", ".join(g.user_name for g in group)
+                classifica += f"{first.emoji}{stelle}{names} ({first.processed_tries})\n"
+
+            for g in lost_giocate:
+                classifica += g.to_string() + "\n"
 
         if self.last and not self.aggregate:
             classifica += f"{self.last}"

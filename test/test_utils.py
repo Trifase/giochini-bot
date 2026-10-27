@@ -215,3 +215,28 @@ def test_foximax_tiebreaking_with_letters():
     assert positions["Bob"] == 3
     assert positions["David"] == 4
 
+def test_classifica_to_string_ties_grouped():
+    from utils import Classifica, Giocata
+
+    cl = Classifica(game="Wordle", day="100", header="Wordle #100")
+    cl.giocate = [
+        Giocata(user_id=1, user_name="Alice", game="Wordle", tries=3),
+        Giocata(user_id=2, user_name="Bob", game="Wordle", tries=3),
+        Giocata(user_id=3, user_name="Charlie", game="Wordle", tries=4),
+        Giocata(user_id=4, user_name="David", game="Wordle", tries=5),
+        Giocata(user_id=5, user_name="Eve", game="Wordle", tries=5),
+        Giocata(user_id=6, user_name="Frank", game="Wordle", tries=9999999),
+    ]
+    cl.order_and_position()
+    cl.assign_stars('default')
+
+    s = cl.to_string()
+    expected = (
+        "Wordle #100\n"
+        "\U0001F947 4\u2B50Alice, Bob (3)\n"
+        "\U0001F949 3\u2B50Charlie (4)\n"
+        "\u2714\uFE0F 1\u2B50David, Eve (5)\n"
+        "<s><i>Frank</i></s>\n"
+    )
+    assert s == expected
+
