@@ -692,7 +692,7 @@ async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         classifica = make_single_classifica(game, chat_id=update.effective_chat.id, limit=3, show_lost=True)
 
         if classifica:
-            messaggio += classifica + "\n\n"
+            messaggio += classifica + "\n"
 
     if messaggio:
         reply_to_id = update.effective_message.message_id if update.effective_message else None
