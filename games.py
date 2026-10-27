@@ -3660,12 +3660,14 @@ class QueensUltimateMini(Giochino):
     examples = [
         "👑 Queens Ultimate - Daily Mini #152\n⏱️ 01:08.75 | 💎 Brilliant\n\n🟩🟩🟪🟪🟪🟪\n🟥🟥🟪🟪🟪🟪\n🟥🟥⬜⬜🟦🟪\n\nCan you beat my time?\nqueensultimate.com",
         "👑 Queens Ultimate - Daily Mini #134\n⏱️ 00:57.73 | 💡 Hints: 1\n\n🟦🟧⬜⬜🟪🟪\n\nCan you beat my time?\nqueensultimate.com",
-        "👑 Queens Ultimate - Daily Mini #134\n⏱️ 00:52.41 | 💡 Hints: 1\n\n🟦🟧⬜️⬜️🟪🟪\n\nCan you beat my time?\nqueensultimate.com"
+        "👑 Queens Ultimate - Daily Mini #134\n⏱️ 00:52.41 | 💡 Hints: 1\n\n🟦🟧⬜️⬜️🟪🟪\n\nCan you beat my time?\nqueensultimate.com",
+        "👑 Queens Ultimate - Daily Mini #289\n⏱️ 00:37.4 | 💎 Brilliant\n\n🟧🟧🟥🟥🟩🟪\n\nCan you beat my time?\nqueensultimate.com"
     ]
     expected = [
         {"day": "152", "name": "QueensUltimateMini", "timestamp": 10, "tries": "010875", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "010773", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "010241", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "134", "name": "QueensUltimateMini", "timestamp": 10, "tries": "010241", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "289", "name": "QueensUltimateMini", "timestamp": 10, "tries": "003740", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -3679,11 +3681,12 @@ class QueensUltimateMini(Giochino):
         day_match = re.search(r"Daily Mini #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})(?:\.(\d{2}))?", text)
+        time_match = re.search(r"⏱\ufe0f?\s*(\d+):(\d{2})(?:\.(\d+))?", text)
         if time_match:
             minutes = int(time_match.group(1))
             seconds = int(time_match.group(2))
-            cents = int(time_match.group(3)) if time_match.group(3) else 0
+            subsecs = time_match.group(3)
+            cents = round(float(f"0.{subsecs}") * 100) if subsecs else 0
             total_cents = (minutes * 60 + seconds) * 100 + cents
 
             hints_match = re.search(r"💡\s*Hints:\s*(\d+)", text)
@@ -3715,13 +3718,15 @@ class QueensUltimateMax(Giochino):
         "👑 Queens Ultimate - Daily Max #153\n⏱️ 04:02.18 | 💎 Brilliant\n\n🟥🟥🟧🟧🟧🟧\n🟥🟥🟧🟧🟧🟧\n🟥🟧🟧🟧⬜🟧\n🟩🟩🟦🟦⬜⬜\n🟩🟩🟪🟦⬜⬜\n🟩🟪🟪🟪🟪⬜\n\nCan you beat my time?\nqueensultimate.com/max",
         "👑 Queens Ultimate - Daily Max #152\n⏱️ 03:42.55 | 💎 Brilliant\n\n🟧🟦🟦🟦🟥🟥\n🟧🟧🟦🟦🟦🟦\n🟧🟧🟩⬜⬜⬜\n🟧🟧🟩🟪🟪⬜\n🟧🟩🟩🟪🟪🟪\n🟧🟪🟪🟪🟪🟪\n\nCan you beat my time?\nqueensultimate.com/max",
         "👑 Queens Ultimate - Daily Max #149\n⏱️ 03:13.68 | 💎 Brilliant\n\n🟦🟦🟦🟪🟪🟪\n🟦🟦🟩🟧🟪⬜\n🟦🟦🟩🟧🟧⬜\n🟩🟩🟩🟩🟧🟧\n🟩🟩🟩🟥🟥🟧\n🟩🟩🟥🟥🟥🟥\n\nCan you beat my time?\nqueensultimate.com/max",
-        "👑 Queens Ultimate - Daily Max #140\n⏱️ 03:10.74 | 💎 Brilliant\n\n🟥🟥🟪🟪🟪🟪\n🟥🟥🟪🟪🟪🟪\n🟥🟦🟪🟪🟩🟪\n🟧🟦🟪⬜🟩🟩\n🟧🟧⬜⬜⬜🟩\n🟧🟧🟧⬜⬜⬜\n\nCan you beat my time?\nqueensultimate.com/max"
+        "👑 Queens Ultimate - Daily Max #140\n⏱️ 03:10.74 | 💎 Brilliant\n\n🟥🟥🟪🟪🟪🟪\n🟥🟥🟪🟪🟪🟪\n🟥🟦🟪🟪🟩🟪\n🟧🟦🟪⬜🟩🟩\n🟧🟧⬜⬜⬜🟩\n🟧🟧🟧⬜⬜⬜\n\nCan you beat my time?\nqueensultimate.com/max",
+        "👑 Queens Ultimate - Daily Max #286\n⏱️ 02:12.8 | 💎 Brilliant\n\n🟥🟥🟪🟪🟪🟪\n\nCan you beat my time?\nqueensultimate.com/max"
     ]
     expected = [
         {"day": "153", "name": "QueensUltimateMax", "timestamp": 10, "tries": "040218", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "152", "name": "QueensUltimateMax", "timestamp": 10, "tries": "034255", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "149", "name": "QueensUltimateMax", "timestamp": 10, "tries": "031368", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "140", "name": "QueensUltimateMax", "timestamp": 10, "tries": "031074", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "140", "name": "QueensUltimateMax", "timestamp": 10, "tries": "031074", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "286", "name": "QueensUltimateMax", "timestamp": 10, "tries": "021280", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -3735,11 +3740,12 @@ class QueensUltimateMax(Giochino):
         day_match = re.search(r"Daily Max #(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})(?:\.(\d{2}))?", text)
+        time_match = re.search(r"⏱\ufe0f?\s*(\d+):(\d{2})(?:\.(\d+))?", text)
         if time_match:
             minutes = int(time_match.group(1))
             seconds = int(time_match.group(2))
-            cents = int(time_match.group(3)) if time_match.group(3) else 0
+            subsecs = time_match.group(3)
+            cents = round(float(f"0.{subsecs}") * 100) if subsecs else 0
             total_cents = (minutes * 60 + seconds) * 100 + cents
 
             hints_match = re.search(r"💡\s*Hints:\s*(\d+)", text)
@@ -4243,11 +4249,13 @@ class Sumplete(Giochino):
 
     examples = [
         "🧩 #Sumplete Daily 5x5 #1229 ⏱️ 00:28.25\n\n3️⃣4️⃣8️⃣7️⃣7️⃣ 3️⃣8️⃣3️⃣5️⃣4️⃣ 4️⃣2️⃣2️⃣5️⃣1️⃣ 2️⃣6️⃣1️⃣1️⃣8️⃣ 4️⃣7️⃣5️⃣9️⃣2️⃣\n\nCan you beat my time? sumplete.com/",
-        "🧩 #Sumplete Daily 5x5 #1230 ⏱️ 01:15.10\n\nCan you beat my time? sumplete.com/"
+        "🧩 #Sumplete Daily 5x5 #1230 ⏱️ 01:15.10\n\nCan you beat my time? sumplete.com/",
+        "🧩 #Sumplete Daily 5x5 #1326 ⏱️ 00:31.5\n\nCan you beat my time? sumplete.com/"
     ]
     expected = [
         {"day": "1229", "name": "Sumplete", "timestamp": 10, "tries": "002825", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "1230", "name": "Sumplete", "timestamp": 10, "tries": "011510", "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "1230", "name": "Sumplete", "timestamp": 10, "tries": "011510", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1326", "name": "Sumplete", "timestamp": 10, "tries": "003150", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -4262,11 +4270,12 @@ class Sumplete(Giochino):
         day_match = re.search(r"#(\d+)", text)
         self.day = day_match.group(1) if day_match else None
 
-        time_match = re.search(r"⏱️\s*(\d{2}):(\d{2})(?:\.(\d{2}))?", text)
+        time_match = re.search(r"⏱\ufe0f?\s*(\d+):(\d{2})(?:\.(\d+))?", text)
         if time_match:
             minutes = int(time_match.group(1))
             seconds = int(time_match.group(2))
-            cents = int(time_match.group(3)) if time_match.group(3) else 0
+            subsecs = time_match.group(3)
+            cents = round(float(f"0.{subsecs}") * 100) if subsecs else 0
             self.tries = f"{minutes:02d}{seconds:02d}{cents:02d}"
         else:
             self.tries = None
