@@ -73,7 +73,7 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date, "%b %d %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
-    if isinstance(date, str) and (game == "HighFive" or game == "Hundo" or game == "HigherLower"):
+    if isinstance(date, str) and (game in ["HighFive", "Hundo", "HigherLower", "Size It Up"]):
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
     if isinstance(date, str) and game == "Moviedle":
@@ -3930,12 +3930,14 @@ class SizeItUp(Giochino):
         "Size It Up\nOverall Score 252\n\n🟥🟥🟥🟥⬜️ 75\n🟥🟥🟥⬜️⬜️ 57\n⬜️⬜️⬜️⬜️⬜️ 9\n🟥⬜️⬜️⬜️⬜️ 29\n🟥🟥🟥🟥⬜️ 82\nhttps://magnitudle.com/size-it-up",
         "Size It Up\nOverall Score 272\n\n🟥🟥🟥⬜️⬜️ 64\n🟥🟥🟥🟥🟥 100\n🟥⬜️⬜️⬜️⬜️ 23\n🟥🟥⬜️⬜️⬜️ 30\n🟥🟥🟥⬜️⬜️ 55\nhttps://magnitudle.com/size-it-up",
         "Size It Up\nOverall Score 204\n\n⬜️⬜️⬜️⬜️⬜️ 2\n🟥🟥🟥⬜️⬜️ 54\n🟥🟥⬜️⬜️⬜️ 42\n🟥🟥⬜️⬜️⬜️ 32\n🟥🟥🟥🟥⬜️ 74\nhttps://magnitudle.com/size-it-up",
+        "Magnitudle — Size It Up\n2026-11-04\n\nScore: 292/500\n\n🟥🟥🟥🟥🟥 100\n🟥⬜️⬜️⬜️⬜️ 24\n🟥🟥🟥🟥⬜️ 87\n🟥🟥🟥⬜️⬜️ 58\n🟥⬜️⬜️⬜️⬜️ 23\n\nhttps://magnitudle.com/size-it-up",
     ]
     expected = [
         {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -141, "user_id": 456481297, "user_name": "Trifase"},
         {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -252, "user_id": 456481297, "user_name": "Trifase"},
         {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -272, "user_id": 456481297, "user_name": "Trifase"},
         {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -204, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "Size It Up", "2026-11-04")}', "name": "Size It Up", "timestamp": 10, "tries": -292, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -3945,8 +3947,13 @@ class SizeItUp(Giochino):
 
     def parse(self):
         text = self.raw_text
-        self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
-        score_match = re.search(r"Overall\s+Score\s*(\d+)", text, re.IGNORECASE)
+        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", text)
+        if date_match:
+            self.day = get_day_from_date(self._date, self._day, self._name, date_match.group(1))
+        else:
+            self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
+
+        score_match = re.search(r"(?:Overall\s+Score|Score:?)\s*(\d+)", text, re.IGNORECASE)
         if score_match:
             self.tries = -int(score_match.group(1))
         else:
