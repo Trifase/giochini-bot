@@ -121,6 +121,8 @@ def get_game_leaderboard(target_date: date, game_name: str) -> dict:
     }
 
 
+@app.get("/games/")
+@app.get("/games")
 @app.get("/api/games/")
 @app.get("/giochini-list/")
 async def list_available_games():
@@ -579,3 +581,9 @@ async def serve_players_page():
 
 # Mount static files under root path
 app.mount("/", StaticFiles(directory="www/html/trifase.online", html=True), name="static")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main_fastapi:app", host="0.0.0.0", port=8000, reload=False)
+
