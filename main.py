@@ -48,8 +48,8 @@ from config import (
     Medaglia,
     Punteggio,
     Punti,
-
 )
+import config
 from games import ALL_GAMES as GAMES
 from games import GameFilter
 from utils import (
@@ -57,12 +57,15 @@ from utils import (
     Giocata,
     GameStatus,
     GameAnchor,
+    GiocoBonus,
     PuntiBonus,
     POOP_MEDAL,
     correct_name,
     daily_ranking,
     get_day_from_date,
     get_date_from_day,
+    get_bonus_game,
+    pick_or_get_bonus_game,
     group_stats,
     longest_streak,
     make_buttons,
@@ -440,6 +443,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "",
         "📌 /myday - Mostra i giochi a cui non hai ancora giocato oggi",
         "📌 /myscore - Mostra il tuo punteggio e le tue posizioni di oggi",
+        "📌 /jolly - Mostra il gioco Jolly di oggi (punti moltiplicati)",
         "📌 /dailyranking - Mostra i punti del giorno corrente",
         "📌 /medaglie - Mostra il medagliere mensile",
         "",
@@ -949,6 +953,15 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         favorites = context.bot_data["settings"][str(update.effective_user.id)]["favs"]
         solo_preferiti = context.bot_data["settings"][str(update.effective_user.id)].get("favs_extra_button", False)
 
+    bonus_today = (get_bonus_game(datetime.date.today()) or pick_or_get_bonus_game(datetime.date.today())) if getattr(config, "BONUS_GAME_ENABLED", True) else None
+    bonus_game_name = bonus_today.game if bonus_today else None
+    bonus_multiplier = bonus_today.multiplier if bonus_today else 1
+
+    def get_game_badge(g_name: str) -> str:
+        if bonus_game_name and g_name == bonus_game_name:
+            return f" [🎰 {bonus_multiplier}x]"
+        return ""
+
     # Divido i giochi in giocati e non giocati
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
@@ -989,13 +1002,13 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if not_played_favs:
         for game in not_played_favs:
-            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>\n'
+            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
 
     message += "\n"
 
     if not_played_regs and not solo_preferiti:
         for game in not_played_regs:
-            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
 
     active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
     tot_favs = len(active_favorites)
@@ -1056,13 +1069,22 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             favs.append(game)
         else:
             regs.append(game)
+    bonus_today = (get_bonus_game(datetime.date.today()) or pick_or_get_bonus_game(datetime.date.today())) if getattr(config, "BONUS_GAME_ENABLED", True) else None
+    bonus_game_name = bonus_today.game if bonus_today else None
+    bonus_multiplier = bonus_today.multiplier if bonus_today else 1
+
+    def get_game_badge(g_name: str) -> str:
+        if bonus_game_name and g_name == bonus_game_name:
+            return f" [🎰 {bonus_multiplier}x]"
+        return ""
+
     if favs:
         for game in favs:
-            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>\n'
+            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
     message += "\n"
     if regs:
         for game in regs:
-            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>\n'
+            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
 
     elif not not_played_today:
         message = "Hai giocato a tutto!"
@@ -1657,7 +1679,11 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Dictionary to store game results for the user
     user_games = []
     total_stars = 0
-    
+
+    bonus_today = (get_bonus_game(today) or pick_or_get_bonus_game(today)) if getattr(config, "BONUS_GAME_ENABLED", True) else None
+    bonus_game_name = bonus_today.game if bonus_today else None
+    bonus_multiplier = bonus_today.multiplier if bonus_today else 1
+
     # Iterate through all active games
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
@@ -1714,15 +1740,18 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 if giocata.user_id == user_id:
                     # Only include non-lost games since lost games produce 0 points
                     if not giocata.lost:
+                        mult = bonus_multiplier if (bonus_game_name and game == bonus_game_name) else 1
+                        awarded_stars = giocata.stelle * mult
                         user_games.append({
                             "game": game,
                             "emoji": GAMES[game]["emoji"],
                             "position": giocata.posizione,
-                            "stars": giocata.stelle,
+                            "stars": awarded_stars,
+                            "multiplier": mult,
                             "medal_emoji": giocata.emoji,
                             "tries": giocata.processed_tries,
                         })
-                        total_stars += giocata.stelle
+                        total_stars += awarded_stars
                     break
     
     # Build the message
@@ -1732,7 +1761,8 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = f"<b>Il tuo punteggio di oggi:</b> {total_stars}{STAR_SYMBOL}\n\n"
         
         for game_info in user_games:
-            stars_display = f"+{game_info['stars']}{STAR_SYMBOL}" if game_info['stars'] > 0 else ""
+            mult_str = f" (x{game_info['multiplier']} 🎰)" if game_info.get("multiplier", 1) > 1 else ""
+            stars_display = f"+{game_info['stars']}{STAR_SYMBOL}{mult_str}" if game_info['stars'] > 0 else ""
             message += f"{game_info['medal_emoji']}{stars_display} {game_info['game']}\n"
     
     mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
@@ -1790,6 +1820,31 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
+async def cmd_jolly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Shows the current bonus game of the day."""
+    if not getattr(config, "BONUS_GAME_ENABLED", True):
+        await update.message.reply_text("La funzione Gioco Jolly non è attiva.")
+        return
+
+    today = datetime.date.today()
+    bonus = get_bonus_game(today) or pick_or_get_bonus_game(today)
+
+    if not bonus:
+        await update.message.reply_text("Nessun gioco Jolly disponibile per oggi.")
+        return
+
+    emoji = GAMES.get(bonus.game, {}).get("emoji", "🎮")
+    url = GAMES.get(bonus.game, {}).get("url", "")
+    game_link = f'<a href="{url}">{emoji} {bonus.game}</a>' if url else f"<b>{emoji} {bonus.game}</b>"
+
+    msg = (
+        f"🎰 <b>Gioco Jolly di oggi ({today.strftime('%d/%m/%Y')})</b> 🎰\n\n"
+        f"Oggi il gioco bonus è {game_link} e vale <b>{bonus.multiplier}x punti</b> {STAR_SYMBOL}!\n"
+        f"Giocatelo per scalare la classifica! 🚀"
+    )
+    await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
+
+
 async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat.id != ID_GIOCHINI:
         return
@@ -1814,7 +1869,13 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         classifica_stelle = daily_ranking(model)
 
-    message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n\n"
+    yesterday_bonus = get_bonus_game(yesterday)
+    bonus_note = ""
+    if yesterday_bonus:
+        yg_emoji = GAMES.get(yesterday_bonus.game, {}).get("emoji", "🎮")
+        bonus_note = f"🎰 <i>Gioco Jolly: {yg_emoji} {yesterday_bonus.game} ({yesterday_bonus.multiplier}x punti)</i>\n\n"
+
+    message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n{bonus_note}"
 
     min_score = min([s for _, _, _, s, *_ in classifica_stelle]) if classifica_stelle else None
     award_poop = len(classifica_stelle) >= 4
@@ -1883,6 +1944,27 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     message2 = '<a href="https://trifase.online/giochini">★ Classifiche online! ★</a>'
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message2, disable_web_page_preview=True, parse_mode="HTML")
+
+    # Annuncio del gioco Jolly per la nuova giornata
+    if getattr(config, "BONUS_GAME_ENABLED", True) and not context.bot_data.get("manual_riassunto", None):
+        bonus_today = pick_or_get_bonus_game(today)
+        if bonus_today:
+            emoji = GAMES.get(bonus_today.game, {}).get("emoji", "🎮")
+            url = GAMES.get(bonus_today.game, {}).get("url", "")
+            game_text = f'<a href="{url}">{emoji} {bonus_today.game}</a>' if url else f"<b>{emoji} {bonus_today.game}</b>"
+            jolly_msg = (
+                f"🎰 <b>GIOCO JOLLY DI OGGI ({today.strftime('%d/%m/%Y')})</b> 🎰\n\n"
+                f"Il gioco estratto per oggi è {game_text}!\n"
+                f"Tutti i punti ottenuti in questo gioco varranno <b>{bonus_today.multiplier}x</b> {STAR_SYMBOL}!\n\n"
+                f"Buona sfida a tutti! 🍀"
+            )
+            await context.bot.send_message(
+                chat_id=ID_GIOCHINI,
+                text=jolly_msg,
+                parse_mode="HTML",
+                disable_web_page_preview=True,
+            )
+
     context.bot_data["manual_riassunto"] = False
 
 
@@ -2083,6 +2165,7 @@ async def post_init(app: Application) -> None:
     Medaglia.create_table()
     GameStatus.create_table()
     GameAnchor.create_table()
+    GiocoBonus.create_table()
     # Setting.create_table()
     
     sync_disabled_games()
@@ -2098,6 +2181,7 @@ async def post_init(app: Application) -> None:
     my_commands = [
         ('myday', 'Quali giochi devi ancora giocare oggi?'),
         ('myscore', 'Mostra il tuo punteggio di oggi'),
+        ('jolly', 'Gioco Jolly di oggi (punti moltiplicati)'),
         ('mystats', 'Le tue statistiche'),
         ('groupstats', 'Le statistiche del gruppo'),
         ('weekstat', 'Statistiche degli ultimi 7 giorni'),
@@ -2150,6 +2234,7 @@ def main():
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
     app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
     app.add_handler(CommandHandler(["simuladaily", "simula"], simula_daily), 1)
+    app.add_handler(CommandHandler(["jolly", "bonusgame", "giocobonus"], cmd_jolly), 1)
     app.add_handler(CommandHandler(["bonus", "stelle", "stelline", "malus"], cmd_bonus), 1)
     app.add_handler(CommandHandler(["bonusoggi", "bonuslist"], cmd_bonus_oggi), 1)
 

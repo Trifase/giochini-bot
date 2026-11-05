@@ -1,4 +1,6 @@
 import datetime
+import logging
+import random
 from collections import defaultdict
 
 import httpx
@@ -8,6 +10,7 @@ import timedelta
 from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
+import config
 from config import ID_GIOCHINI, MEDALS, TOKEN, STAR_SYMBOL, ELSE_MEDAL, Medaglia, Punteggio
 try:
     from config import POOP_MEDAL
@@ -95,6 +98,109 @@ class PuntiBonus(peewee.Model):
     class Meta:
         database = Punteggio._meta.database
         table_name = "punti_bonus"
+
+
+class GiocoBonus(peewee.Model):
+    date = peewee.DateField(unique=True)
+    game = peewee.TextField()
+    multiplier = peewee.IntegerField()
+
+    class Meta:
+        database = Punteggio._meta.database
+        table_name = "gioco_bonus"
+
+
+def get_active_games() -> list[str]:
+    """Returns list of active (non-disabled) games, filtering out hardcoded and dynamic disabled games."""
+    try:
+        GameStatus.create_table(safe=True)
+        auto_disabled = {
+            s.game_name for s in GameStatus.select(GameStatus.game_name).where(GameStatus.is_disabled == True)
+        }
+    except Exception:
+        auto_disabled = set()
+
+    active = []
+    for g, data in GAMES.items():
+        if data.get("disabled", False):
+            continue
+        if g in auto_disabled:
+            continue
+        active.append(g)
+    return active
+
+
+def choose_bonus_multiplier() -> int:
+    """Randomly selects a multiplier based on BONUS_GAME_MULTIPLIERS weights."""
+    configs = getattr(config, "BONUS_GAME_MULTIPLIERS", [(2, 50), (3, 35), (4, 15)])
+    if isinstance(configs, dict):
+        items = list(configs.items())
+    else:
+        items = list(configs)
+    vals = [item[0] for item in items]
+    weights = [item[1] for item in items]
+    return random.choices(vals, weights=weights, k=1)[0]
+
+
+def get_bonus_game(target_date: datetime.date = None):
+    """Retrieves existing bonus game for the given date, if any."""
+    if not getattr(config, "BONUS_GAME_ENABLED", True):
+        return None
+    if not target_date:
+        target_date = datetime.date.today()
+    try:
+        GiocoBonus.create_table(safe=True)
+        return GiocoBonus.get_or_none(GiocoBonus.date == target_date)
+    except Exception as e:
+        logging.error(f"Error fetching bonus game: {e}")
+        return None
+
+
+def pick_or_get_bonus_game(target_date: datetime.date = None):
+    """Gets or extracts the bonus game for target_date.
+    Draws from all active games, avoiding games picked in the last BONUS_GAME_NO_REPEAT_DAYS days."""
+    if not getattr(config, "BONUS_GAME_ENABLED", True):
+        return None
+    if not target_date:
+        target_date = datetime.date.today()
+
+    try:
+        GiocoBonus.create_table(safe=True)
+        existing = GiocoBonus.get_or_none(GiocoBonus.date == target_date)
+        if existing:
+            return existing
+
+        active = get_active_games()
+        if not active:
+            return None
+
+        no_repeat_days = getattr(config, "BONUS_GAME_NO_REPEAT_DAYS", 7)
+        cutoff = target_date - datetime.timedelta(days=no_repeat_days)
+        recent_games = {
+            bg.game
+            for bg in GiocoBonus.select(GiocoBonus.game).where(
+                GiocoBonus.date >= cutoff,
+                GiocoBonus.date < target_date,
+            )
+        }
+
+        pool = [g for g in active if g not in recent_games]
+        if not pool:
+            pool = active
+
+        chosen_game = random.choice(pool)
+        multiplier = choose_bonus_multiplier()
+
+        bonus_entry = GiocoBonus.create(
+            date=target_date,
+            game=chosen_game,
+            multiplier=multiplier,
+        )
+        return bonus_entry
+    except Exception as e:
+        logging.error(f"Error picking bonus game: {e}")
+        return None
+
 
 @dataclass
 class Classifica:
@@ -422,6 +528,16 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
     
     player_scores = {}
 
+    bonus_entry = None
+    if getattr(config, "BONUS_GAME_ENABLED", True):
+        if from_day == today:
+            bonus_entry = pick_or_get_bonus_game(from_day)
+        else:
+            bonus_entry = get_bonus_game(from_day)
+
+    bonus_game_name = bonus_entry.game if bonus_entry else None
+    bonus_multiplier = bonus_entry.multiplier if bonus_entry else 1
+
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
             continue
@@ -447,12 +563,15 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
         cl.assign_stars(model)
         positions = cl.get_stars_list()
 
+        current_multiplier = bonus_multiplier if (bonus_game_name and game == bonus_game_name) else 1
+
         # sum this games stars to the player_scores dict
         for _position, user_id, user_name, stars in positions:
+            awarded = stars * current_multiplier
             if user_id in player_scores:
-                player_scores[user_id]["stars"] += stars
+                player_scores[user_id]["stars"] += awarded
             else:
-                player_scores[user_id] = {"user_name": user_name, "stars": stars, "bonus": 0}
+                player_scores[user_id] = {"user_name": user_name, "stars": awarded, "bonus": 0}
 
     # Query daily bonus/malus
     try:

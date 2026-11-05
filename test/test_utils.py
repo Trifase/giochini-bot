@@ -3,14 +3,26 @@ import peewee
 import pytest
 
 from config import Punteggio, Medaglia, ID_GIOCHINI
-from utils import PuntiBonus, daily_ranking, medaglie_count, personal_stats, POOP_MEDAL
+from utils import (
+    PuntiBonus,
+    GameStatus,
+    GiocoBonus,
+    daily_ranking,
+    medaglie_count,
+    personal_stats,
+    POOP_MEDAL,
+    get_active_games,
+    choose_bonus_multiplier,
+    get_bonus_game,
+    pick_or_get_bonus_game,
+)
 
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
     # Setup test tables
     test_db = peewee.SqliteDatabase(":memory:")
-    models = [Punteggio, Medaglia, PuntiBonus]
+    models = [Punteggio, Medaglia, PuntiBonus, GiocoBonus, GameStatus]
     test_db.bind(models, bind_refs=False, bind_backrefs=False)
     test_db.connect()
     test_db.create_tables(models)
@@ -279,3 +291,95 @@ def test_score_no_single_point_games():
     cl3.assign_stars("no-single-point-games")
     assert cl3.giocate[0].stelle == 2
     assert cl3.giocate[1].stelle == 1
+
+
+def test_get_active_games_filters_disabled():
+    from games import ALL_GAMES
+    active = get_active_games()
+    assert len(active) > 0
+
+    # Statically disabled games must not be in active
+    for g, data in ALL_GAMES.items():
+        if data.get("disabled", False):
+            assert g not in active
+
+    # Dynamically disabled games must not be in active
+    test_game = active[0]
+    GameStatus.create(game_name=test_game, is_disabled=True)
+    new_active = get_active_games()
+    assert test_game not in new_active
+
+
+def test_choose_bonus_multiplier():
+    for _ in range(50):
+        mult = choose_bonus_multiplier()
+        assert mult in [2, 3, 4]
+
+
+def test_pick_or_get_bonus_game():
+    today = datetime.date.today()
+    bg = pick_or_get_bonus_game(today)
+    assert bg is not None
+    assert bg.date == today
+    assert bg.multiplier in [2, 3, 4]
+    assert bg.game in get_active_games()
+
+    # Calling again for today should return the same record (idempotent)
+    bg2 = pick_or_get_bonus_game(today)
+    assert bg2.id == bg.id
+    assert bg2.game == bg.game
+    assert bg2.multiplier == bg.multiplier
+
+    # Test no repeat: tomorrow should not pick today's game if other games exist
+    active = get_active_games()
+    if len(active) > 1:
+        tomorrow = today + datetime.timedelta(days=1)
+        bg_tomorrow = pick_or_get_bonus_game(tomorrow)
+        assert bg_tomorrow.game != bg.game
+
+
+def test_daily_ranking_with_bonus_game():
+    today = datetime.date.today()
+    from games import get_day_from_date, ALL_GAMES
+    wordle_day = get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today)
+
+    # Set Wordle as bonus game with 3x multiplier
+    GiocoBonus.create(date=today, game="Wordle", multiplier=3)
+
+    # Alice gets 1st place in Wordle (2 stars base)
+    Punteggio.create(
+        date=today,
+        timestamp=100,
+        chat_id=ID_GIOCHINI,
+        user_id=1,
+        user_name="Alice",
+        game="Wordle",
+        day=wordle_day,
+        tries=3,
+        extra=None,
+        streak=1,
+        lost=False,
+    )
+
+    # Bob gets 2nd place in Wordle (1 star base)
+    Punteggio.create(
+        date=today,
+        timestamp=101,
+        chat_id=ID_GIOCHINI,
+        user_id=2,
+        user_name="Bob",
+        game="Wordle",
+        day=wordle_day,
+        tries=4,
+        extra=None,
+        streak=1,
+        lost=False,
+    )
+
+    ranking = daily_ranking("default", today)
+    scores = {user_name: stars for pos, uid, user_name, stars, bonus in ranking}
+
+    # Alice: 2 base * 3 = 6 stars
+    # Bob: 1 base * 3 = 3 stars
+    assert scores["Alice"] == 6
+    assert scores["Bob"] == 3

@@ -89,3 +89,27 @@ class Medaglia(peewee.Model):
         database = db
         table_name = "medaglie"
         primary_key = peewee.CompositeKey("timestamp", "user_id")
+
+
+# ==========================================
+# GIOCO BONUS DEL GIORNO (JOLLY)
+# ==========================================
+BONUS_GAME_ENABLED = True
+# Lista pesata dei moltiplicatori [(moltiplicatore, peso)]
+# 2x più comune (50%), 3x intermedio (35%), 4x più raro ma non tantissimo (15%)
+BONUS_GAME_MULTIPLIERS = [
+    (2, 50),
+    (3, 35),
+    (4, 15),
+]
+BONUS_GAME_NO_REPEAT_DAYS = 7
+
+
+class GiocoBonus(peewee.Model):
+    date = peewee.DateField(unique=True)
+    game = peewee.TextField()
+    multiplier = peewee.IntegerField()
+
+    class Meta:
+        database = db
+        table_name = "gioco_bonus"

@@ -9,7 +9,7 @@ from games import get_day_from_date
 from config import Punteggio
 import peewee
 
-from utils import daily_ranking
+from utils import daily_ranking, get_bonus_game
 
 
 app = FastAPI()
@@ -229,7 +229,9 @@ async def dailyranking(day: str | None = None):
         bonus = rest[0] if rest else 0
         rankings.append({'name': user_name, 'points': stelle, 'pos': position, 'bonus': bonus})
         # pos += 1
-    return {'date': dates.strftime("%Y-%m-%d"), 'rankings': rankings}
+    bonus = get_bonus_game(dates)
+    bonus_data = {'game': bonus.game, 'multiplier': bonus.multiplier} if bonus else None
+    return {'date': dates.strftime("%Y-%m-%d"), 'rankings': rankings, 'bonus_game': bonus_data}
 
 
 
