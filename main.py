@@ -1749,6 +1749,10 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "alternate": "Alternate (max 3pt, solo vincenti)",
         "alternate-with-lost": "Alternate (max 3pt, include persi)",
         "standard": "Standard (3-2-1 fisso)",
+        "no-single-point-games": "No single player (min. 2 giocate)",
+        "no_single_point_games": "No single player (min. 2 giocate)",
+        "only-popular-games": "Only popular games (min. 2 giocate)",
+        "only_popular_games": "Only popular games (min. 2 giocate)",
     }
 
     selected_model = "no_limit_with_lost"
@@ -1779,6 +1783,7 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     msg += f"\n<i>Prova altri modelli:</i>\n"
     msg += f"• <code>/simuladaily no_limit_with_lost</code>\n"
     msg += f"• <code>/simuladaily default</code>\n"
+    msg += f"• <code>/simuladaily no-single-point-games</code>\n"
     msg += f"• <code>/simuladaily alternate-with-lost</code>\n"
     msg += f"• <code>/simuladaily standard</code>"
 

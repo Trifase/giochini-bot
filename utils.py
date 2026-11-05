@@ -150,6 +150,10 @@ class Classifica:
             "alternate-with-lost": self._score_alternate_with_lost,
             "no_limit_with_lost": self._score_no_limit_with_lost,
             "no_limit_with_lost_rank_based": self._score_no_limit_with_lost_rank_based,
+            "no-single-point-games": self._score_no_single_point_games,
+            "no_single_point_games": self._score_no_single_point_games,
+            "only-popular-games": self._score_no_single_point_games,
+            "only_popular_games": self._score_no_single_point_games,
         }
         
         scoring_function = scoring_models.get(model)
@@ -262,6 +266,20 @@ class Classifica:
         for g in self.giocate:
             if g.lost:
                 g.stelle = 0
+
+    def _score_no_single_point_games(self):
+        """
+        Calcola le stelle come nel default, ma se un gioco ha solo un giocatore
+        totale (senza altre giocate o perse), quella giocata riceve 0 stelle
+        e non concorre al totale giornaliero.
+        Se ci sono 2 o piu giocate (es. 1 valida + 1 persa, o piu valide),
+        vale la classifica default.
+        """
+        if len(self.giocate) <= 1:
+            for g in self.giocate:
+                g.stelle = 0
+            return
+        self._score_no_limit_with_lost_rank_based()
 
     def to_string(self) -> str:
         classifica = ""

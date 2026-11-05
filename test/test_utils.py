@@ -240,3 +240,42 @@ def test_classifica_to_string_ties_grouped():
     )
     assert s == expected
 
+
+
+def test_score_no_single_point_games():
+    from utils import Classifica, Giocata
+
+    # Scenario 1: Only 1 valid player, no lost plays -> 0 stars
+    cl1 = Classifica(game="Wordle", day="100")
+    cl1.giocate = [
+        Giocata(user_id=1, user_name="Alice", game="Wordle", tries=3),
+    ]
+    cl1.order_and_position()
+    cl1.assign_stars("no-single-point-games")
+    assert cl1.giocate[0].stelle == 0
+
+    # Also test with alias "only-popular-games"
+    cl1.assign_stars("only-popular-games")
+    assert cl1.giocate[0].stelle == 0
+
+    # Scenario 2: 1 valid player + 1 lost player -> total players > 1, so valid player gets 1 star, lost gets 0
+    cl2 = Classifica(game="Wordle", day="100")
+    cl2.giocate = [
+        Giocata(user_id=1, user_name="Alice", game="Wordle", tries=3),
+        Giocata(user_id=2, user_name="Bob", game="Wordle", tries=9999999),
+    ]
+    cl2.order_and_position()
+    cl2.assign_stars("no-single-point-games")
+    assert cl2.giocate[0].stelle == 1
+    assert cl2.giocate[1].stelle == 0
+
+    # Scenario 3: Multiple valid players -> works identical to default
+    cl3 = Classifica(game="Wordle", day="100")
+    cl3.giocate = [
+        Giocata(user_id=1, user_name="Alice", game="Wordle", tries=3),
+        Giocata(user_id=2, user_name="Bob", game="Wordle", tries=4),
+    ]
+    cl3.order_and_position()
+    cl3.assign_stars("no-single-point-games")
+    assert cl3.giocate[0].stelle == 2
+    assert cl3.giocate[1].stelle == 1
