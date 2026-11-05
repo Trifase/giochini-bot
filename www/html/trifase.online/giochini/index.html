@@ -44,9 +44,16 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.8);
+        }
+        .dark ::-webkit-scrollbar-track {
             background: rgba(15, 23, 42, 0.6);
         }
         ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.5);
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
             background: rgba(100, 116, 139, 0.4);
             border-radius: 4px;
         }
@@ -55,15 +62,16 @@
         }
 
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -2px rgba(15, 23, 42, 0.02);
         }
-        .light .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 0, 0, 0.06);
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
         }
 
         .jolly-glow {
@@ -76,35 +84,47 @@
             border-radius: 1rem;
             background: linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6, #3b82f6);
             z-index: -1;
-            opacity: 0.75;
+            opacity: 0.6;
             filter: blur(6px);
             animation: pulse-glow 3s ease-in-out infinite alternate;
         }
+        .dark .jolly-glow::before {
+            opacity: 0.75;
+            filter: blur(8px);
+        }
         @keyframes pulse-glow {
-            0% { opacity: 0.4; filter: blur(4px); }
-            100% { opacity: 0.9; filter: blur(8px); }
+            0% { opacity: 0.35; filter: blur(4px); }
+            100% { opacity: 0.85; filter: blur(8px); }
         }
 
-        .heat-0 { background-color: rgba(148, 163, 184, 0.12); }
-        .heat-1 { background-color: rgba(56, 189, 248, 0.35); }
-        .heat-2 { background-color: rgba(56, 189, 248, 0.65); }
-        .heat-3 { background-color: rgba(14, 165, 233, 0.9); }
-        .heat-4 { background-color: #0284c7; }
+        /* Light mode heatmap */
+        .heat-0 { background-color: rgba(203, 213, 225, 0.5); }
+        .heat-1 { background-color: #7dd3fc; }
+        .heat-2 { background-color: #38bdf8; }
+        .heat-3 { background-color: #0284c7; }
+        .heat-4 { background-color: #0369a1; }
+
+        /* Dark mode heatmap */
+        .dark .heat-0 { background-color: rgba(148, 163, 184, 0.15); }
+        .dark .heat-1 { background-color: rgba(56, 189, 248, 0.4); }
+        .dark .heat-2 { background-color: rgba(56, 189, 248, 0.7); }
+        .dark .heat-3 { background-color: rgba(14, 165, 233, 0.9); }
+        .dark .heat-4 { background-color: #38bdf8; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white transition-colors duration-200" id="body-root">
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white transition-colors duration-200" id="body-root">
     <div id="app" v-cloak class="flex flex-col min-h-screen">
         <!-- Top Navbar -->
-        <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80">
+        <header class="sticky top-0 z-50 glass-panel border-b border-slate-200/80 dark:border-slate-800/80">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <a href="/giochini/" @click.prevent="setTab('daily')" class="flex items-center gap-2 group">
                         <span class="text-2xl sm:text-3xl transform group-hover:scale-110 transition-transform">🎮</span>
                         <div>
-                            <span class="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-sky-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+                            <span class="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 dark:from-sky-400 dark:via-indigo-300 dark:to-purple-400 bg-clip-text text-transparent">
                                 Giochini!
                             </span>
-                            <span class="hidden sm:inline-block text-xs text-slate-400 font-mono ml-2 py-0.5 px-2 bg-slate-800/60 rounded-full border border-slate-700/50">
+                            <span class="hidden sm:inline-block text-xs font-mono ml-2 py-0.5 px-2 bg-slate-200/70 text-slate-600 border border-slate-300/60 rounded-full dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700/50">
                                 Trifase Hub
                             </span>
                         </div>
@@ -112,7 +132,7 @@
                 </div>
 
                 <!-- Navigation Tabs -->
-                <nav class="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800">
+                <nav class="hidden md:flex items-center gap-1 bg-slate-200/70 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-300/70 dark:border-slate-800">
                     <button 
                         v-for="t in tabs" 
                         :key="t.id"
@@ -120,8 +140,8 @@
                         :class="[
                             'px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5',
                             currentTab === t.id 
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                         ]"
                     >
                         <span>{{ t.icon }}</span>
@@ -135,25 +155,25 @@
                         @click="refreshCurrentTab" 
                         :disabled="loading"
                         title="Ricarica dati"
-                        class="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 transition-all active:scale-95"
+                        class="p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300/80 shadow-sm transition-all active:scale-95 dark:text-slate-400 dark:hover:text-white dark:bg-slate-800/50 dark:hover:bg-slate-800 dark:border-slate-700/60"
                     >
-                        <svg :class="['w-5 h-5', loading ? 'animate-spin text-indigo-400' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg :class="['w-5 h-5', loading ? 'animate-spin text-indigo-500' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                     </button>
                     <button 
                         @click="toggleTheme" 
                         title="Cambia tema"
-                        class="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 transition-all"
+                        class="p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300/80 shadow-sm transition-all dark:text-slate-400 dark:hover:text-white dark:bg-slate-800/50 dark:hover:bg-slate-800 dark:border-slate-700/60"
                     >
                         <span v-if="isDark" class="text-amber-400 text-lg">☀️</span>
-                        <span v-else class="text-indigo-300 text-lg">🌙</span>
+                        <span v-else class="text-indigo-600 text-lg">🌙</span>
                     </button>
                 </div>
             </div>
 
             <!-- Mobile Sub-Navigation -->
-            <div class="md:hidden flex overflow-x-auto px-4 py-2 gap-1 border-t border-slate-800/60 bg-slate-900/80 no-scrollbar">
+            <div class="md:hidden flex overflow-x-auto px-4 py-2 gap-1 border-t border-slate-200 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/80 no-scrollbar">
                 <button 
                     v-for="t in tabs" 
                     :key="t.id"
@@ -161,8 +181,8 @@
                     :class="[
                         'px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1',
                         currentTab === t.id 
-                            ? 'bg-indigo-600 text-white' 
-                            : 'text-slate-400 bg-slate-800/50'
+                            ? 'bg-indigo-600 text-white shadow-sm' 
+                            : 'text-slate-600 bg-slate-100 border border-slate-200/60 dark:text-slate-400 dark:bg-slate-800/50 dark:border-transparent'
                     ]"
                 >
                     <span>{{ t.icon }}</span>
@@ -176,22 +196,22 @@
 
             <!-- Jolly Game Spotlight Banner -->
             <section v-if="jollyData && jollyData.active && jollyData.bonus" class="jolly-glow">
-                <div class="glass-panel bg-gradient-to-r from-slate-900/90 via-indigo-950/80 to-purple-950/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-indigo-500/30 shadow-xl">
+                <div class="glass-panel bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-purple-500/10 dark:from-slate-900/90 dark:via-indigo-950/80 dark:to-purple-950/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-amber-400/50 dark:border-indigo-500/30 shadow-xl">
                     <div class="flex items-center gap-3.5 text-center sm:text-left">
                         <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/20 shrink-0">
                             {{ jollyData.bonus.emoji || '🎰' }}
                         </div>
                         <div>
                             <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                                <span class="uppercase tracking-wider text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                <span class="uppercase tracking-wider text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40">
                                     🎰 Gioco Jolly del Giorno
                                 </span>
-                                <span class="text-xs font-mono font-bold text-purple-300 bg-purple-900/40 px-2 py-0.5 rounded-full border border-purple-500/30">
+                                <span class="text-xs font-mono font-bold text-purple-800 bg-purple-100 border border-purple-300 px-2 py-0.5 rounded-full dark:text-purple-300 dark:bg-purple-900/40 dark:border-purple-500/30">
                                     {{ jollyData.bonus.multiplier }}x Punti ⭐
                                 </span>
                             </div>
-                            <h2 class="text-lg sm:text-xl font-bold text-white mt-1">
-                                Oggi si gioca a <span class="underline decoration-indigo-400 underline-offset-4">{{ jollyData.bonus.game }}</span> con punteggio moltiplicato!
+                            <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
+                                Oggi si gioca a <span class="underline decoration-indigo-500 underline-offset-4">{{ jollyData.bonus.game }}</span> con punteggio moltiplicato!
                             </h2>
                         </div>
                     </div>
@@ -207,7 +227,7 @@
                         </a>
                         <button 
                             @click="filterByGame(jollyData.bonus.game)"
-                            class="px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all"
+                            class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm border border-slate-300 shadow-sm transition-all dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700"
                         >
                             Vedi Partita
                         </button>
@@ -223,7 +243,7 @@
                     <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
                         <button 
                             @click="stepDate(-1)" 
-                            class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
+                            class="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-sm transition-all dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
                             title="Giorno precedente"
                         >
                             ◀
@@ -234,12 +254,12 @@
                                 v-model="selectedDate" 
                                 :max="today"
                                 @change="onDateChange"
-                                class="bg-slate-900 text-slate-100 font-mono font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                                class="bg-white text-slate-800 font-mono font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-500 shadow-sm transition-all cursor-pointer dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
                             />
                             <button 
                                 v-if="selectedDate !== today"
                                 @click="goToToday" 
-                                class="px-2.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-xs font-bold border border-indigo-500/40 transition-all"
+                                class="px-2.5 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold border border-indigo-200 transition-all dark:bg-indigo-600/30 dark:hover:bg-indigo-600/50 dark:text-indigo-300 dark:border-indigo-500/40"
                             >
                                 Oggi
                             </button>
@@ -247,7 +267,7 @@
                         <button 
                             @click="stepDate(1)" 
                             :disabled="selectedDate >= today"
-                            class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 border border-slate-700 transition-all"
+                            class="p-2 rounded-xl bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 border border-slate-300 shadow-sm transition-all dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
                             title="Giorno successivo"
                         >
                             ▶
@@ -261,12 +281,12 @@
                                 type="text" 
                                 v-model="searchQuery" 
                                 placeholder="Cerca gioco o giocatore..."
-                                class="w-full bg-slate-900/90 text-sm text-slate-200 pl-9 pr-3.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-500"
+                                class="w-full bg-white text-sm text-slate-800 pl-9 pr-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-500 shadow-sm transition-all placeholder:text-slate-400 dark:bg-slate-900/90 dark:text-slate-200 dark:border-slate-700 dark:placeholder:text-slate-500"
                             />
-                            <span class="absolute left-3 top-2.5 text-slate-500 text-xs">🔍</span>
+                            <span class="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500 text-xs">🔍</span>
                         </div>
-                        <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300 select-none bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-800">
-                            <input type="checkbox" v-model="hideEmptyGames" class="rounded text-indigo-600 focus:ring-0 bg-slate-800 border-slate-700">
+                        <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300 select-none bg-slate-100 dark:bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <input type="checkbox" v-model="hideEmptyGames" class="rounded text-indigo-600 focus:ring-0 bg-white border-slate-300 dark:bg-slate-800 dark:border-slate-700">
                             <span>Nascondi vuoti</span>
                         </label>
                     </div>
@@ -277,10 +297,10 @@
                     <button 
                         @click="selectedCategory = 'all'"
                         :class="[
-                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap',
+                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap shadow-sm',
                             selectedCategory === 'all'
-                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200'
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-500/20'
+                                : 'bg-white text-slate-600 border-slate-300 hover:text-slate-900 hover:bg-slate-50 dark:bg-slate-900/80 dark:text-slate-400 dark:border-slate-800 dark:hover:text-slate-200'
                         ]"
                     >
                         Tutte le categorie ({{ displayedGames.length }})
@@ -290,10 +310,10 @@
                         :key="cat"
                         @click="selectedCategory = cat"
                         :class="[
-                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap capitalize',
+                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap capitalize shadow-sm',
                             selectedCategory === cat
-                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200'
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-500/20'
+                                : 'bg-white text-slate-600 border-slate-300 hover:text-slate-900 hover:bg-slate-50 dark:bg-slate-900/80 dark:text-slate-400 dark:border-slate-800 dark:hover:text-slate-200'
                         ]"
                     >
                         {{ formatCategory(cat) }}
@@ -304,21 +324,21 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <!-- Daily Standings Column (Lg: 4 Cols) -->
                     <div class="lg:col-span-4 space-y-4">
-                        <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800 shadow-xl sticky top-20">
-                            <div class="p-4 bg-gradient-to-r from-slate-900 to-indigo-950/60 border-b border-slate-800 flex items-center justify-between">
+                        <div class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl sticky top-20">
+                            <div class="p-4 bg-gradient-to-r from-slate-100 to-indigo-50/70 border-b border-slate-200 dark:from-slate-900 dark:to-indigo-950/60 dark:border-slate-800 flex items-center justify-between">
                                 <div class="flex items-center gap-2">
                                     <span class="text-xl">🏆</span>
                                     <div>
-                                        <h3 class="font-bold text-base text-white">Classifica di Oggi</h3>
-                                        <p class="text-xs text-slate-400 font-mono">{{ selectedDate }}</p>
+                                        <h3 class="font-bold text-base text-slate-900 dark:text-white">Classifica di Oggi</h3>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ selectedDate }}</p>
                                     </div>
                                 </div>
-                                <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30">
+                                <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 font-mono font-bold border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30">
                                     {{ dailyRankings.rankings.length }} giocatori
                                 </span>
                             </div>
 
-                            <div v-if="loadingDaily" class="p-8 text-center text-slate-400">
+                            <div v-if="loadingDaily" class="p-8 text-center text-slate-500 dark:text-slate-400">
                                 <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                                 <span class="text-xs">Caricamento punti...</span>
                             </div>
@@ -329,11 +349,11 @@
                                 <p class="text-xs mt-1">Sii il primo a giocare oggi!</p>
                             </div>
 
-                            <ul v-else class="divide-y divide-slate-800/80 max-h-[600px] overflow-y-auto">
+                            <ul v-else class="divide-y divide-slate-200 dark:divide-slate-800/80 max-h-[600px] overflow-y-auto">
                                 <li 
                                     v-for="r in dailyRankings.rankings" 
                                     :key="r.name"
-                                    class="p-3 sm:px-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                                    class="p-3 sm:px-4 flex items-center justify-between hover:bg-slate-100/70 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
                                     @click="viewPlayerProfile(r.name)"
                                 >
                                     <div class="flex items-center gap-3">
@@ -345,15 +365,15 @@
                                             <span v-else class="text-xs font-mono text-slate-400">{{ r.pos }}°</span>
                                         </span>
                                         <div>
-                                            <span class="font-semibold text-sm text-slate-200 group-hover:text-indigo-400 transition-colors">
+                                            <span class="font-semibold text-sm text-slate-800 group-hover:text-indigo-600 dark:text-slate-200 dark:group-hover:text-indigo-400 transition-colors">
                                                 {{ r.name }}
                                             </span>
-                                            <span v-if="r.bonus !== 0" :class="['text-[11px] font-mono ml-1.5', r.bonus > 0 ? 'text-emerald-400' : 'text-rose-400']">
+                                            <span v-if="r.bonus !== 0" :class="['text-[11px] font-mono ml-1.5', r.bonus > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400']">
                                                 ({{ r.bonus > 0 ? '+' : '' }}{{ r.bonus }})
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-1 font-mono font-bold text-sm text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">
+                                    <div class="flex items-center gap-1 font-mono font-bold text-sm text-amber-700 bg-amber-100 border border-amber-300 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20 px-2.5 py-1 rounded-lg">
                                         <span>{{ r.points }}</span>
                                         <span class="text-xs">⭐</span>
                                     </div>
@@ -364,15 +384,15 @@
 
                     <!-- Games Grid Column (Lg: 8 Cols) -->
                     <div class="lg:col-span-8 space-y-4">
-                        <div v-if="loadingGames" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                        <div v-if="loadingGames" class="glass-panel rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400">
                             <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                             <p class="text-sm font-semibold">Caricamento classifiche giochi...</p>
                         </div>
 
                         <div v-else-if="!displayedGames.length" class="glass-panel rounded-2xl p-12 text-center text-slate-500">
                             <p class="text-4xl mb-3">🎯</p>
-                            <h3 class="text-base font-bold text-slate-300">Nessun gioco corrisponde ai filtri</h3>
-                            <p class="text-xs text-slate-400 mt-1">Prova a disattivare "Nascondi vuoti" o modifica i termini di ricerca.</p>
+                            <h3 class="text-base font-bold text-slate-700 dark:text-slate-300">Nessun gioco corrisponde ai filtri</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Prova a disattivare "Nascondi vuoti" o modifica i termini di ricerca.</p>
                         </div>
 
                         <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -381,24 +401,28 @@
                                 :key="g.game"
                                 :class="[
                                     'glass-panel rounded-2xl overflow-hidden border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl flex flex-col',
-                                    g.is_jolly ? 'border-amber-500/50 bg-slate-900/90' : 'border-slate-800/90'
+                                    g.is_jolly 
+                                        ? 'border-amber-400 bg-amber-50/40 dark:border-amber-500/50 dark:bg-slate-900/90' 
+                                        : 'border-slate-200 dark:border-slate-800/90'
                                 ]"
                             >
                                 <!-- Card Header -->
                                 <div :class="[
                                     'p-3.5 border-b flex items-center justify-between gap-2',
-                                    g.is_jolly ? 'bg-gradient-to-r from-amber-950/40 to-slate-900 border-amber-500/30' : 'bg-slate-900/80 border-slate-800'
+                                    g.is_jolly 
+                                        ? 'bg-gradient-to-r from-amber-100 to-slate-50 border-amber-300 dark:from-amber-950/40 dark:to-slate-900 dark:border-amber-500/30' 
+                                        : 'bg-slate-50/90 border-slate-200 dark:bg-slate-900/80 dark:border-slate-800'
                                 ]">
                                     <div class="flex items-center gap-2.5 truncate">
                                         <span class="text-2xl">{{ g.emoji }}</span>
                                         <div class="truncate">
                                             <div class="flex items-center gap-1.5">
-                                                <h4 class="font-bold text-sm text-white truncate">{{ g.game }}</h4>
-                                                <span v-if="g.is_jolly" class="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                                <h4 class="font-bold text-sm text-slate-900 dark:text-white truncate">{{ g.game }}</h4>
+                                                <span v-if="g.is_jolly" class="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40">
                                                     🎰 {{ g.multiplier }}x
                                                 </span>
                                             </div>
-                                            <span class="text-xs text-slate-400 font-mono">#{{ g.game_day }}</span>
+                                            <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">#{{ g.game_day }}</span>
                                         </div>
                                     </div>
                                     <a 
@@ -407,7 +431,7 @@
                                         target="_blank" 
                                         rel="noopener noreferrer" 
                                         title="Gioca a questo gioco"
-                                        class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-xs font-semibold transition-all shrink-0 border border-slate-700/60"
+                                        class="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-600 text-slate-700 hover:text-white text-xs font-semibold transition-all shrink-0 border border-slate-300 shadow-sm dark:bg-slate-800 dark:hover:bg-indigo-600 dark:text-slate-300 dark:hover:text-white dark:border-slate-700/60"
                                     >
                                         Gioca ↗
                                     </a>
@@ -419,42 +443,44 @@
                                         <div 
                                             v-for="(p, pIdx) in g.posizioni" 
                                             :key="p.user_name"
-                                            class="flex items-center justify-between text-xs py-1 px-2 rounded-lg hover:bg-slate-800/40 transition-colors"
+                                            class="flex items-center justify-between text-xs py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/40 transition-colors"
                                         >
                                             <div class="flex items-center gap-2 truncate">
                                                 <span class="w-4 text-center font-bold">
                                                     <span v-if="pIdx === 0 && !p.lost">🥇</span>
                                                     <span v-else-if="pIdx === 1 && !p.lost">🥈</span>
                                                     <span v-else-if="pIdx === 2 && !p.lost">🥉</span>
-                                                    <span v-else-if="p.lost" class="text-rose-400 text-[10px]">✕</span>
-                                                    <span v-else class="text-slate-500 text-[11px] font-mono">{{ pIdx + 1 }}</span>
+                                                    <span v-else-if="p.lost" class="text-rose-500 text-[10px]">✕</span>
+                                                    <span v-else class="text-slate-400 dark:text-slate-500 text-[11px] font-mono">{{ pIdx + 1 }}</span>
                                                 </span>
                                                 <button 
                                                     @click="viewPlayerProfile(p.user_name)"
                                                     :class="[
                                                         'font-medium text-left truncate hover:underline',
-                                                        p.lost ? 'line-through text-slate-500 italic' : 'text-slate-200 hover:text-indigo-300'
+                                                        p.lost 
+                                                            ? 'line-through text-slate-400 italic dark:text-slate-500' 
+                                                            : 'text-slate-800 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-300'
                                                     ]"
                                                 >
                                                     {{ p.user_name }}
                                                 </button>
                                             </div>
                                             <div class="flex items-center gap-1.5 shrink-0 font-mono">
-                                                <span v-if="p.stars > 0" class="text-amber-400 font-bold text-[11px]">
+                                                <span v-if="p.stars > 0" class="text-amber-700 dark:text-amber-400 font-bold text-[11px]">
                                                     +{{ p.stars }}⭐
                                                 </span>
-                                                <span class="px-2 py-0.5 rounded bg-slate-800/90 text-slate-300 font-semibold border border-slate-700/60 text-[11px]">
+                                                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800/90 dark:text-slate-300 dark:border-slate-700/60 font-semibold text-[11px]">
                                                     {{ p.tries_formatted }}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-else class="py-6 text-center text-slate-500 text-xs">
+                                    <div v-else class="py-6 text-center text-slate-400 text-xs">
                                         Nessuna giocata registrata per oggi
                                     </div>
 
                                     <!-- Bottom indicator -->
-                                    <div class="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
+                                    <div class="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
                                         <span>{{ g.total_players || 0 }} {{ g.total_players === 1 ? 'giocata' : 'giocate' }}</span>
                                         <span class="capitalize">{{ formatCategory(g.category) }}</span>
                                     </div>
@@ -469,24 +495,24 @@
             <div v-show="currentTab === 'monthly'" class="space-y-6">
                 <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>📅</span>
                             <span>Classifica del Mese</span>
                         </h2>
-                        <p class="text-xs text-slate-400">Punti totali accumulati giorno per giorno con l'algoritmo SWG4 Zip War Airganon.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Punti totali accumulati giorno per giorno con l'algoritmo SWG4 Zip War Airganon.</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <label class="text-xs font-semibold text-slate-400">Mese:</label>
+                        <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Mese:</label>
                         <input 
                             type="month" 
                             v-model="selectedMonth" 
                             @change="fetchMonthlyRankings"
-                            class="bg-slate-900 text-slate-100 font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                            class="bg-white text-slate-800 font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-300 shadow-sm focus:outline-none focus:border-indigo-500 cursor-pointer dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
                         />
                     </div>
                 </div>
 
-                <div v-if="loadingMonthly" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                <div v-if="loadingMonthly" class="glass-panel rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400">
                     <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p class="text-sm font-semibold">Caricamento classifica mensile...</p>
                 </div>
@@ -500,55 +526,55 @@
                     <!-- Top 3 Podium (if >= 3 players) -->
                     <div v-if="monthlyRankings.length >= 3" class="grid grid-cols-3 gap-3 sm:gap-4 max-w-xl mx-auto pt-8 items-end">
                         <!-- 2nd Place -->
-                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-700/80 transform hover:-translate-y-1 transition-all">
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-300/80 dark:border-slate-700/80 transform hover:-translate-y-1 transition-all">
                             <span class="text-3xl sm:text-4xl">🥈</span>
-                            <h4 class="font-bold text-sm sm:text-base text-white mt-1 truncate">{{ monthlyRankings[1].name }}</h4>
-                            <p class="text-lg sm:text-xl font-mono font-extrabold text-slate-300 mt-1">{{ monthlyRankings[1].points }}⭐</p>
-                            <span class="text-[11px] font-semibold text-slate-400">2° Posto</span>
+                            <h4 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white mt-1 truncate">{{ monthlyRankings[1].name }}</h4>
+                            <p class="text-lg sm:text-xl font-mono font-extrabold text-slate-700 dark:text-slate-300 mt-1">{{ monthlyRankings[1].points }}⭐</p>
+                            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">2° Posto</span>
                         </div>
                         <!-- 1st Place (Tallest) -->
-                        <div class="glass-panel rounded-2xl p-5 text-center border-amber-500/60 bg-gradient-to-b from-amber-500/10 to-transparent transform hover:-translate-y-1.5 transition-all shadow-xl shadow-amber-500/10">
+                        <div class="glass-panel rounded-2xl p-5 text-center border-amber-400 bg-gradient-to-b from-amber-100/60 to-transparent dark:border-amber-500/60 dark:from-amber-500/10 transform hover:-translate-y-1.5 transition-all shadow-xl shadow-amber-500/10">
                             <span class="text-4xl sm:text-5xl">👑</span>
-                            <h4 class="font-extrabold text-base sm:text-lg text-white mt-1 truncate">{{ monthlyRankings[0].name }}</h4>
-                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-400 mt-1">{{ monthlyRankings[0].points }}⭐</p>
-                            <span class="text-xs font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full">Campione</span>
+                            <h4 class="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white mt-1 truncate">{{ monthlyRankings[0].name }}</h4>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-600 dark:text-amber-400 mt-1">{{ monthlyRankings[0].points }}⭐</p>
+                            <span class="text-xs font-bold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-full dark:text-amber-300 dark:bg-amber-500/20">Campione</span>
                         </div>
                         <!-- 3rd Place -->
-                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-700/80 transform hover:-translate-y-1 transition-all">
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-300/80 dark:border-slate-700/80 transform hover:-translate-y-1 transition-all">
                             <span class="text-3xl sm:text-4xl">🥉</span>
-                            <h4 class="font-bold text-sm sm:text-base text-white mt-1 truncate">{{ monthlyRankings[2].name }}</h4>
-                            <p class="text-lg sm:text-xl font-mono font-extrabold text-amber-600 mt-1">{{ monthlyRankings[2].points }}⭐</p>
-                            <span class="text-[11px] font-semibold text-slate-400">3° Posto</span>
+                            <h4 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white mt-1 truncate">{{ monthlyRankings[2].name }}</h4>
+                            <p class="text-lg sm:text-xl font-mono font-extrabold text-amber-800 dark:text-amber-600 mt-1">{{ monthlyRankings[2].points }}⭐</p>
+                            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">3° Posto</span>
                         </div>
                     </div>
 
                     <!-- Full Table -->
-                    <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                <tr class="bg-slate-100 text-[11px] uppercase tracking-wider text-slate-600 border-b border-slate-200 dark:bg-slate-900/90 dark:text-slate-400 dark:border-slate-800">
                                     <th class="py-3 px-4 w-16">Pos</th>
                                     <th class="py-3 px-4">Giocatore</th>
                                     <th class="py-3 px-4 text-right">Punti Totali</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-800/60 text-sm">
+                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60 text-sm">
                                 <tr 
                                     v-for="r in monthlyRankings" 
                                     :key="r.name"
-                                    class="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                    class="hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                                     @click="viewPlayerProfile(r.name)"
                                 >
                                     <td class="py-3 px-4 font-mono font-bold">
                                         <span v-if="r.pos === 1">🥇</span>
                                         <span v-else-if="r.pos === 2">🥈</span>
                                         <span v-else-if="r.pos === 3">🥉</span>
-                                        <span v-else class="text-slate-400">{{ r.pos }}°</span>
+                                        <span v-else class="text-slate-500 dark:text-slate-400">{{ r.pos }}°</span>
                                     </td>
-                                    <td class="py-3 px-4 font-semibold text-slate-200 hover:text-indigo-300">
+                                    <td class="py-3 px-4 font-semibold text-slate-800 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-300">
                                         {{ r.name }}
                                     </td>
-                                    <td class="py-3 px-4 text-right font-mono font-bold text-amber-400">
+                                    <td class="py-3 px-4 text-right font-mono font-bold text-amber-700 dark:text-amber-400">
                                         {{ r.points }} ⭐
                                     </td>
                                 </tr>
@@ -562,48 +588,48 @@
             <div v-show="currentTab === 'alltime'" class="space-y-6">
                 <div class="glass-panel rounded-2xl p-5 flex items-center justify-between">
                     <div>
-                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>⭐</span>
                             <span>Classificona All-Time</span>
                         </h2>
-                        <p class="text-xs text-slate-400">La classifica storica di tutti i punti accumulati dal primo giorno.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">La classifica storica di tutti i punti accumulati dal primo giorno.</p>
                     </div>
-                    <span class="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 font-mono font-bold text-xs border border-purple-500/30">
+                    <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-300 font-mono font-bold text-xs dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30">
                         {{ allTimeRankings.length }} Giocatori
                     </span>
                 </div>
 
-                <div v-if="loadingAllTime" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                <div v-if="loadingAllTime" class="glass-panel rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400">
                     <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p class="text-sm font-semibold">Caricamento classificona...</p>
                 </div>
 
-                <div v-else class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                <div v-else class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                            <tr class="bg-slate-100 text-[11px] uppercase tracking-wider text-slate-600 border-b border-slate-200 dark:bg-slate-900/90 dark:text-slate-400 dark:border-slate-800">
                                 <th class="py-3 px-4 w-16">Pos</th>
                                 <th class="py-3 px-4">Giocatore</th>
                                 <th class="py-3 px-4 text-right">Punti All-Time</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-800/60 text-sm">
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60 text-sm">
                             <tr 
                                 v-for="r in allTimeRankings" 
                                 :key="r.name"
-                                class="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                class="hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                                 @click="viewPlayerProfile(r.name)"
                             >
                                 <td class="py-3 px-4 font-mono font-bold">
                                     <span v-if="r.pos === 1">🥇</span>
                                     <span v-else-if="r.pos === 2">🥈</span>
                                     <span v-else-if="r.pos === 3">🥉</span>
-                                    <span v-else class="text-slate-400">{{ r.pos }}°</span>
+                                    <span v-else class="text-slate-500 dark:text-slate-400">{{ r.pos }}°</span>
                                 </td>
-                                <td class="py-3 px-4 font-semibold text-slate-200 hover:text-indigo-300">
+                                <td class="py-3 px-4 font-semibold text-slate-800 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-300">
                                     {{ r.name }}
                                 </td>
-                                <td class="py-3 px-4 text-right font-mono font-bold text-amber-400">
+                                <td class="py-3 px-4 text-right font-mono font-bold text-amber-700 dark:text-amber-400">
                                     {{ r.points.toLocaleString() }} ⭐
                                 </td>
                             </tr>
@@ -616,29 +642,29 @@
             <div v-show="currentTab === 'medals'" class="space-y-6">
                 <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>🏅</span>
                             <span>Medagliere Ufficiale</span>
                         </h2>
-                        <p class="text-xs text-slate-400">Oro 🥇 (3 pt), Argento 🥈 (2 pt), Bronzo 🥉 (1 pt) e Cucchiaio di Legno 💩</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Oro 🥇 (3 pt), Argento 🥈 (2 pt), Bronzo 🥉 (1 pt) e Cucchiaio di Legno 💩</p>
                     </div>
-                    <div class="flex items-center gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-2 bg-slate-200/80 dark:bg-slate-900/80 p-1 rounded-xl border border-slate-300 dark:border-slate-800">
                         <button 
                             @click="medalsAllTime = false; fetchMedals()" 
-                            :class="['px-3 py-1.5 rounded-lg text-xs font-bold transition-all', !medalsAllTime ? 'bg-indigo-600 text-white' : 'text-slate-400']"
+                            :class="['px-3 py-1.5 rounded-lg text-xs font-bold transition-all', !medalsAllTime ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200']"
                         >
                             Questo Mese
                         </button>
                         <button 
                             @click="medalsAllTime = true; fetchMedals()" 
-                            :class="['px-3 py-1.5 rounded-lg text-xs font-bold transition-all', medalsAllTime ? 'bg-indigo-600 text-white' : 'text-slate-400']"
+                            :class="['px-3 py-1.5 rounded-lg text-xs font-bold transition-all', medalsAllTime ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200']"
                         >
                             All Time
                         </button>
                     </div>
                 </div>
 
-                <div v-if="loadingMedals" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                <div v-if="loadingMedals" class="glass-panel rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400">
                     <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p class="text-sm font-semibold">Caricamento medagliere...</p>
                 </div>
@@ -648,11 +674,11 @@
                     <p class="text-base font-semibold">Nessuna medaglia registrata per questo periodo.</p>
                 </div>
 
-                <div v-else class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                <div v-else class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                <tr class="bg-slate-100 text-[11px] uppercase tracking-wider text-slate-600 border-b border-slate-200 dark:bg-slate-900/90 dark:text-slate-400 dark:border-slate-800">
                                     <th class="py-3 px-4 w-14">Pos</th>
                                     <th class="py-3 px-4">Giocatore</th>
                                     <th class="py-3 px-3 text-center">🥇 Oro</th>
@@ -662,32 +688,32 @@
                                     <th class="py-3 px-4 text-right">Score</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-800/60 text-sm">
+                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60 text-sm">
                                 <tr 
                                     v-for="m in medalsList" 
                                     :key="m.user_name"
-                                    class="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                    class="hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                                     @click="viewPlayerProfile(m.user_name)"
                                 >
-                                    <td class="py-3 px-4 font-mono font-bold text-slate-400">
+                                    <td class="py-3 px-4 font-mono font-bold text-slate-500 dark:text-slate-400">
                                         {{ m.pos }}°
                                     </td>
-                                    <td class="py-3 px-4 font-semibold text-slate-200 hover:text-indigo-300">
+                                    <td class="py-3 px-4 font-semibold text-slate-800 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-300">
                                         {{ m.user_name }}
                                     </td>
-                                    <td class="py-3 px-3 text-center font-mono font-bold text-amber-300">
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-amber-600 dark:text-amber-300">
                                         {{ m.gold }}
                                     </td>
-                                    <td class="py-3 px-3 text-center font-mono font-bold text-slate-300">
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-slate-600 dark:text-slate-300">
                                         {{ m.silver }}
                                     </td>
-                                    <td class="py-3 px-3 text-center font-mono font-bold text-amber-600">
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-amber-700 dark:text-amber-600">
                                         {{ m.bronze }}
                                     </td>
-                                    <td class="py-3 px-3 text-center font-mono font-bold text-stone-400">
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-stone-600 dark:text-stone-400">
                                         {{ m.last }}
                                     </td>
-                                    <td class="py-3 px-4 text-right font-mono font-extrabold text-indigo-400">
+                                    <td class="py-3 px-4 text-right font-mono font-extrabold text-indigo-600 dark:text-indigo-400">
                                         {{ m.medal_score }}
                                     </td>
                                 </tr>
@@ -701,27 +727,27 @@
             <div v-show="currentTab === 'activity'" class="space-y-6">
                 <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>📈</span>
                             <span>Attività degli Ultimi 365 Giorni</span>
                         </h2>
-                        <p class="text-xs text-slate-400">Frequenza complessiva di partite giocate nel gruppo ogni giorno.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Frequenza complessiva di partite giocate nel gruppo ogni giorno.</p>
                     </div>
                     <div class="text-right">
-                        <span class="text-xs text-slate-400">Partite totali nell'ultimo anno:</span>
-                        <p class="text-xl font-mono font-black text-indigo-400">{{ heatmapData.total_games.toLocaleString() }}</p>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">Partite totali nell'ultimo anno:</span>
+                        <p class="text-xl font-mono font-black text-indigo-600 dark:text-indigo-400">{{ heatmapData.total_games.toLocaleString() }}</p>
                     </div>
                 </div>
 
-                <div class="glass-panel rounded-2xl p-6 border border-slate-800 overflow-x-auto">
-                    <div v-if="loadingHeatmap" class="py-12 text-center text-slate-400">
+                <div class="glass-panel rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto">
+                    <div v-if="loadingHeatmap" class="py-12 text-center text-slate-500 dark:text-slate-400">
                         <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                         <span class="text-xs">Caricamento grafico attività...</span>
                     </div>
 
                     <div v-else class="min-w-[750px] flex flex-col items-center">
                         <!-- Month labels -->
-                        <div class="flex justify-between w-full text-[10px] text-slate-400 font-mono mb-2 px-6">
+                        <div class="flex justify-between w-full text-[10px] text-slate-500 dark:text-slate-400 font-mono mb-2 px-6">
                             <span v-for="m in monthHeaders" :key="m">{{ m }}</span>
                         </div>
 
@@ -742,7 +768,7 @@
                         </div>
 
                         <!-- Legend -->
-                        <div class="flex items-center justify-between w-full mt-4 pt-3 border-t border-slate-800/60 text-xs text-slate-400">
+                        <div class="flex items-center justify-between w-full mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/60 text-xs text-slate-500 dark:text-slate-400">
                             <span>Meno attivo</span>
                             <div class="flex items-center gap-1.5">
                                 <span class="w-3 h-3 rounded-sm heat-0"></span>
@@ -761,13 +787,13 @@
             <div v-show="currentTab === 'games'" class="space-y-6">
                 <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>🎮</span>
                             <span>Catalogo di Tutti i Giochi</span>
                         </h2>
-                        <p class="text-xs text-slate-400">Lista completa di tutti i giochi supportati con link per giocare.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Lista completa di tutti i giochi supportati con link per giocare.</p>
                     </div>
-                    <div class="text-xs font-mono font-bold text-slate-400 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                    <div class="text-xs font-mono font-bold text-slate-600 bg-slate-200/80 px-3 py-1.5 rounded-xl border border-slate-300 dark:text-slate-400 dark:bg-slate-900 dark:border-slate-800">
                         {{ allGamesList.length }} giochi supportati
                     </div>
                 </div>
@@ -776,27 +802,27 @@
                     <div 
                         v-for="g in allGamesList" 
                         :key="g.name"
-                        class="glass-panel rounded-2xl p-4 border border-slate-800 hover:border-indigo-500/50 transition-all flex flex-col justify-between hover:-translate-y-1"
+                        class="glass-panel rounded-2xl p-4 border border-slate-200 hover:border-indigo-400 hover:shadow-md dark:border-slate-800 dark:hover:border-indigo-500/50 transition-all flex flex-col justify-between hover:-translate-y-1"
                     >
                         <div class="flex items-center gap-3 mb-3">
-                            <span class="text-3xl p-2 rounded-xl bg-slate-800/80">{{ g.emoji }}</span>
+                            <span class="text-3xl p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80">{{ g.emoji }}</span>
                             <div class="truncate">
-                                <h3 class="font-bold text-sm text-white truncate">{{ g.name }}</h3>
-                                <span class="text-[11px] font-semibold text-slate-400 capitalize">{{ formatCategory(g.category) }}</span>
+                                <h3 class="font-bold text-sm text-slate-900 dark:text-white truncate">{{ g.name }}</h3>
+                                <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 capitalize">{{ formatCategory(g.category) }}</span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 pt-2 border-t border-slate-800/60">
+                        <div class="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800/60">
                             <a 
                                 :href="g.url" 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                class="flex-1 text-center py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all"
+                                class="flex-1 text-center py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm"
                             >
                                 Gioca ↗
                             </a>
                             <button 
                                 @click="filterByGame(g.name)" 
-                                class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700"
+                                class="py-1.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 shadow-sm dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
                             >
                                 Risultati
                             </button>
@@ -812,15 +838,15 @@
                     <div class="flex items-center gap-3">
                         <span class="text-3xl">👤</span>
                         <div>
-                            <h2 class="text-xl font-bold text-white">Statistiche Giocatore</h2>
-                            <p class="text-xs text-slate-400">Profilo completo, vittorie, medaglie e record.</p>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Statistiche Giocatore</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Profilo completo, vittorie, medaglie e record.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 w-full sm:w-auto">
                         <select 
                             v-model="selectedPlayer" 
                             @change="fetchPlayerStats"
-                            class="w-full sm:w-64 bg-slate-900 text-slate-100 font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                            class="w-full sm:w-64 bg-white text-slate-800 font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-300 shadow-sm focus:outline-none focus:border-indigo-500 cursor-pointer dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
                         >
                             <option value="">-- Seleziona Giocatore --</option>
                             <option v-for="p in allPlayers" :key="p.name" :value="p.name">
@@ -830,7 +856,7 @@
                     </div>
                 </div>
 
-                <div v-if="loadingPlayer" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                <div v-if="loadingPlayer" class="glass-panel rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400">
                     <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p class="text-sm font-semibold">Caricamento statistiche di {{ selectedPlayer }}...</p>
                 </div>
@@ -842,22 +868,22 @@
 
                 <div v-else class="space-y-6">
                     <!-- Player Header Card -->
-                    <div class="glass-panel bg-gradient-to-r from-slate-900 via-indigo-950/60 to-purple-950/60 rounded-3xl p-6 border border-slate-800 shadow-xl">
+                    <div class="glass-panel bg-gradient-to-r from-slate-100 via-indigo-50/70 to-purple-50/70 dark:from-slate-900 dark:via-indigo-950/60 dark:to-purple-950/60 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl">
                         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
                             <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white shadow-xl shadow-indigo-500/30">
                                 {{ selectedPlayer.charAt(0).toUpperCase() }}
                             </div>
                             <div class="space-y-1">
-                                <h2 class="text-2xl sm:text-3xl font-black text-white">{{ selectedPlayer }}</h2>
-                                <p class="text-xs text-indigo-300 font-semibold">Membro attivo della community Giochini</p>
+                                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ selectedPlayer }}</h2>
+                                <p class="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">Membro attivo della community Giochini</p>
                                 <div class="flex items-center justify-center sm:justify-start gap-2 pt-2 flex-wrap">
-                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-200 border border-slate-700">
+                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
                                         🎮 {{ playerData.total_plays }} partite
                                     </span>
-                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30">
                                         ⭐ {{ playerData.total_points }} punti storici
                                     </span>
-                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30">
                                         🎯 {{ playerData.win_rate }}% win rate
                                     </span>
                                 </div>
@@ -867,43 +893,43 @@
 
                     <!-- Stat Cards Grid -->
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
-                            <span class="text-xs text-slate-400 font-medium">🥇 Medaglie Oro</span>
-                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-300 mt-1">{{ playerData.medals.gold }}</p>
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-200 dark:border-slate-800">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">🥇 Medaglie Oro</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-600 dark:text-amber-300 mt-1">{{ playerData.medals.gold }}</p>
                         </div>
-                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
-                            <span class="text-xs text-slate-400 font-medium">🥈 Medaglie Argento</span>
-                            <p class="text-2xl sm:text-3xl font-mono font-black text-slate-300 mt-1">{{ playerData.medals.silver }}</p>
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-200 dark:border-slate-800">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">🥈 Medaglie Argento</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-slate-700 dark:text-slate-300 mt-1">{{ playerData.medals.silver }}</p>
                         </div>
-                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
-                            <span class="text-xs text-slate-400 font-medium">🥉 Medaglie Bronzo</span>
-                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-600 mt-1">{{ playerData.medals.bronze }}</p>
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-200 dark:border-slate-800">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">🥉 Medaglie Bronzo</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-700 dark:text-amber-600 mt-1">{{ playerData.medals.bronze }}</p>
                         </div>
-                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
-                            <span class="text-xs text-slate-400 font-medium">💩 Cucchiai Legno</span>
-                            <p class="text-2xl sm:text-3xl font-mono font-black text-stone-400 mt-1">{{ playerData.medals.last }}</p>
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-200 dark:border-slate-800">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">💩 Cucchiai Legno</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-stone-600 dark:text-stone-400 mt-1">{{ playerData.medals.last }}</p>
                         </div>
                     </div>
 
                     <!-- Detailed Highlights Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                        <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
                             <span class="text-2xl mb-2 block">🔥</span>
-                            <h4 class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Miglior Streak</h4>
-                            <p class="text-xl font-bold text-white mt-1">{{ playerData.long_streak_days }} giorni</p>
-                            <p class="text-xs text-indigo-400 mt-0.5">{{ playerData.long_streak_game }}</p>
+                            <h4 class="text-xs uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-wider">Miglior Streak</h4>
+                            <p class="text-xl font-bold text-slate-900 dark:text-white mt-1">{{ playerData.long_streak_days }} giorni</p>
+                            <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5 font-semibold">{{ playerData.long_streak_game }}</p>
                         </div>
-                        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                        <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
                             <span class="text-2xl mb-2 block">❤️</span>
-                            <h4 class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Gioco Preferito</h4>
-                            <p class="text-xl font-bold text-white mt-1">{{ playerData.most_played_game }}</p>
-                            <p class="text-xs text-slate-400 mt-0.5">{{ playerData.most_played_count }} partite giocate</p>
+                            <h4 class="text-xs uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-wider">Gioco Preferito</h4>
+                            <p class="text-xl font-bold text-slate-900 dark:text-white mt-1">{{ playerData.most_played_game }}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ playerData.most_played_count }} partite giocate</p>
                         </div>
-                        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                        <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
                             <span class="text-2xl mb-2 block">⏳</span>
-                            <h4 class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Tempo di Gioco Stimato</h4>
-                            <p class="text-xl font-bold text-white mt-1">{{ Math.round(playerData.total_time_minutes / 60) }} ore</p>
-                            <p class="text-xs text-slate-400 mt-0.5">~{{ playerData.total_time_minutes }} minuti spesi a giocare</p>
+                            <h4 class="text-xs uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-wider">Tempo di Gioco Stimato</h4>
+                            <p class="text-xl font-bold text-slate-900 dark:text-white mt-1">{{ Math.round(playerData.total_time_minutes / 60) }} ore</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">~{{ playerData.total_time_minutes }} minuti spesi a giocare</p>
                         </div>
                     </div>
                 </div>
@@ -911,9 +937,9 @@
         </main>
 
         <!-- Footer -->
-        <footer class="glass-panel border-t border-slate-800 mt-12 py-6 text-center text-xs text-slate-500">
+        <footer class="glass-panel border-t border-slate-200 dark:border-slate-800 mt-12 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
             <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <p>Made with ❤️ per il gruppo Giochini Telegram · <a href="https://trifase.online" class="underline hover:text-indigo-400">trifase.online</a></p>
+                <p>Made with ❤️ per il gruppo Giochini Telegram · <a href="https://trifase.online" class="underline hover:text-indigo-600 dark:hover:text-indigo-400">trifase.online</a></p>
                 <p class="font-mono">Punteggi calcolati con Zip War Airganon SWG4</p>
             </div>
         </footer>
@@ -1148,17 +1174,15 @@
                     this.loadingGames = true;
                     this.loadingDaily = true;
                     try {
-                        const [clsRes, dailyRes] = await Promise.all([
-                            fetch(`/api/classifica/?day=${this.selectedDate}`),
-                            fetch(`/api/dailyranking/?day=${this.selectedDate}`)
+                        const [dailyRes, gamesRes] = await Promise.all([
+                            fetch(`/api/dailyranking/?day=${this.selectedDate}`),
+                            fetch(`/api/classifica/?day=${this.selectedDate}`)
                         ]);
-
-                        if (clsRes.ok) {
-                            const data = await clsRes.json();
-                            this.gamesData = Array.isArray(data) ? data : (data.error ? [] : [data]);
-                        }
                         if (dailyRes.ok) {
                             this.dailyRankings = await dailyRes.json();
+                        }
+                        if (gamesRes.ok) {
+                            this.gamesData = await gamesRes.json();
                         }
                     } catch (e) {
                         console.error('Error fetching daily data:', e);
@@ -1190,7 +1214,7 @@
                             this.allTimeRankings = data.rankings || [];
                         }
                     } catch (e) {
-                        console.error('Error fetching all time rankings:', e);
+                        console.error('Error fetching all-time rankings:', e);
                     } finally {
                         this.loadingAllTime = false;
                     }
@@ -1198,7 +1222,9 @@
                 async fetchMedals() {
                     this.loadingMedals = true;
                     try {
-                        const url = this.medalsAllTime ? '/api/medals/?all_time=true' : `/api/medals/?month=${this.selectedMonth}`;
+                        const url = this.medalsAllTime 
+                            ? '/api/medals/?all_time=true' 
+                            : `/api/medals/?month=${this.selectedMonth}`;
                         const res = await fetch(url);
                         if (res.ok) {
                             const data = await res.json();
@@ -1239,10 +1265,6 @@
                         if (res.ok) {
                             const data = await res.json();
                             this.allPlayers = data.players || [];
-                            if (!this.selectedPlayer && this.allPlayers.length > 0) {
-                                this.selectedPlayer = this.allPlayers[0].name;
-                                this.fetchPlayerStats();
-                            }
                         }
                     } catch (e) {
                         console.error('Error fetching players:', e);
@@ -1276,7 +1298,12 @@
                 // URL params handling
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('tab')) {
-                    this.currentTab = params.get('tab');
+                    let tab = params.get('tab');
+                    if (tab === 'player' || tab === 'players') tab = 'player';
+                    if (tab === 'giochi') tab = 'games';
+                    if (tab === 'medaglie') tab = 'medals';
+                    if (tab === 'attivita') tab = 'activity';
+                    this.currentTab = tab;
                 }
                 if (params.get('player')) {
                     this.selectedPlayer = params.get('player');
