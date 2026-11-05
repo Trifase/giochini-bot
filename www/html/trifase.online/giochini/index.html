@@ -1,762 +1,1303 @@
 <!DOCTYPE html>
-<html>
+<html lang="it" class="dark">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>It's giochini!</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giochini! · Classifiche e Statistiche</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        accent: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
+        [v-cloak] { display: none !important; }
         
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --background-color: #ecf0f1;
-            --card-background: #ffffff;
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.7);
         }
 
-        [v-cloak] {
-            display: none !important;
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.06);
         }
 
-        body {
-            background-color: var(--background-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px 0;
-        }
-
-        .blue-1 { background-color: #e0f7fa; border-radius: 2px; }
-        .blue-2 { background-color: #b9e2f5; border-radius: 2px; }
-        .blue-3 { background-color: #81d4fa; border-radius: 2px; }
-        .blue-4 { background-color: #1976d2; border-radius: 2px; }
-        .blue-5 { background-color: #0d47a1; border-radius: 2px; }
-
-        .page-title {
-            color: var(--primary-color);
-            font-size: 3.5rem;
-            font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1.5rem;
-        }
-
-        .filters-container {
-            background: var(--card-background);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .form-select, .form-control {
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            padding: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .form-select:focus, .form-control:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-        }
-
-        .btn-primary {
-            background-color: var(--secondary-color);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .game-card {
-            background: var(--card-background);
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            height: 100%;
-        }
-
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .game-card .card-header {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 15px 15px 0 0;
-            padding: 15px;
-        }
-
-        .game-card .card-header h3 {
-            margin: 0;
-            font-size: 1.5rem;
-        }
-
-        .list-group-item {
-            border-left: none;
-            border-right: none;
-            padding: 2px 20px;
-            transition: background-color 0.2s ease;
-        }
-
-        .list-group-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .badge {
-            font-size: 0.9rem;
-            padding: 8px 12px;
-            border-radius: 20px;
-        }
-
-        .loading-spinner {
-            color: var(--secondary-color);
-            width: 4rem;
-            height: 4rem;
-        }
-
-        .alert {
-            border-radius: 10px;
-            padding: 1rem;
-        }
-
-        .empty-state {
-            padding: 2rem;
-            text-align: center;
-            color: #6c757d;
-        }
-
-        /* Toggle Switch Styles */
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 0;
-        }
-
-        .toggle-switch {
+        .jolly-glow {
             position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 26px;
         }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
+        .jolly-glow::before {
+            content: '';
             position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
+            inset: -2px;
+            border-radius: 1rem;
+            background: linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6, #3b82f6);
+            z-index: -1;
+            opacity: 0.75;
+            filter: blur(6px);
+            animation: pulse-glow 3s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { opacity: 0.4; filter: blur(4px); }
+            100% { opacity: 0.9; filter: blur(8px); }
         }
 
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .toggle-slider {
-            background-color: var(--secondary-color);
-        }
-
-        input:checked + .toggle-slider:before {
-            transform: translateX(24px);
-        }
-
-        .toggle-label {
-            font-size: 0.9rem;
-            color: var(--primary-color);
-            user-select: none;
-        }
-
-        .daily-rankings {
-            position: sticky;
-            top: 1rem;
-        }
-
-        .position-badge {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            line-height: 24px;
-            text-align: center;
-            border-radius: 50%;
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-
-        .list-group-item:first-child .position-badge {
-            background-color: #ffd700;
-            color: #000;
-        }
-
-        .list-group-item:nth-child(2) .position-badge {
-            background-color: #c0c0c0;
-            color: #000;
-        }
-
-        .list-group-item:nth-child(3) .position-badge {
-            background-color: #cd7f32;
-            color: #fff;
-        }
-
-        .game-heatmap-cell {
-            width: 10px;
-            height: 10px;
-            margin: 1px;
-            transition: all 0.2s ease;
-        }
-
-        .game-heatmap-cell:hover {
-            transform: scale(1.2);
-            z-index: 10;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .game-card {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .page-title {
-                font-size: 2.5rem;
-            }
-            
-            .filters-container {
-                padding: 15px;
-            }
-            
-            .btn-primary {
-                width: 100%;
-                margin-top: 10px;
-            }
-
-            .toggle-container {
-                justify-content: center;
-                margin-top: 10px;
-            }
-        }
-
-        /* Add styles for medals */
-        .medal {
-            font-size: 1.2rem;
-            margin-right: 8px;
-        }
+        .heat-0 { background-color: rgba(148, 163, 184, 0.12); }
+        .heat-1 { background-color: rgba(56, 189, 248, 0.35); }
+        .heat-2 { background-color: rgba(56, 189, 248, 0.65); }
+        .heat-3 { background-color: rgba(14, 165, 233, 0.9); }
+        .heat-4 { background-color: #0284c7; }
     </style>
 </head>
-<body>
-    <script type="importmap">
-      {
-        "imports": {
-          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
-        }
-      }
-    </script>
-    <div id="app" v-cloak>
-        <div class="container">
-            <div class="text-center">
-                <h1 class="page-title">Giochini!</h1>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white transition-colors duration-200" id="body-root">
+    <div id="app" v-cloak class="flex flex-col min-h-screen">
+        <!-- Top Navbar -->
+        <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <a href="/giochini/" @click.prevent="setTab('daily')" class="flex items-center gap-2 group">
+                        <span class="text-2xl sm:text-3xl transform group-hover:scale-110 transition-transform">🎮</span>
+                        <div>
+                            <span class="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-sky-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+                                Giochini!
+                            </span>
+                            <span class="hidden sm:inline-block text-xs text-slate-400 font-mono ml-2 py-0.5 px-2 bg-slate-800/60 rounded-full border border-slate-700/50">
+                                Trifase Hub
+                            </span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800">
+                    <button 
+                        v-for="t in tabs" 
+                        :key="t.id"
+                        @click="setTab(t.id)"
+                        :class="[
+                            'px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5',
+                            currentTab === t.id 
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        ]"
+                    >
+                        <span>{{ t.icon }}</span>
+                        <span>{{ t.label }}</span>
+                    </button>
+                </nav>
+
+                <!-- Actions (Theme Toggle & Refresh) -->
+                <div class="flex items-center gap-2">
+                    <button 
+                        @click="refreshCurrentTab" 
+                        :disabled="loading"
+                        title="Ricarica dati"
+                        class="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 transition-all active:scale-95"
+                    >
+                        <svg :class="['w-5 h-5', loading ? 'animate-spin text-indigo-400' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                    <button 
+                        @click="toggleTheme" 
+                        title="Cambia tema"
+                        class="p-2 rounded-xl text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 transition-all"
+                    >
+                        <span v-if="isDark" class="text-amber-400 text-lg">☀️</span>
+                        <span v-else class="text-indigo-300 text-lg">🌙</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Filters Section -->
-            <div class="filters-container" v-if="initialized">
-                <div class="row g-3">
-                    <div class="col-md-5">
-                        <select class="form-select" v-model="selectedGame">
-                            <option value="">All Games</option>
-                            <option v-for="game in uniqueGames" :value="game">
-                                {{ game }}
-                            </option>
-                        </select>
+            <!-- Mobile Sub-Navigation -->
+            <div class="md:hidden flex overflow-x-auto px-4 py-2 gap-1 border-t border-slate-800/60 bg-slate-900/80 no-scrollbar">
+                <button 
+                    v-for="t in tabs" 
+                    :key="t.id"
+                    @click="setTab(t.id)"
+                    :class="[
+                        'px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1',
+                        currentTab === t.id 
+                            ? 'bg-indigo-600 text-white' 
+                            : 'text-slate-400 bg-slate-800/50'
+                    ]"
+                >
+                    <span>{{ t.icon }}</span>
+                    <span>{{ t.label }}</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+            <!-- Jolly Game Spotlight Banner -->
+            <section v-if="jollyData && jollyData.active && jollyData.bonus" class="jolly-glow">
+                <div class="glass-panel bg-gradient-to-r from-slate-900/90 via-indigo-950/80 to-purple-950/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-indigo-500/30 shadow-xl">
+                    <div class="flex items-center gap-3.5 text-center sm:text-left">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/20 shrink-0">
+                            {{ jollyData.bonus.emoji || '🎰' }}
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                <span class="uppercase tracking-wider text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    🎰 Gioco Jolly del Giorno
+                                </span>
+                                <span class="text-xs font-mono font-bold text-purple-300 bg-purple-900/40 px-2 py-0.5 rounded-full border border-purple-500/30">
+                                    {{ jollyData.bonus.multiplier }}x Punti ⭐
+                                </span>
+                            </div>
+                            <h2 class="text-lg sm:text-xl font-bold text-white mt-1">
+                                Oggi si gioca a <span class="underline decoration-indigo-400 underline-offset-4">{{ jollyData.bonus.game }}</span> con punteggio moltiplicato!
+                            </h2>
+                        </div>
                     </div>
-                    <div class="col-md-5">
-                        <input type="date" class="form-control" v-model="selectedDate" :max="today" />
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-primary w-100" @click="fetchData" :disabled="isLoading">
-                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                            <span v-else>Load Data</span>
+                    <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                        <a 
+                            v-if="jollyData.bonus.url" 
+                            :href="jollyData.bonus.url" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            class="flex-1 sm:flex-none text-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5"
+                        >
+                            Gioca Subito ↗
+                        </a>
+                        <button 
+                            @click="filterByGame(jollyData.bonus.game)"
+                            class="px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all"
+                        >
+                            Vedi Partita
                         </button>
                     </div>
                 </div>
-                
-                <!-- Toggle Switch for hiding empty games -->
-                <div v-if="!selectedGame" class="toggle-container mt-3">
-                    <label class="toggle-switch">
-                        <input type="checkbox" v-model="hideEmptyGames">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label">Hide games with no data</span>
-                </div>
-            </div>
+            </section>
 
-            <!-- Loading State -->
-            <div v-if="isLoading" class="text-center my-5">
-                <div class="spinner-border loading-spinner" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-
-            <!-- Error State -->
-            <div v-if="error" class="alert alert-danger" role="alert">
-                {{ error }}
-            </div>
-
-
-
-            <!-- Data Display -->
-            <div v-if="!isLoading && !error && initialized" class="row g-4">
-                <!-- Heat map -->
-                <div class="col-12">
-                    <div class="card game-card">
-                        <div class="card-header">
-                            <h3>📈 Game Activity Heatmap</h3>
+            <!-- TAB 1: GIORNATA (DAILY DASHBOARD) -->
+            <div v-show="currentTab === 'daily'" class="space-y-6">
+                <!-- Date Bar & Controls -->
+                <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <!-- Date Picker with Previous/Next -->
+                    <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
+                        <button 
+                            @click="stepDate(-1)" 
+                            class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
+                            title="Giorno precedente"
+                        >
+                            ◀
+                        </button>
+                        <div class="flex items-center gap-2">
+                            <input 
+                                type="date" 
+                                v-model="selectedDate" 
+                                :max="today"
+                                @change="onDateChange"
+                                class="bg-slate-900 text-slate-100 font-mono font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                            />
+                            <button 
+                                v-if="selectedDate !== today"
+                                @click="goToToday" 
+                                class="px-2.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-xs font-bold border border-indigo-500/40 transition-all"
+                            >
+                                Oggi
+                            </button>
                         </div>
-                        <div class="card-body">
-                            <div v-if="heatmapLoading" class="text-center py-4">
-                                <div class="spinner-border" role="status">
-                                    <span class="visually-hidden">Loading heatmap...</span>
-                                </div>
-                            </div>
-                            <div v-else-if="heatmapError" class="alert alert-danger" role="alert">
-                                {{ heatmapError }}
-                            </div>
-                            <div v-else class="d-flex flex-column">
-                                <!-- New month labels row -->
-                                <div class="d-flex justify-content-center mb-1">
-                                    <div 
-                                        v-for="(month, index) in getMonthLabels()"
-                                        :key="index"
-                                        class="text-muted small text-center"
-                                        style="width: 12px; font-size: 9px; overflow: visible; white-space: nowrap;"
-                                    >
-                                        {{ month }}
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-center mt-2">
-                                    <div
-                                        v-for="(week, weekIndex) in generateHeatmapGrid()"
-                                        :key="weekIndex"
-                                        class="d-flex flex-column"
-                                    >
-                                        <div
-                                            v-for="(day, dayIndex) in week"
-                                            :key="`${weekIndex}-${dayIndex}`"
-                                            class="game-heatmap-cell"
-                                            :class="getHeatmapColorIntensity(day.count)"
-                                            :title="`${day.date}: ${day.count} games`"
-                                        ></div>
-                                    </div>
-                                </div>
-                               
-                                <div class="d-flex justify-content-between mt-2">
-                                    
-                                    <div class="d-flex align-items-center">
-                                        <small class="text-muted me-2">Less</small>
-                                        <div class="d-flex me-2">
-                                            <div
-                                                v-for="(colorClass, index) in ['blue-2', 'blue-3', 'blue-4', 'blue-5']"
-                                                :key="index"
-                                                class="me-1"
-                                                :style="{
-                                                    width: '10px',
-                                                    height: '10px',
-                                                    margin: '1px'
-                                                }"
-                                                :class="colorClass"
-                                            ></div>
-                                        </div>
-                                        <small class="text-muted">More</small>
-                                    </div>
-                                    <small class="text-muted">
-                                        Total Games: {{ heatmapData.total_games.toLocaleString() }}
-                                    </small>
-                                </div>
-                            </div>
+                        <button 
+                            @click="stepDate(1)" 
+                            :disabled="selectedDate >= today"
+                            class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 border border-slate-700 transition-all"
+                            title="Giorno successivo"
+                        >
+                            ▶
+                        </button>
+                    </div>
+
+                    <!-- Search & Filter Controls -->
+                    <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
+                        <div class="relative flex-grow md:w-64">
+                            <input 
+                                type="text" 
+                                v-model="searchQuery" 
+                                placeholder="Cerca gioco o giocatore..."
+                                class="w-full bg-slate-900/90 text-sm text-slate-200 pl-9 pr-3.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-500"
+                            />
+                            <span class="absolute left-3 top-2.5 text-slate-500 text-xs">🔍</span>
                         </div>
+                        <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300 select-none bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-800">
+                            <input type="checkbox" v-model="hideEmptyGames" class="rounded text-indigo-600 focus:ring-0 bg-slate-800 border-slate-700">
+                            <span>Nascondi vuoti</span>
+                        </label>
                     </div>
                 </div>
-                <!-- New Daily Rankings Panel -->
-                <div class="col-md-3">
-                    <div class="card game-card">
-                        <div class="card-header">
-                            <h3 class="m-0">📊 Rank · {{ dailyRankings.date }}
-                        </div>
-                        <div class="card-body p-0">
-                            <div v-if="loadingRankings" class="text-center py-4">
-                                <div class="spinner-border" role="status">
-                                    <span class="visually-hidden">Loading rankings...</span>
+
+                <!-- Category Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
+                    <button 
+                        @click="selectedCategory = 'all'"
+                        :class="[
+                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap',
+                            selectedCategory === 'all'
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200'
+                        ]"
+                    >
+                        Tutte le categorie ({{ displayedGames.length }})
+                    </button>
+                    <button 
+                        v-for="cat in availableCategories" 
+                        :key="cat"
+                        @click="selectedCategory = cat"
+                        :class="[
+                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap capitalize',
+                            selectedCategory === cat
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200'
+                        ]"
+                    >
+                        {{ formatCategory(cat) }}
+                    </button>
+                </div>
+
+                <!-- Main Grid Layout: Daily Ranking on Left, Games Grid on Right -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <!-- Daily Standings Column (Lg: 4 Cols) -->
+                    <div class="lg:col-span-4 space-y-4">
+                        <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800 shadow-xl sticky top-20">
+                            <div class="p-4 bg-gradient-to-r from-slate-900 to-indigo-950/60 border-b border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">🏆</span>
+                                    <div>
+                                        <h3 class="font-bold text-base text-white">Classifica di Oggi</h3>
+                                        <p class="text-xs text-slate-400 font-mono">{{ selectedDate }}</p>
+                                    </div>
                                 </div>
+                                <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30">
+                                    {{ dailyRankings.rankings.length }} giocatori
+                                </span>
                             </div>
-                            <div v-else-if="rankingsError" class="alert alert-danger m-3" role="alert">
-                                {{ rankingsError }}
+
+                            <div v-if="loadingDaily" class="p-8 text-center text-slate-400">
+                                <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                <span class="text-xs">Caricamento punti...</span>
                             </div>
-                            <ul v-else class="list-group list-group-flush">
-                                <li v-for="rank in dailyRankings.rankings" :key="rank.name"
-                                    class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <span class="position-badge me-2">{{ rank.pos }}</span>
-                                        {{ rank.name }}
-                                    </span>
-                                    <span class="badge text-primary rounded-pill">{{ rank.points }} pts</span>
+
+                            <div v-else-if="!dailyRankings.rankings.length" class="p-8 text-center text-slate-500">
+                                <p class="text-3xl mb-2">😴</p>
+                                <p class="text-sm font-semibold">Nessun punteggio per questa data.</p>
+                                <p class="text-xs mt-1">Sii il primo a giocare oggi!</p>
+                            </div>
+
+                            <ul v-else class="divide-y divide-slate-800/80 max-h-[600px] overflow-y-auto">
+                                <li 
+                                    v-for="r in dailyRankings.rankings" 
+                                    :key="r.name"
+                                    class="p-3 sm:px-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                                    @click="viewPlayerProfile(r.name)"
+                                >
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-6 text-center font-bold text-base shrink-0">
+                                            <span v-if="r.pos === 1">🥇</span>
+                                            <span v-else-if="r.pos === 2">🥈</span>
+                                            <span v-else-if="r.pos === 3">🥉</span>
+                                            <span v-else-if="isPoop(r.pos, r.points)" title="Cucchiaio di legno!">💩</span>
+                                            <span v-else class="text-xs font-mono text-slate-400">{{ r.pos }}°</span>
+                                        </span>
+                                        <div>
+                                            <span class="font-semibold text-sm text-slate-200 group-hover:text-indigo-400 transition-colors">
+                                                {{ r.name }}
+                                            </span>
+                                            <span v-if="r.bonus !== 0" :class="['text-[11px] font-mono ml-1.5', r.bonus > 0 ? 'text-emerald-400' : 'text-rose-400']">
+                                                ({{ r.bonus > 0 ? '+' : '' }}{{ r.bonus }})
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1 font-mono font-bold text-sm text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">
+                                        <span>{{ r.points }}</span>
+                                        <span class="text-xs">⭐</span>
+                                    </div>
                                 </li>
                             </ul>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-9">
-                    <div class="row g-4">
-                        <div v-for="game in displayedGames" class="col-md-4">
-                            <div class="game-card card">
-                                <div class="card-header">
-                                    <span><span class="h5">{{ game.emoji }} {{ game.game }}</span> <span style="color: #999">#{{ game.game_day }}</span></span>
+
+                    <!-- Games Grid Column (Lg: 8 Cols) -->
+                    <div class="lg:col-span-8 space-y-4">
+                        <div v-if="loadingGames" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                            <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                            <p class="text-sm font-semibold">Caricamento classifiche giochi...</p>
+                        </div>
+
+                        <div v-else-if="!displayedGames.length" class="glass-panel rounded-2xl p-12 text-center text-slate-500">
+                            <p class="text-4xl mb-3">🎯</p>
+                            <h3 class="text-base font-bold text-slate-300">Nessun gioco corrisponde ai filtri</h3>
+                            <p class="text-xs text-slate-400 mt-1">Prova a disattivare "Nascondi vuoti" o modifica i termini di ricerca.</p>
+                        </div>
+
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div 
+                                v-for="g in displayedGames" 
+                                :key="g.game"
+                                :class="[
+                                    'glass-panel rounded-2xl overflow-hidden border transition-all duration-200 hover:-translate-y-1 hover:shadow-xl flex flex-col',
+                                    g.is_jolly ? 'border-amber-500/50 bg-slate-900/90' : 'border-slate-800/90'
+                                ]"
+                            >
+                                <!-- Card Header -->
+                                <div :class="[
+                                    'p-3.5 border-b flex items-center justify-between gap-2',
+                                    g.is_jolly ? 'bg-gradient-to-r from-amber-950/40 to-slate-900 border-amber-500/30' : 'bg-slate-900/80 border-slate-800'
+                                ]">
+                                    <div class="flex items-center gap-2.5 truncate">
+                                        <span class="text-2xl">{{ g.emoji }}</span>
+                                        <div class="truncate">
+                                            <div class="flex items-center gap-1.5">
+                                                <h4 class="font-bold text-sm text-white truncate">{{ g.game }}</h4>
+                                                <span v-if="g.is_jolly" class="text-[10px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                                    🎰 {{ g.multiplier }}x
+                                                </span>
+                                            </div>
+                                            <span class="text-xs text-slate-400 font-mono">#{{ g.game_day }}</span>
+                                        </div>
+                                    </div>
+                                    <a 
+                                        v-if="g.url" 
+                                        :href="g.url" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        title="Gioca a questo gioco"
+                                        class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-xs font-semibold transition-all shrink-0 border border-slate-700/60"
+                                    >
+                                        Gioca ↗
+                                    </a>
                                 </div>
-                                <div class="card-body">
-                                    <ul class="list-group list-group-flush" v-if="game.posizioni.length">
-                                        <li v-for="(item, index) in game.posizioni" 
-                                            class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span>
-                                                <a :href="'/giochini/players.html?player=' + encodeURIComponent(item.user_name)" class="d-block text-decoration-none mb-2">
-                                                    <!-- <span class="medal"></span> -->
-                                                    {{ getRankEmoji(index) }} {{ item.user_name }}
-                                                </a>
-                                            </span>
-                                            <span class="badge bg-primary">{{ processTries(game.game, item.tries) }}</span>
-                                        </li>
-                                    </ul>
-                                    <div v-else class="empty-state">
-                                        <p>No data available for this game</p>
+
+                                <!-- Card Body: Plays List -->
+                                <div class="p-3 flex-grow flex flex-col justify-between">
+                                    <div v-if="g.posizioni && g.posizioni.length" class="space-y-1.5">
+                                        <div 
+                                            v-for="(p, pIdx) in g.posizioni" 
+                                            :key="p.user_name"
+                                            class="flex items-center justify-between text-xs py-1 px-2 rounded-lg hover:bg-slate-800/40 transition-colors"
+                                        >
+                                            <div class="flex items-center gap-2 truncate">
+                                                <span class="w-4 text-center font-bold">
+                                                    <span v-if="pIdx === 0 && !p.lost">🥇</span>
+                                                    <span v-else-if="pIdx === 1 && !p.lost">🥈</span>
+                                                    <span v-else-if="pIdx === 2 && !p.lost">🥉</span>
+                                                    <span v-else-if="p.lost" class="text-rose-400 text-[10px]">✕</span>
+                                                    <span v-else class="text-slate-500 text-[11px] font-mono">{{ pIdx + 1 }}</span>
+                                                </span>
+                                                <button 
+                                                    @click="viewPlayerProfile(p.user_name)"
+                                                    :class="[
+                                                        'font-medium text-left truncate hover:underline',
+                                                        p.lost ? 'line-through text-slate-500 italic' : 'text-slate-200 hover:text-indigo-300'
+                                                    ]"
+                                                >
+                                                    {{ p.user_name }}
+                                                </button>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 shrink-0 font-mono">
+                                                <span v-if="p.stars > 0" class="text-amber-400 font-bold text-[11px]">
+                                                    +{{ p.stars }}⭐
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded bg-slate-800/90 text-slate-300 font-semibold border border-slate-700/60 text-[11px]">
+                                                    {{ p.tries_formatted }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="py-6 text-center text-slate-500 text-xs">
+                                        Nessuna giocata registrata per oggi
+                                    </div>
+
+                                    <!-- Bottom indicator -->
+                                    <div class="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
+                                        <span>{{ g.total_players || 0 }} {{ g.total_players === 1 ? 'giocata' : 'giocate' }}</span>
+                                        <span class="capitalize">{{ formatCategory(g.category) }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
-        </div>
+
+            <!-- TAB 2: MESI (MONTHLY RANKING) -->
+            <div v-show="currentTab === 'monthly'" class="space-y-6">
+                <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>📅</span>
+                            <span>Classifica del Mese</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Punti totali accumulati giorno per giorno con l'algoritmo SWG4 Zip War Airganon.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-semibold text-slate-400">Mese:</label>
+                        <input 
+                            type="month" 
+                            v-model="selectedMonth" 
+                            @change="fetchMonthlyRankings"
+                            class="bg-slate-900 text-slate-100 font-mono text-sm px-3 py-1.5 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                        />
+                    </div>
+                </div>
+
+                <div v-if="loadingMonthly" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                    <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <p class="text-sm font-semibold">Caricamento classifica mensile...</p>
+                </div>
+
+                <div v-else-if="!monthlyRankings.length" class="glass-panel rounded-2xl p-12 text-center text-slate-500">
+                    <p class="text-4xl mb-2">🏖️</p>
+                    <p class="text-base font-semibold">Nessun punteggio per questo mese.</p>
+                </div>
+
+                <div v-else class="space-y-6">
+                    <!-- Top 3 Podium (if >= 3 players) -->
+                    <div v-if="monthlyRankings.length >= 3" class="grid grid-cols-3 gap-3 sm:gap-4 max-w-xl mx-auto pt-8 items-end">
+                        <!-- 2nd Place -->
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-700/80 transform hover:-translate-y-1 transition-all">
+                            <span class="text-3xl sm:text-4xl">🥈</span>
+                            <h4 class="font-bold text-sm sm:text-base text-white mt-1 truncate">{{ monthlyRankings[1].name }}</h4>
+                            <p class="text-lg sm:text-xl font-mono font-extrabold text-slate-300 mt-1">{{ monthlyRankings[1].points }}⭐</p>
+                            <span class="text-[11px] font-semibold text-slate-400">2° Posto</span>
+                        </div>
+                        <!-- 1st Place (Tallest) -->
+                        <div class="glass-panel rounded-2xl p-5 text-center border-amber-500/60 bg-gradient-to-b from-amber-500/10 to-transparent transform hover:-translate-y-1.5 transition-all shadow-xl shadow-amber-500/10">
+                            <span class="text-4xl sm:text-5xl">👑</span>
+                            <h4 class="font-extrabold text-base sm:text-lg text-white mt-1 truncate">{{ monthlyRankings[0].name }}</h4>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-400 mt-1">{{ monthlyRankings[0].points }}⭐</p>
+                            <span class="text-xs font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full">Campione</span>
+                        </div>
+                        <!-- 3rd Place -->
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-700/80 transform hover:-translate-y-1 transition-all">
+                            <span class="text-3xl sm:text-4xl">🥉</span>
+                            <h4 class="font-bold text-sm sm:text-base text-white mt-1 truncate">{{ monthlyRankings[2].name }}</h4>
+                            <p class="text-lg sm:text-xl font-mono font-extrabold text-amber-600 mt-1">{{ monthlyRankings[2].points }}⭐</p>
+                            <span class="text-[11px] font-semibold text-slate-400">3° Posto</span>
+                        </div>
+                    </div>
+
+                    <!-- Full Table -->
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                    <th class="py-3 px-4 w-16">Pos</th>
+                                    <th class="py-3 px-4">Giocatore</th>
+                                    <th class="py-3 px-4 text-right">Punti Totali</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 text-sm">
+                                <tr 
+                                    v-for="r in monthlyRankings" 
+                                    :key="r.name"
+                                    class="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                    @click="viewPlayerProfile(r.name)"
+                                >
+                                    <td class="py-3 px-4 font-mono font-bold">
+                                        <span v-if="r.pos === 1">🥇</span>
+                                        <span v-else-if="r.pos === 2">🥈</span>
+                                        <span v-else-if="r.pos === 3">🥉</span>
+                                        <span v-else class="text-slate-400">{{ r.pos }}°</span>
+                                    </td>
+                                    <td class="py-3 px-4 font-semibold text-slate-200 hover:text-indigo-300">
+                                        {{ r.name }}
+                                    </td>
+                                    <td class="py-3 px-4 text-right font-mono font-bold text-amber-400">
+                                        {{ r.points }} ⭐
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ALL TIME RANKING -->
+            <div v-show="currentTab === 'alltime'" class="space-y-6">
+                <div class="glass-panel rounded-2xl p-5 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>⭐</span>
+                            <span>Classificona All-Time</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">La classifica storica di tutti i punti accumulati dal primo giorno.</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 font-mono font-bold text-xs border border-purple-500/30">
+                        {{ allTimeRankings.length }} Giocatori
+                    </span>
+                </div>
+
+                <div v-if="loadingAllTime" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                    <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <p class="text-sm font-semibold">Caricamento classificona...</p>
+                </div>
+
+                <div v-else class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                <th class="py-3 px-4 w-16">Pos</th>
+                                <th class="py-3 px-4">Giocatore</th>
+                                <th class="py-3 px-4 text-right">Punti All-Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-sm">
+                            <tr 
+                                v-for="r in allTimeRankings" 
+                                :key="r.name"
+                                class="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                @click="viewPlayerProfile(r.name)"
+                            >
+                                <td class="py-3 px-4 font-mono font-bold">
+                                    <span v-if="r.pos === 1">🥇</span>
+                                    <span v-else-if="r.pos === 2">🥈</span>
+                                    <span v-else-if="r.pos === 3">🥉</span>
+                                    <span v-else class="text-slate-400">{{ r.pos }}°</span>
+                                </td>
+                                <td class="py-3 px-4 font-semibold text-slate-200 hover:text-indigo-300">
+                                    {{ r.name }}
+                                </td>
+                                <td class="py-3 px-4 text-right font-mono font-bold text-amber-400">
+                                    {{ r.points.toLocaleString() }} ⭐
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 4: MEDAGLIERE (MEDALS) -->
+            <div v-show="currentTab === 'medals'" class="space-y-6">
+                <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>🏅</span>
+                            <span>Medagliere Ufficiale</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Oro 🥇 (3 pt), Argento 🥈 (2 pt), Bronzo 🥉 (1 pt) e Cucchiaio di Legno 💩</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                        <button 
+                            @click="medalsAllTime = false; fetchMedals()" 
+                            :class="['px-3 py-1.5 rounded-lg text-xs font-bold transition-all', !medalsAllTime ? 'bg-indigo-600 text-white' : 'text-slate-400']"
+                        >
+                            Questo Mese
+                        </button>
+                        <button 
+                            @click="medalsAllTime = true; fetchMedals()" 
+                            :class="['px-3 py-1.5 rounded-lg text-xs font-bold transition-all', medalsAllTime ? 'bg-indigo-600 text-white' : 'text-slate-400']"
+                        >
+                            All Time
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="loadingMedals" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                    <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <p class="text-sm font-semibold">Caricamento medagliere...</p>
+                </div>
+
+                <div v-else-if="!medalsList.length" class="glass-panel rounded-2xl p-12 text-center text-slate-500">
+                    <p class="text-4xl mb-2">🏅</p>
+                    <p class="text-base font-semibold">Nessuna medaglia registrata per questo periodo.</p>
+                </div>
+
+                <div v-else class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                    <th class="py-3 px-4 w-14">Pos</th>
+                                    <th class="py-3 px-4">Giocatore</th>
+                                    <th class="py-3 px-3 text-center">🥇 Oro</th>
+                                    <th class="py-3 px-3 text-center">🥈 Argento</th>
+                                    <th class="py-3 px-3 text-center">🥉 Bronzo</th>
+                                    <th class="py-3 px-3 text-center">💩 Ultimo</th>
+                                    <th class="py-3 px-4 text-right">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 text-sm">
+                                <tr 
+                                    v-for="m in medalsList" 
+                                    :key="m.user_name"
+                                    class="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                    @click="viewPlayerProfile(m.user_name)"
+                                >
+                                    <td class="py-3 px-4 font-mono font-bold text-slate-400">
+                                        {{ m.pos }}°
+                                    </td>
+                                    <td class="py-3 px-4 font-semibold text-slate-200 hover:text-indigo-300">
+                                        {{ m.user_name }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-amber-300">
+                                        {{ m.gold }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-slate-300">
+                                        {{ m.silver }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-amber-600">
+                                        {{ m.bronze }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-mono font-bold text-stone-400">
+                                        {{ m.last }}
+                                    </td>
+                                    <td class="py-3 px-4 text-right font-mono font-extrabold text-indigo-400">
+                                        {{ m.medal_score }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: ATTIVITÀ & HEATMAP -->
+            <div v-show="currentTab === 'activity'" class="space-y-6">
+                <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>📈</span>
+                            <span>Attività degli Ultimi 365 Giorni</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Frequenza complessiva di partite giocate nel gruppo ogni giorno.</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400">Partite totali nell'ultimo anno:</span>
+                        <p class="text-xl font-mono font-black text-indigo-400">{{ heatmapData.total_games.toLocaleString() }}</p>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 overflow-x-auto">
+                    <div v-if="loadingHeatmap" class="py-12 text-center text-slate-400">
+                        <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <span class="text-xs">Caricamento grafico attività...</span>
+                    </div>
+
+                    <div v-else class="min-w-[750px] flex flex-col items-center">
+                        <!-- Month labels -->
+                        <div class="flex justify-between w-full text-[10px] text-slate-400 font-mono mb-2 px-6">
+                            <span v-for="m in monthHeaders" :key="m">{{ m }}</span>
+                        </div>
+
+                        <!-- Grid -->
+                        <div class="flex gap-1">
+                            <div 
+                                v-for="(col, colIdx) in heatmapGrid" 
+                                :key="colIdx" 
+                                class="flex flex-col gap-1"
+                            >
+                                <div 
+                                    v-for="(cell, cellIdx) in col" 
+                                    :key="cellIdx"
+                                    :class="['w-3 h-3 rounded-sm transition-all duration-200 transform hover:scale-150 hover:z-20', getHeatColor(cell.count)]"
+                                    :title="`${cell.date}: ${cell.count} partite`"
+                                ></div>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="flex items-center justify-between w-full mt-4 pt-3 border-t border-slate-800/60 text-xs text-slate-400">
+                            <span>Meno attivo</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-3 h-3 rounded-sm heat-0"></span>
+                                <span class="w-3 h-3 rounded-sm heat-1"></span>
+                                <span class="w-3 h-3 rounded-sm heat-2"></span>
+                                <span class="w-3 h-3 rounded-sm heat-3"></span>
+                                <span class="w-3 h-3 rounded-sm heat-4"></span>
+                            </div>
+                            <span>Più attivo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: TUTTI I GIOCHI (DIRECTORY) -->
+            <div v-show="currentTab === 'games'" class="space-y-6">
+                <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>🎮</span>
+                            <span>Catalogo di Tutti i Giochi</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Lista completa di tutti i giochi supportati con link per giocare.</p>
+                    </div>
+                    <div class="text-xs font-mono font-bold text-slate-400 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                        {{ allGamesList.length }} giochi supportati
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div 
+                        v-for="g in allGamesList" 
+                        :key="g.name"
+                        class="glass-panel rounded-2xl p-4 border border-slate-800 hover:border-indigo-500/50 transition-all flex flex-col justify-between hover:-translate-y-1"
+                    >
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="text-3xl p-2 rounded-xl bg-slate-800/80">{{ g.emoji }}</span>
+                            <div class="truncate">
+                                <h3 class="font-bold text-sm text-white truncate">{{ g.name }}</h3>
+                                <span class="text-[11px] font-semibold text-slate-400 capitalize">{{ formatCategory(g.category) }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 pt-2 border-t border-slate-800/60">
+                            <a 
+                                :href="g.url" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                class="flex-1 text-center py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all"
+                            >
+                                Gioca ↗
+                            </a>
+                            <button 
+                                @click="filterByGame(g.name)" 
+                                class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700"
+                            >
+                                Risultati
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: PROFILO GIOCATORE (PLAYER PROFILE) -->
+            <div v-show="currentTab === 'player'" class="space-y-6">
+                <!-- Player Selector Bar -->
+                <div class="glass-panel rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">👤</span>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Statistiche Giocatore</h2>
+                            <p class="text-xs text-slate-400">Profilo completo, vittorie, medaglie e record.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <select 
+                            v-model="selectedPlayer" 
+                            @change="fetchPlayerStats"
+                            class="w-full sm:w-64 bg-slate-900 text-slate-100 font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                        >
+                            <option value="">-- Seleziona Giocatore --</option>
+                            <option v-for="p in allPlayers" :key="p.name" :value="p.name">
+                                {{ p.name }} ({{ p.plays }} partite)
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div v-if="loadingPlayer" class="glass-panel rounded-2xl p-12 text-center text-slate-400">
+                    <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <p class="text-sm font-semibold">Caricamento statistiche di {{ selectedPlayer }}...</p>
+                </div>
+
+                <div v-else-if="!selectedPlayer || !playerData || playerData.error" class="glass-panel rounded-2xl p-12 text-center text-slate-500">
+                    <p class="text-4xl mb-2">🔍</p>
+                    <p class="text-base font-semibold">Seleziona un giocatore per visualizzare il profilo.</p>
+                </div>
+
+                <div v-else class="space-y-6">
+                    <!-- Player Header Card -->
+                    <div class="glass-panel bg-gradient-to-r from-slate-900 via-indigo-950/60 to-purple-950/60 rounded-3xl p-6 border border-slate-800 shadow-xl">
+                        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+                            <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white shadow-xl shadow-indigo-500/30">
+                                {{ selectedPlayer.charAt(0).toUpperCase() }}
+                            </div>
+                            <div class="space-y-1">
+                                <h2 class="text-2xl sm:text-3xl font-black text-white">{{ selectedPlayer }}</h2>
+                                <p class="text-xs text-indigo-300 font-semibold">Membro attivo della community Giochini</p>
+                                <div class="flex items-center justify-center sm:justify-start gap-2 pt-2 flex-wrap">
+                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-200 border border-slate-700">
+                                        🎮 {{ playerData.total_plays }} partite
+                                    </span>
+                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                        ⭐ {{ playerData.total_points }} punti storici
+                                    </span>
+                                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                        🎯 {{ playerData.win_rate }}% win rate
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stat Cards Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
+                            <span class="text-xs text-slate-400 font-medium">🥇 Medaglie Oro</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-300 mt-1">{{ playerData.medals.gold }}</p>
+                        </div>
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
+                            <span class="text-xs text-slate-400 font-medium">🥈 Medaglie Argento</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-slate-300 mt-1">{{ playerData.medals.silver }}</p>
+                        </div>
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
+                            <span class="text-xs text-slate-400 font-medium">🥉 Medaglie Bronzo</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-amber-600 mt-1">{{ playerData.medals.bronze }}</p>
+                        </div>
+                        <div class="glass-panel rounded-2xl p-4 text-center border-slate-800">
+                            <span class="text-xs text-slate-400 font-medium">💩 Cucchiai Legno</span>
+                            <p class="text-2xl sm:text-3xl font-mono font-black text-stone-400 mt-1">{{ playerData.medals.last }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Highlights Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                            <span class="text-2xl mb-2 block">🔥</span>
+                            <h4 class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Miglior Streak</h4>
+                            <p class="text-xl font-bold text-white mt-1">{{ playerData.long_streak_days }} giorni</p>
+                            <p class="text-xs text-indigo-400 mt-0.5">{{ playerData.long_streak_game }}</p>
+                        </div>
+                        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                            <span class="text-2xl mb-2 block">❤️</span>
+                            <h4 class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Gioco Preferito</h4>
+                            <p class="text-xl font-bold text-white mt-1">{{ playerData.most_played_game }}</p>
+                            <p class="text-xs text-slate-400 mt-0.5">{{ playerData.most_played_count }} partite giocate</p>
+                        </div>
+                        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                            <span class="text-2xl mb-2 block">⏳</span>
+                            <h4 class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Tempo di Gioco Stimato</h4>
+                            <p class="text-xl font-bold text-white mt-1">{{ Math.round(playerData.total_time_minutes / 60) }} ore</p>
+                            <p class="text-xs text-slate-400 mt-0.5">~{{ playerData.total_time_minutes }} minuti spesi a giocare</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="glass-panel border-t border-slate-800 mt-12 py-6 text-center text-xs text-slate-500">
+            <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p>Made with ❤️ per il gruppo Giochini Telegram · <a href="https://trifase.online" class="underline hover:text-indigo-400">trifase.online</a></p>
+                <p class="font-mono">Punteggi calcolati con Zip War Airganon SWG4</p>
+            </div>
+        </footer>
     </div>
 
-    
+    <!-- Vue 3 with fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+    <script>
+        if (typeof Vue === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"><\/script>');
+        }
+    </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
+    <!-- App Logic -->
+    <script>
+        const { createApp } = Vue;
 
-    <script type="module">
-        import { createApp } from "vue";
-        
         createApp({
             data() {
+                const todayStr = new Date().toISOString().split('T')[0];
                 return {
-                    data: [],
-                    selectedGame: "",
-                    selectedDate: new Date().toISOString().split('T')[0],
-                    isLoading: true,
-                    error: null,
-                    today: new Date().toISOString().split('T')[0],
+                    today: todayStr,
+                    selectedDate: todayStr,
+                    selectedMonth: todayStr.substring(0, 7),
+                    isDark: true,
+                    loading: false,
+                    loadingDaily: false,
+                    loadingGames: false,
+                    loadingMonthly: false,
+                    loadingAllTime: false,
+                    loadingMedals: false,
+                    loadingHeatmap: false,
+                    loadingPlayer: false,
+                    currentTab: 'daily',
+                    tabs: [
+                        { id: 'daily', label: 'Oggi', icon: '🏆' },
+                        { id: 'monthly', label: 'Mese', icon: '📅' },
+                        { id: 'alltime', label: 'All-Time', icon: '⭐' },
+                        { id: 'medals', label: 'Medagliere', icon: '🏅' },
+                        { id: 'activity', label: 'Attività', icon: '📈' },
+                        { id: 'games', label: 'Giochi', icon: '🎮' },
+                        { id: 'player', label: 'Giocatori', icon: '👤' },
+                    ],
+                    searchQuery: '',
+                    selectedCategory: 'all',
                     hideEmptyGames: true,
-                    initialized: false,
-                    dailyRankings: {
-                        date: '',
-                        rankings: []
-                    },
-                    loadingRankings: false,
-                    rankingsError: null,
-                    heatmapData: {
-                        total_stats: [],
-                        total_games: 0,
-                        date_range: {
-                            start: '',
-                            end: ''
-                        }
-                    },
-                    heatmapLoading: false,
-                    heatmapError: null
+                    jollyData: null,
+                    dailyRankings: { rankings: [], date: todayStr },
+                    gamesData: [],
+                    allGamesList: [],
+                    monthlyRankings: [],
+                    allTimeRankings: [],
+                    medalsList: [],
+                    medalsAllTime: false,
+                    heatmapData: { total_stats: [], total_games: 0 },
+                    allPlayers: [],
+                    selectedPlayer: '',
+                    playerData: null,
                 };
             },
             computed: {
-                uniqueGames() {
-                    return [...new Set(this.data.map(game => game.game))];
-                },
-                filteredGames() {
-                    let filtered = this.data;
-                    if (this.selectedGame) {
-                        filtered = filtered.filter(game => game.game === this.selectedGame);
-                    }
-                    return filtered;
+                availableCategories() {
+                    const cats = new Set(this.gamesData.map(g => g.category).filter(Boolean));
+                    return Array.from(cats);
                 },
                 displayedGames() {
-                    if (this.hideEmptyGames && !this.selectedGame) {
-                        return this.filteredGames.filter(game => game.posizioni.length > 0);
+                    let list = this.gamesData;
+
+                    // Filter empty
+                    if (this.hideEmptyGames) {
+                        list = list.filter(g => g.posizioni && g.posizioni.length > 0);
                     }
-                    return this.filteredGames;
+
+                    // Filter category
+                    if (this.selectedCategory !== 'all') {
+                        list = list.filter(g => g.category === this.selectedCategory);
+                    }
+
+                    // Search query
+                    if (this.searchQuery.trim()) {
+                        const q = this.searchQuery.toLowerCase().trim();
+                        list = list.filter(g => {
+                            if (g.game.toLowerCase().includes(q)) return true;
+                            if (g.posizioni && g.posizioni.some(p => p.user_name.toLowerCase().includes(q))) return true;
+                            return false;
+                        });
+                    }
+
+                    return list;
+                },
+                heatmapGrid() {
+                    const statsMap = new Map();
+                    if (this.heatmapData && this.heatmapData.total_stats) {
+                        this.heatmapData.total_stats.forEach(s => {
+                            statsMap.set(s.day, s.game_count);
+                        });
+                    }
+
+                    const cols = [];
+                    const todayDate = new Date();
+                    for (let w = 51; w >= 0; w--) {
+                        const col = [];
+                        for (let d = 0; d < 7; d++) {
+                            const cur = new Date(todayDate);
+                            cur.setDate(todayDate.getDate() - (w * 7 + (6 - d)));
+                            const y = cur.getFullYear();
+                            const m = String(cur.getMonth() + 1).padStart(2, '0');
+                            const day = String(cur.getDate()).padStart(2, '0');
+                            const dateStr = `${y}-${m}-${day}`;
+                            col.push({
+                                date: dateStr,
+                                count: statsMap.get(dateStr) || 0
+                            });
+                        }
+                        cols.push(col);
+                    }
+                    return cols;
+                },
+                monthHeaders() {
+                    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+                    const res = [];
+                    const curMonth = new Date().getMonth();
+                    for (let i = 11; i >= 0; i--) {
+                        const idx = (curMonth - i + 12) % 12;
+                        res.push(months[idx]);
+                    }
+                    return res;
                 }
             },
             methods: {
-                processTries(game, tries) {
-                    // Convert tries to number if it's a string (except for time-based games)
-                    if (typeof tries === 'string' && 
-                        !['Murdle', 'Queens', 'Tango', 'Crossclimb', 'Zip', 'Gisnep', 'Patches', 'Wend', 'Snoop', 'Sumplete', 'QueensUltimateMini', 'QueensUltimateMax'].includes(game)) {
-                        tries = Number(tries);
-                    }
-
-                    // Process based on game type
-                    if (game === "HighFive" || game === "DontWordle" || game === "MoreLess" || game === "Krillion" || game === "Borderline" || game === "Geozee" || game === "MinuteCryptic" || game === "Size It Up" || game === "HigherLower" || game === "Farflung" || game === "Perceptle") {
-                        return Math.abs(tries);
-                    }
-                    if (game === "Color" || game === "Color2" || game === "Time") {
-                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
-                        return (Math.abs(tries) / 100).toFixed(2);
-                    }
-                    if (game === "TimeGuessr" || game === "TimeGuesser" || game === "Geoguessr") {
-                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
-                        return 50000 - tries;
-                    }
-                    if (game === "Chronophoto") {
-                        return 5000 - tries;
-                    }
-                    if (game === "FoodGuessr") {
-                        return 15000 - tries;
-                    }
-                    if (game === "Spellcheck") {
-                        return 15 - tries;
-                    }
-                    if (game === "Waffle") {
-                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
-                        return 15 - tries;
-                    }
-                    if (game === "TempoIndovinr") {
-                        return 1000 - tries;
-                    }
-                    if (game === "WhenTaken") {
-                        return 1000 - tries;
-                    }
-                    if (game === "Picsey") {
-                        return 100 - tries;
-                    }
-                    if (game === "NerdleCross") {
-                        return 6 - tries;
-                    }
-                    if (game === "WordGrid" || game === "Geogrid") {
-                        if (tries === 9999999 || tries === "9999999" || tries === "X") return "X";
-                        let val = Number(tries) / 100;
-                        if (Math.round(val * 10) / 10 === Math.round(val * 100) / 100) {
-                            return val.toFixed(1);
-                        } else {
-                            return val.toFixed(2);
-                        }
-                    }
-                    if (game === "Reversle") {
-                        return `${(tries / 100).toFixed(2)}s`;
-                    }
-                    if (["Murdle", "Queens", "Tango", "Crossclimb", "Zip", "Gisnep", "Patches", "Wend"].includes(game)) {
-                        let timeStr = tries.toString();
-                        // Ensure the string is at least 3 characters long
-                        while (timeStr.length < 3) {
-                            timeStr = '0' + timeStr;
-                        }
-                        let minutes = timeStr.slice(0, -2);
-                        let seconds = timeStr.slice(-2);
-                        if (minutes === '') minutes = '0';
-                        return `${minutes}:${seconds}`;
-                    }
-                    if (["Snoop", "Sumplete", "QueensUltimateMini", "QueensUltimateMax"].includes(game)) {
-                        let triesStr = String(tries).padStart(6, '0');
-                        let mins = triesStr.substring(0, 2);
-                        let secs = triesStr.substring(2, 4);
-                        let cents = triesStr.substring(4, 6);
-                        return `${mins}:${secs}.${cents}`;
-                    }
-                    return tries;
+                toggleTheme() {
+                    this.isDark = !this.isDark;
+                    localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+                    this.applyTheme();
                 },
-
-                getRankEmoji(index) {
-                    switch(index) {
-                        case 0: return "🥇";
-                        case 1: return "🥈";
-                        case 2: return "🥉";
-                        default: return `${index + 1}.`;
+                applyTheme() {
+                    if (this.isDark) {
+                        document.documentElement.classList.add('dark');
+                        document.documentElement.classList.remove('light');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        document.documentElement.classList.add('light');
                     }
                 },
+                setTab(tabId) {
+                    this.currentTab = tabId;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', tabId);
+                    window.history.replaceState({}, '', url.toString());
 
-                async fetchData() {
-                    this.isLoading = true;
-                    this.error = null;
+                    if (tabId === 'monthly' && !this.monthlyRankings.length) this.fetchMonthlyRankings();
+                    if (tabId === 'alltime' && !this.allTimeRankings.length) this.fetchAllTimeRankings();
+                    if (tabId === 'medals' && !this.medalsList.length) this.fetchMedals();
+                    if (tabId === 'activity' && !this.heatmapData.total_games) this.fetchHeatmap();
+                    if (tabId === 'games' && !this.allGamesList.length) this.fetchAllGamesList();
+                    if (tabId === 'player' && !this.allPlayers.length) this.fetchPlayersList();
+                },
+                formatCategory(cat) {
+                    const map = {
+                        'word': 'Parole',
+                        'words': 'Parole',
+                        'geo': 'Geografia',
+                        'geography': 'Geografia',
+                        'number': 'Numeri',
+                        'logic': 'Logica',
+                        'trivia': 'Trivia',
+                        'other': 'Varie'
+                    };
+                    return map[cat.toLowerCase()] || cat;
+                },
+                stepDate(days) {
+                    const d = new Date(this.selectedDate);
+                    d.setDate(d.getDate() + days);
+                    const newDate = d.toISOString().split('T')[0];
+                    if (newDate <= this.today) {
+                        this.selectedDate = newDate;
+                        this.onDateChange();
+                    }
+                },
+                goToToday() {
+                    this.selectedDate = this.today;
+                    this.onDateChange();
+                },
+                onDateChange() {
+                    this.fetchDailyData();
+                    this.fetchJolly();
+                },
+                isPoop(pos, pts) {
+                    if (this.dailyRankings.rankings.length < 4) return false;
+                    const minPts = Math.min(...this.dailyRankings.rankings.map(r => r.points));
+                    return pts === minPts && pos > 3;
+                },
+                getHeatColor(count) {
+                    if (!count || count === 0) return 'heat-0';
+                    if (count <= 3) return 'heat-1';
+                    if (count <= 8) return 'heat-2';
+                    if (count <= 15) return 'heat-3';
+                    return 'heat-4';
+                },
+                filterByGame(gameName) {
+                    this.currentTab = 'daily';
+                    this.searchQuery = gameName;
+                },
+                viewPlayerProfile(playerName) {
+                    this.selectedPlayer = playerName;
+                    this.setTab('player');
+                    this.fetchPlayerStats();
+                },
+                refreshCurrentTab() {
+                    this.fetchDailyData();
+                    this.fetchJolly();
+                    if (this.currentTab === 'monthly') this.fetchMonthlyRankings();
+                    if (this.currentTab === 'alltime') this.fetchAllTimeRankings();
+                    if (this.currentTab === 'medals') this.fetchMedals();
+                    if (this.currentTab === 'activity') this.fetchHeatmap();
+                    if (this.currentTab === 'games') this.fetchAllGamesList();
+                    if (this.currentTab === 'player') this.fetchPlayerStats();
+                },
+
+                // API Calls
+                async fetchJolly() {
                     try {
-                        let url = `/api/classifica/?day=${this.selectedDate}`;
-                        if (this.selectedGame) {
-                            url += `&game=${this.selectedGame}`;
+                        const res = await fetch(`/api/jolly/?day=${this.selectedDate}`);
+                        if (res.ok) {
+                            this.jollyData = await res.json();
                         }
-                        const response = await fetch(url, {
-                            method: 'GET',
-                            mode: 'cors',
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        this.data = await response.json();
-                    } catch (error) {
-                        this.error = "Failed to load data. Please try again later.";
-                        console.error('Error:', error);
-                    } finally {
-                        this.isLoading = false;
-                        this.initialized = true;
+                    } catch (e) {
+                        console.error('Error fetching jolly:', e);
                     }
                 },
-
-                async fetchDailyRankings() {
-                    this.loadingRankings = true;
-                    this.rankingsError = null;
+                async fetchDailyData() {
+                    this.loadingGames = true;
+                    this.loadingDaily = true;
                     try {
-                        const response = await fetch(`/api/dailyranking/?day=${this.selectedDate}`);
-                        if (!response.ok) {
-                        throw new Error('Failed to fetch rankings');
+                        const [clsRes, dailyRes] = await Promise.all([
+                            fetch(`/api/classifica/?day=${this.selectedDate}`),
+                            fetch(`/api/dailyranking/?day=${this.selectedDate}`)
+                        ]);
+
+                        if (clsRes.ok) {
+                            const data = await clsRes.json();
+                            this.gamesData = Array.isArray(data) ? data : (data.error ? [] : [data]);
                         }
-                        this.dailyRankings = await response.json();
-                    } catch (error) {
-                        this.rankingsError = 'Error loading daily rankings: ' + error.message;
+                        if (dailyRes.ok) {
+                            this.dailyRankings = await dailyRes.json();
+                        }
+                    } catch (e) {
+                        console.error('Error fetching daily data:', e);
                     } finally {
-                        this.loadingRankings = false;
+                        this.loadingGames = false;
+                        this.loadingDaily = false;
                     }
                 },
-
-                async fetchHeatmapData() {
-                    this.heatmapLoading = true;
-                    this.heatmapError = null;
+                async fetchMonthlyRankings() {
+                    this.loadingMonthly = true;
                     try {
-                        const response = await fetch('/api/game-stats/');
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch heatmap data');
+                        const res = await fetch(`/api/monthlyranking/?month=${this.selectedMonth}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.monthlyRankings = data.rankings || [];
                         }
-                        this.heatmapData = await response.json();
-                    } catch (error) {
-                        this.heatmapError = 'Error loading heatmap: ' + error.message;
-                        console.error('Heatmap fetch error:', error);
+                    } catch (e) {
+                        console.error('Error fetching monthly rankings:', e);
                     } finally {
-                        this.heatmapLoading = false;
+                        this.loadingMonthly = false;
                     }
                 },
-
-                generateHeatmapGrid() {
-                    const today = new Date();
-                    const grid = [];
-
-                    // Create a map of existing data for quick lookup
-                    const dataMap = new Map(
-                        this.heatmapData.total_stats.map(item => [item.day, item.game_count])
-                    );
-                    // console.log('map' + JSON.stringify(this.heatmapData));
-                    // console.log(dataMap);
-
-                    // Generate 365 days (52 weeks * 7 days)
-                    for (let week = 0; week < 52; week++) {
-                        const weekGrid = [];
-                        for (let day = 0; day < 7; day++) {
-                            const currentDate = new Date(today);
-                            // console.log('today: ', today);
-                            // console.log('week: ', week);
-                            // console.log('day: ', day);
-                            currentDate.setDate(today.getDate() - (week * 7 + day));
-                            // console.log('currentDate: ', currentDate);
-                            // console.log('currentDate toISOString: ', currentDate.toISOString());
-                            const year = currentDate.getFullYear();
-                            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-                            const dateVal = String(currentDate.getDate()).padStart(2, '0');
-                            const dateString = `${year}-${month}-${dateVal}`;
-                            // console.log('dateString: ', dateString);
-                            // console.log('dataMap.get(dateString): ', dataMap.get(dateString));
-                            const count = dataMap.get(dateString) || 0;
-
-                            weekGrid.push({
-                                date: dateString,
-                                count: count
-                            });
+                async fetchAllTimeRankings() {
+                    this.loadingAllTime = true;
+                    try {
+                        const res = await fetch('/api/alltimeranking/');
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.allTimeRankings = data.rankings || [];
                         }
-                        grid.push(weekGrid);
+                    } catch (e) {
+                        console.error('Error fetching all time rankings:', e);
+                    } finally {
+                        this.loadingAllTime = false;
                     }
-
-                    return grid.reverse();
                 },
-
-                getMonthLabels() {
-                    // Get the grid first to ensure we have the same width
-                    const grid = this.generateHeatmapGrid();
-                    const monthAbbreviations = [
-                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                    ];
-
-                    const labels = new Array(grid.length).fill('');
-                    let lastMonth = null;
-                    
-                    grid.forEach((week, weekIndex) => {
-                        if (week[0] && week[0].date) {
-                            const dateObj = new Date(week[0].date);
-                            const month = dateObj.getMonth();
-                            if (month !== lastMonth) {
-                                labels[weekIndex] = monthAbbreviations[month];
-                                lastMonth = month;
+                async fetchMedals() {
+                    this.loadingMedals = true;
+                    try {
+                        const url = this.medalsAllTime ? '/api/medals/?all_time=true' : `/api/medals/?month=${this.selectedMonth}`;
+                        const res = await fetch(url);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.medalsList = data.medals || [];
+                        }
+                    } catch (e) {
+                        console.error('Error fetching medals:', e);
+                    } finally {
+                        this.loadingMedals = false;
+                    }
+                },
+                async fetchHeatmap() {
+                    this.loadingHeatmap = true;
+                    try {
+                        const res = await fetch('/api/game-stats/');
+                        if (res.ok) {
+                            this.heatmapData = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Error fetching heatmap:', e);
+                    } finally {
+                        this.loadingHeatmap = false;
+                    }
+                },
+                async fetchAllGamesList() {
+                    try {
+                        const res = await fetch('/api/games/');
+                        if (res.ok) {
+                            this.allGamesList = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Error fetching games list:', e);
+                    }
+                },
+                async fetchPlayersList() {
+                    try {
+                        const res = await fetch('/api/players/');
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.allPlayers = data.players || [];
+                            if (!this.selectedPlayer && this.allPlayers.length > 0) {
+                                this.selectedPlayer = this.allPlayers[0].name;
+                                this.fetchPlayerStats();
                             }
                         }
-                    });
-
-                    return labels;
+                    } catch (e) {
+                        console.error('Error fetching players:', e);
+                    }
                 },
-
-                getHeatmapColorIntensity(count) {
-                    // More nuanced color scaling based on max game count
-                    const maxCount = Math.max(...this.heatmapData.total_stats.map(item => item.game_count), 1);
-                    const normalizedCount = count / maxCount;
-                    if (count === 0) return 'blue-1';
-                    if (normalizedCount < 0.2) return 'blue-2';
-                    if (normalizedCount < 0.4) return 'blue-3';
-                    if (normalizedCount < 0.6) return 'blue-4';
-                    return 'blue-5';
-                },
-
-
+                async fetchPlayerStats() {
+                    if (!this.selectedPlayer) return;
+                    this.loadingPlayer = true;
+                    try {
+                        const res = await fetch(`/api/stats/?player=${encodeURIComponent(this.selectedPlayer)}`);
+                        if (res.ok) {
+                            this.playerData = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Error fetching player stats:', e);
+                    } finally {
+                        this.loadingPlayer = false;
+                    }
+                }
             },
             mounted() {
-                this.fetchData();
-                this.fetchDailyRankings();
-                this.fetchHeatmapData();
+                // Initialize theme
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    this.isDark = savedTheme === 'dark';
+                } else {
+                    this.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                }
+                this.applyTheme();
+
+                // URL params handling
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('tab')) {
+                    this.currentTab = params.get('tab');
+                }
+                if (params.get('player')) {
+                    this.selectedPlayer = params.get('player');
+                    this.currentTab = 'player';
+                }
+                if (params.get('day')) {
+                    this.selectedDate = params.get('day');
+                }
+
+                this.fetchJolly();
+                this.fetchDailyData();
+                this.fetchAllGamesList();
+                this.fetchPlayersList();
+
+                if (this.currentTab === 'monthly') this.fetchMonthlyRankings();
+                if (this.currentTab === 'alltime') this.fetchAllTimeRankings();
+                if (this.currentTab === 'medals') this.fetchMedals();
+                if (this.currentTab === 'activity') this.fetchHeatmap();
+                if (this.currentTab === 'player' && this.selectedPlayer) this.fetchPlayerStats();
             }
-        }).mount("#app");
+        }).mount('#app');
     </script>
 </body>
 </html>

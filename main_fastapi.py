@@ -2,20 +2,27 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from datetime import date, datetime, timedelta
-from config import ID_GIOCHINI as CHAT_ID
-from games import ALL_GAMES as GAMES
-from games import get_day_from_date
-from config import Punteggio
 import peewee
 
-from utils import daily_ranking, get_bonus_game
+import config
+from config import ID_GIOCHINI as CHAT_ID, Punteggio, Punti, Medaglia, PuntiBonus
+from games import ALL_GAMES as GAMES, get_day_from_date
+from utils import (
+    daily_ranking,
+    get_bonus_game,
+    pick_or_get_bonus_game,
+    process_tries,
+    Classifica,
+    Giocata,
+    GiocoBonus,
+)
 
 
-app = FastAPI()
+app = FastAPI(title="Giochini API", version="2.0.0")
 
 origins = ["*"]
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,273 +33,549 @@ app.add_middleware(
 )
 
 games = dict()
-for k,v in GAMES.items():
+for k, v in GAMES.items():
     games[k.lower()] = v
 
-async def classifica_for_game(day, game_name) -> list:
-    klassifica = []
-    game_day = get_day_from_date(GAMES[game_name]["date"], GAMES[game_name]["day"], game_name, date.today())
-    query = (
-        Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id, Punteggio.lost, Punteggio.extra, Punteggio.lost)
-        .where(
-            # Punteggio.date == day,
-            Punteggio.day == game_day,
-            Punteggio.game == game_name,
-            Punteggio.chat_id == CHAT_ID,
-            Punteggio.lost == False,
+
+def get_game_leaderboard(target_date: date, game_name: str) -> dict:
+    """Calculates ranks, stars, and formatted scores for a game on target_date."""
+    game_info = GAMES.get(game_name, {})
+    if not game_info:
+        return None
+
+    game_day = get_day_from_date(game_info["date"], game_info["day"], game_name, target_date)
+    str_day = str(game_day)
+
+    # Bonus / Jolly game
+    bonus_entry = None
+    if getattr(config, "BONUS_GAME_ENABLED", True):
+        if target_date == date.today():
+            bonus_entry = get_bonus_game(target_date) or pick_or_get_bonus_game(target_date)
+        else:
+            bonus_entry = get_bonus_game(target_date)
+
+    is_jolly = bonus_entry is not None and game_name == bonus_entry.game
+    multiplier = bonus_entry.multiplier if is_jolly else 1
+
+    try:
+        Punteggio.create_table(safe=True)
+        query = (
+            Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
+            .where(
+                (Punteggio.day == str_day) | (Punteggio.day == game_day),
+                Punteggio.game == game_name,
+            )
         )
-        .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
-        .limit(10)
-    )
-    for p in list(query):
-        klassifica.append({
-            'user_name': p.user_name,
-            'tries': p.tries,
-            'extra': p.extra,
-            'lost': p.lost
+        if CHAT_ID != 0:
+            query = query.where(Punteggio.chat_id == CHAT_ID)
+        query = query.order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
+
+        giocate_list = list(query)
+    except Exception as e:
+        giocate_list = []
+
+    posizioni = []
+    if giocate_list:
+        cl = Classifica()
+        cl.game = game_name
+        cl.day = str_day
+        cl.date = target_date
+        cl.emoji = game_info.get("emoji", "🎮")
+        cl.giocate = [
+            Giocata(
+                user_id=g.user_id,
+                user_name=g.user_name,
+                tries=g.tries,
+                game=game_name,
+                extra=g.extra if g.extra else 0,
+            )
+            for g in giocate_list
+        ]
+        cl.order_and_position()
+        cl.assign_stars("default", multiplier=multiplier)
+
+        for g in cl.giocate:
+            formatted = process_tries(game_name, g.tries)
+            posizioni.append({
+                "user_name": g.user_name,
+                "user_id": g.user_id,
+                "pos": g.posizione,
+                "stars": g.stelle,
+                "tries": g.tries,
+                "tries_formatted": str(formatted) if formatted is not None else str(g.tries),
+                "lost": bool(g.lost),
+                "extra": g.extra,
+            })
+
+    return {
+        "game": game_name,
+        "emoji": game_info.get("emoji", "🎮"),
+        "category": game_info.get("category", "other"),
+        "url": game_info.get("url", ""),
+        "date": target_date.strftime("%Y-%m-%d"),
+        "game_day": str_day,
+        "is_jolly": is_jolly,
+        "multiplier": multiplier,
+        "total_players": len(posizioni),
+        "posizioni": posizioni,
+    }
+
+
+@app.get("/api/games/")
+@app.get("/giochini-list/")
+async def list_available_games():
+    """Returns directory of all tracked games."""
+    result = []
+    for k, v in GAMES.items():
+        result.append({
+            "name": k,
+            "emoji": v.get("emoji", "🎮"),
+            "category": v.get("category", "other"),
+            "url": v.get("url", ""),
+            "disabled": v.get("disabled", False),
         })
-    return klassifica
+    return result
 
 
 @app.get("/giochini/")
 @app.get("/api/giochini/")
 async def return_info(game_name: str | None = 'all'):
-    if game_name == 'all':
-        games = []
-        for _,v in GAMES.items():
-            games.append(v)
-        return games
+    if game_name == 'all' or not game_name:
+        games_list = []
+        for _, v in GAMES.items():
+            games_list.append(v)
+        return games_list
 
-    games = dict()
-    for k,v in GAMES.items():
-        games[k.lower()] = v
-    return games.get(game_name.lower(), {"error": "game not found"})
+    games_dict = {k.lower(): v for k, v in GAMES.items()}
+    return games_dict.get(game_name.lower(), {"error": "game not found"})
+
 
 @app.get("/classifica/")
 @app.get("/api/classifica/")
 async def classifica(day: str | None = None, game: str | None = 'all'):
-    return_list = []
+    """Returns game leaderboards for the given date. Always returns a list."""
     if not day:
-        # new datetime in format yyyy-mm-dd with today date
-        day = date.today().strftime("%Y-%m-%d")
-        
-    if game == 'all':
-        for k,v in games.items():
-            return_obj = dict()
-            return_obj['game'] = v['game']
-            return_obj['date'] = day
-            return_obj['game_day'] = get_day_from_date(v['date'], v['day'], v['game'], date.today())
-            return_obj['emoji'] = v['emoji']
-            return_obj['category'] = v['category']
-            return_obj['posizioni'] = await classifica_for_game(day, v['game'])
-            return_list.append(return_obj)
-        return return_list
+        target_date = date.today()
     else:
-        if game.lower() in games.keys():
-            return_obj = dict()
-            g = games[game.lower()]
-            game_name = g['game']
-            classifica = await classifica_for_game(day, game_name)
-            return_obj['game'] = game_name
-            return_obj['date'] = day
-            return_obj['category'] = g['category']
-            return_obj['posizioni'] = classifica
-            return_list.append(return_obj)
-            return return_obj
+        try:
+            target_date = datetime.strptime(day, "%Y-%m-%d").date()
+        except Exception:
+            target_date = date.today()
+
+    if game and game.lower() != 'all':
+        matched_game = None
+        for k in GAMES.keys():
+            if k.lower() == game.lower():
+                matched_game = k
+                break
+        if not matched_game:
+            return []
+        data = get_game_leaderboard(target_date, matched_game)
+        return [data] if data else []
+    else:
+        results = []
+        for g_name, g_info in GAMES.items():
+            if g_info.get("disabled", False):
+                continue
+            data = get_game_leaderboard(target_date, g_name)
+            if data:
+                results.append(data)
+        return results
+
+
+@app.get("/dailyranking/")
+@app.get("/api/dailyranking/")
+async def dailyranking(day: str | None = None, model: str = "default"):
+    """Returns total daily points ranking."""
+    today = date.today()
+    if not day:
+        dates = today
+    else:
+        try:
+            dates = datetime.strptime(day, '%Y-%m-%d').date()
+        except Exception:
+            dates = today
+
+    try:
+        classifica_stelle = daily_ranking(model, dates)
+    except Exception as e:
+        classifica_stelle = []
+
+    rankings = []
+    for position, user_id, user_name, stelle, *rest in classifica_stelle:
+        bonus = rest[0] if rest else 0
+        rankings.append({
+            'name': user_name,
+            'user_id': user_id,
+            'points': int(stelle),
+            'pos': position,
+            'bonus': bonus,
+        })
+
+    if getattr(config, "BONUS_GAME_ENABLED", True):
+        if dates == today:
+            bonus = get_bonus_game(dates) or pick_or_get_bonus_game(dates)
         else:
-            return {"error": "game not found"}
+            bonus = get_bonus_game(dates)
+    else:
+        bonus = None
+
+    bonus_data = None
+    if bonus:
+        g_info = GAMES.get(bonus.game, {})
+        bonus_data = {
+            'game': bonus.game,
+            'multiplier': bonus.multiplier,
+            'emoji': g_info.get("emoji", "🎮"),
+            'url': g_info.get("url", ""),
+        }
+
+    return {
+        'date': dates.strftime("%Y-%m-%d"),
+        'rankings': rankings,
+        'bonus_game': bonus_data,
+        'total_participants': len(rankings),
+    }
+
+
+@app.get("/monthlyranking/")
+@app.get("/api/monthlyranking/")
+async def monthlyranking(month: str | None = None):
+    """Returns monthly points ranking from Punti table."""
+    today = date.today()
+    if month:
+        try:
+            start_date = datetime.strptime(f"{month}-01", "%Y-%m-%d").date()
+        except Exception:
+            start_date = today.replace(day=1)
+    else:
+        start_date = today.replace(day=1)
+
+    next_month = (start_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+    end_date = next_month - timedelta(days=1)
+
+    try:
+        Punti.create_table(safe=True)
+        query = (
+            Punti.select(Punti.user_id, Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
+            .where(Punti.date >= start_date, Punti.date <= end_date)
+            .group_by(Punti.user_id)
+            .order_by(peewee.fn.SUM(Punti.punti).desc())
+        )
+        rankings = []
+        for i, q in enumerate(query):
+            rankings.append({
+                "pos": i + 1,
+                "user_id": q.user_id,
+                "name": q.user_name,
+                "points": int(q.totale or 0),
+            })
+        return {
+            "month": start_date.strftime("%Y-%m"),
+            "month_name": start_date.strftime("%B %Y"),
+            "rankings": rankings,
+        }
+    except Exception as e:
+        return {"month": start_date.strftime("%Y-%m"), "rankings": [], "error": str(e)}
+
+
+@app.get("/alltimeranking/")
+@app.get("/api/alltimeranking/")
+async def alltimeranking():
+    """Returns all-time points ranking from Punti table."""
+    try:
+        Punti.create_table(safe=True)
+        query = (
+            Punti.select(Punti.user_id, Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
+            .group_by(Punti.user_id)
+            .order_by(peewee.fn.SUM(Punti.punti).desc())
+        )
+        rankings = []
+        for i, q in enumerate(query):
+            rankings.append({
+                "pos": i + 1,
+                "user_id": q.user_id,
+                "name": q.user_name,
+                "points": int(q.totale or 0),
+            })
+        return {"rankings": rankings}
+    except Exception as e:
+        return {"rankings": [], "error": str(e)}
+
+
+@app.get("/medals/")
+@app.get("/api/medals/")
+async def get_medals(month: str | None = None, all_time: bool = False):
+    """Returns medals leaderboard (Gold, Silver, Bronze, Poop)."""
+    try:
+        Medaglia.create_table(safe=True)
+        query = Medaglia.select(
+            Medaglia.user_name,
+            Medaglia.user_id,
+            peewee.fn.SUM(Medaglia.gold).alias("gold"),
+            peewee.fn.SUM(Medaglia.silver).alias("silver"),
+            peewee.fn.SUM(Medaglia.bronze).alias("bronze"),
+            peewee.fn.SUM(Medaglia.last).alias("last"),
+        )
+        today = date.today()
+        period_label = "All Time" if all_time else today.strftime("%B %Y")
+        if not all_time:
+            if month:
+                try:
+                    start_date = datetime.strptime(f"{month}-01", "%Y-%m-%d").date()
+                except Exception:
+                    start_date = today.replace(day=1)
+            else:
+                start_date = today.replace(day=1)
+            next_m = (start_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+            end_date = next_m - timedelta(days=1)
+            period_label = start_date.strftime("%B %Y")
+            query = query.where(Medaglia.date >= start_date, Medaglia.date <= end_date)
+
+        query = query.group_by(Medaglia.user_id)
+        results = []
+        for row in query:
+            g = int(row.gold or 0)
+            s = int(row.silver or 0)
+            b = int(row.bronze or 0)
+            l = int(row.last or 0)
+            score = g * 3 + s * 2 + b * 1
+            results.append({
+                "user_name": row.user_name,
+                "user_id": row.user_id,
+                "gold": g,
+                "silver": s,
+                "bronze": b,
+                "last": l,
+                "total_medals": g + s + b,
+                "medal_score": score,
+            })
+        results.sort(key=lambda x: (x["gold"], x["silver"], x["bronze"], -x["last"]), reverse=True)
+        for i, r in enumerate(results):
+            r["pos"] = i + 1
+        return {"period": period_label, "medals": results}
+    except Exception as e:
+        return {"period": "N/A", "medals": [], "error": str(e)}
+
+
+@app.get("/jolly/")
+@app.get("/api/jolly/")
+async def api_jolly(day: str | None = None):
+    """Returns the bonus game for the given date."""
+    try:
+        today = date.today()
+        target_date = datetime.strptime(day, "%Y-%m-%d").date() if day else today
+        if target_date == today:
+            bonus = get_bonus_game(target_date) or pick_or_get_bonus_game(target_date)
+        else:
+            bonus = get_bonus_game(target_date)
+
+        if not bonus:
+            return {"active": False, "bonus": None}
+
+        g_info = GAMES.get(bonus.game, {})
+        return {
+            "active": True,
+            "bonus": {
+                "date": target_date.strftime("%Y-%m-%d"),
+                "game": bonus.game,
+                "multiplier": bonus.multiplier,
+                "emoji": g_info.get("emoji", "🎮"),
+                "url": g_info.get("url", ""),
+            }
+        }
+    except Exception as e:
+        return {"active": False, "error": str(e)}
+
+
+@app.get("/players/")
+@app.get("/api/players/")
+async def list_players():
+    """Lists distinct active players with play counts."""
+    try:
+        Punteggio.create_table(safe=True)
+        query = (
+            Punteggio.select(Punteggio.user_name, peewee.fn.COUNT(Punteggio.game).alias("count"))
+            .group_by(Punteggio.user_name)
+            .order_by(peewee.fn.COUNT(Punteggio.game).desc())
+        )
+        players = [{"name": r.user_name, "plays": r.count} for r in query if r.user_name]
+        return {"players": players}
+    except Exception as e:
+        return {"players": [], "error": str(e)}
 
 
 @app.get("/stats/")
 @app.get("/api/stats/")
 async def stats(player: str | None = 'all'):
-    if not player:
-        return {"error": "player not found"}
-    return_obj = {}
-    total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_name == player).scalar()
-    
-    if not total_plays:
-        return {
-            "player": player,
-            "total_plays": 0,
-            "total_time_minutes": 0,
-            "total_loses": 0,
-            "long_streak_game": "N/A",
-            "long_streak_days": 0,
-            "most_played_game": "N/A",
-            "most_played_count": 0,
-            "least_played_game": "N/A",
-            "least_played_count": 0
-        }
+    """Detailed personal stats for a player."""
+    if not player or player == 'all':
+        return {"error": "player not specified"}
 
-    long_streak_query = (
-        Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
-        .where(Punteggio.user_name == player)
-        .group_by(Punteggio.game)
-        .order_by(Punteggio.streak.desc())
-        .limit(1)
-    )
-    long_streak = long_streak_query[0].streak
-    long_streak_game = long_streak_query[0].game
-    long_streak_string = f"Il tuo streak più lungo è di <b>{long_streak}</b> partite a <b>{long_streak_game}.</b>\n"
+    try:
+        Punteggio.create_table(safe=True)
+        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_name == player).scalar() or 0
+        if not total_plays:
+            return {
+                "player": player,
+                "total_plays": 0,
+                "total_time_minutes": 0,
+                "total_loses": 0,
+                "win_rate": 0,
+                "long_streak_game": "N/A",
+                "long_streak_days": 0,
+                "most_played_game": "N/A",
+                "most_played_count": 0,
+                "least_played_game": "N/A",
+                "least_played_count": 0,
+                "total_points": 0,
+                "medals": {"gold": 0, "silver": 0, "bronze": 0, "last": 0},
+            }
 
-    most_played_query = (
-        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_name == player)
-        .group_by(Punteggio.game)
-        .order_by(peewee.fn.COUNT(Punteggio.game).desc())
-        .limit(1)
-    )
-    most_played = most_played_query[0].game
-    most_played_count = most_played_query[0].c
-    most_played_string = f"Il gioco a cui hai giocato di più è <b>{most_played}</b> con <b>{most_played_count}</b> partite!\n"
+        long_streak_query = (
+            Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
+            .where(Punteggio.user_name == player)
+            .group_by(Punteggio.game)
+            .order_by(peewee.fn.MAX(Punteggio.streak).desc())
+            .limit(1)
+        )
+        long_streak = long_streak_query[0].streak if long_streak_query else 0
+        long_streak_game = long_streak_query[0].game if long_streak_query else "N/A"
 
-    least_played_query = (
-        Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(Punteggio.user_name == player)
-        .group_by(Punteggio.game)
-        .order_by(peewee.fn.COUNT(Punteggio.game).asc())
-        .limit(1)
-    )
-    least_played = least_played_query[0].game
-    least_played_count = least_played_query[0].c
-    least_played_string = f"Il gioco che ti piace di meno è <b>{least_played}</b>, hai giocato solo <b>{least_played_count}</b> partite...\n\n"
+        most_played_query = (
+            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(Punteggio.user_name == player)
+            .group_by(Punteggio.game)
+            .order_by(peewee.fn.COUNT(Punteggio.game).desc())
+            .limit(1)
+        )
+        most_played = most_played_query[0].game if most_played_query else "N/A"
+        most_played_count = most_played_query[0].c if most_played_query else 0
 
-    # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
-    # single_play_minutes = 2
-    # total_time = total_plays * single_play_minutes
-    # td = timedelta.Timedelta(minutes=total_time)
-    # time_string = ''
-    # if td.total.days > 0:
-    #     time_string += f"{td.total.days} giorni, "
-    # if td.total.hours > 0:
-    #     time_string += f"{td.total.hours % 24} ore e "
-    # time_string += f"{td.total.minutes % 60} minuti"
-    # total_plays_string = f"In totale hai fatto <b>{total_plays}</b> partite.\nA 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n"
+        least_played_query = (
+            Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
+            .where(Punteggio.user_name == player)
+            .group_by(Punteggio.game)
+            .order_by(peewee.fn.COUNT(Punteggio.game).asc())
+            .limit(1)
+        )
+        least_played = least_played_query[0].game if least_played_query else "N/A"
+        least_played_count = least_played_query[0].c if least_played_query else 0
 
-    # tempo perso a giocare (considerando 2min a giocata), in DD:HH:MM
-    single_play_minutes = 2
-    total_time = total_plays * single_play_minutes
-    # Create a timedelta object correctly
-    td = timedelta(minutes=total_time)
-
-    time_string = ''
-    if td.days > 0:
-        time_string += f"{td.days} giorni, "
-    if td.seconds // 3600 > 0:
-        time_string += f"{(td.seconds // 3600) % 24} ore e "
-    time_string += f"{(td.seconds // 60) % 60} minuti"
-
-    total_plays_string = (f"In totale hai fatto <b>{total_plays}</b> partite.\n"
-                        f"A 2 minuti a partita, hai sprecato <b>{time_string}</b> della tua vita.\n")
-
-
-    total_loses = (
-        Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c"))
-        .where(
+        total_time_minutes = total_plays * 2
+        total_loses = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(
             Punteggio.user_name == player,
             Punteggio.lost == True,
-        )
-        .scalar()
-    )
-    if total_loses:
-        total_loses_string = f"In totale, hai perso <b>{total_loses}</b> partite.\n"
-    else:
-        total_loses = 0
+        ).scalar() or 0
 
-    return_obj['player'] = player
-    return_obj['long_streak_game'] = long_streak_game
-    return_obj['long_streak_days'] = long_streak
-    return_obj['most_played_game'] = most_played
-    return_obj['most_played_count'] = most_played_count
-    return_obj['least_played_game'] = least_played
-    return_obj['least_played_count'] = least_played_count
-    return_obj['total_plays'] = total_plays
-    return_obj['total_time_minutes'] = total_time
-    return_obj['total_loses'] = total_loses
+        win_rate = round(((total_plays - total_loses) / total_plays) * 100, 1) if total_plays > 0 else 0
 
-    return return_obj
+        # Points
+        try:
+            Punti.create_table(safe=True)
+            total_points = Punti.select(peewee.fn.SUM(Punti.punti)).where(Punti.user_name == player).scalar() or 0
+        except Exception:
+            total_points = 0
 
+        # Medals
+        try:
+            Medaglia.create_table(safe=True)
+            med_row = Medaglia.select(
+                peewee.fn.SUM(Medaglia.gold).alias("g"),
+                peewee.fn.SUM(Medaglia.silver).alias("s"),
+                peewee.fn.SUM(Medaglia.bronze).alias("b"),
+                peewee.fn.SUM(Medaglia.last).alias("l"),
+            ).where(Medaglia.user_name == player).first()
+            medals = {
+                "gold": int(med_row.g or 0) if med_row else 0,
+                "silver": int(med_row.s or 0) if med_row else 0,
+                "bronze": int(med_row.b or 0) if med_row else 0,
+                "last": int(med_row.l or 0) if med_row else 0,
+            }
+        except Exception:
+            medals = {"gold": 0, "silver": 0, "bronze": 0, "last": 0}
 
-@app.get("/dailyranking/")
-@app.get("/api/dailyranking/")
-async def dailyranking(day: str | None = None):
-    model = "alternate-with-lost"
-    if not day:
-        dates = date.today()
-    else:
-        dates = datetime.strptime(day, '%Y-%m-%d').date()
-    classifica_stelle = daily_ranking(model, dates)
-    rankings = []
-    # pos = 1
-    for position, user_id, user_name, stelle, *rest in classifica_stelle:
-        bonus = rest[0] if rest else 0
-        rankings.append({'name': user_name, 'points': stelle, 'pos': position, 'bonus': bonus})
-        # pos += 1
-    bonus = get_bonus_game(dates)
-    bonus_data = {'game': bonus.game, 'multiplier': bonus.multiplier} if bonus else None
-    return {'date': dates.strftime("%Y-%m-%d"), 'rankings': rankings, 'bonus_game': bonus_data}
-
+        return {
+            "player": player,
+            "total_plays": total_plays,
+            "total_time_minutes": total_time_minutes,
+            "total_loses": total_loses,
+            "win_rate": win_rate,
+            "long_streak_game": long_streak_game,
+            "long_streak_days": long_streak or 0,
+            "most_played_game": most_played,
+            "most_played_count": most_played_count,
+            "least_played_game": least_played,
+            "least_played_count": least_played_count,
+            "total_points": int(total_points),
+            "medals": medals,
+        }
+    except Exception as e:
+        return {"player": player, "error": str(e)}
 
 
 @app.get("/game-stats/")
 @app.get("/api/game-stats/")
-async def get_game_stats(
-    player: Optional[str] = None,
-    game: Optional[str] = None
-):
-    """
-    Retrieve game play statistics for the last 365 days.
-    
-    Parameters:
-    - player (optional): Specific user to filter stats
-    - game (optional): Specific game to filter stats
-    
-    Returns a list of daily game play counts with optional filtering
-    """
-    # Calculate the date 365 days ago from today
-    one_year_ago = datetime.now() - timedelta(days=365)
-    
-    # Start building the base query
-    query = (Punteggio
-        .select(
-            Punteggio.day, Punteggio.date,
-            peewee.fn.COUNT(peewee.fn.DISTINCT(Punteggio.timestamp)).alias('game_count')
+async def get_game_stats(player: Optional[str] = None, game: Optional[str] = None):
+    """Retrieve activity count per day for the last 365 days."""
+    try:
+        one_year_ago = datetime.now() - timedelta(days=365)
+        Punteggio.create_table(safe=True)
+        query = (
+            Punteggio
+            .select(
+                Punteggio.date,
+                peewee.fn.COUNT(peewee.fn.DISTINCT(Punteggio.timestamp)).alias('game_count')
+            )
+            .where(Punteggio.date >= one_year_ago)
         )
-        .where(Punteggio.date >= one_year_ago)
-    )
-    
-    # Apply optional filters
-    if player:
-        query = query.where(Punteggio.user_name == player)
-    
-    if game:
-        query = query.where(Punteggio.game == game)
-    
-    # Group by day and order by day
-    query = (query
-        .group_by(Punteggio.date)
-        .order_by(Punteggio.date)
-    )
-    
-    # Execute the query and convert to list of dictionaries
-    stats = [
-        {
-            "day": row.date, 
-            "game_count": row.game_count
-        } 
-        for row in query
-    ]
-    
-    return {
-        "total_stats": stats,
-        "total_games": sum(stat['game_count'] for stat in stats),
-        "date_range": {
-            "start": one_year_ago.isoformat(),
-            "end": datetime.now().date().isoformat()
+
+        if player:
+            query = query.where(Punteggio.user_name == player)
+        if game:
+            query = query.where(Punteggio.game == game)
+
+        query = query.group_by(Punteggio.date).order_by(Punteggio.date)
+
+        stats_list = [
+            {"day": row.date.strftime("%Y-%m-%d") if isinstance(row.date, (date, datetime)) else str(row.date), "game_count": row.game_count}
+            for row in query
+        ]
+
+        return {
+            "total_stats": stats_list,
+            "total_games": sum(stat['game_count'] for stat in stats_list),
+            "date_range": {
+                "start": one_year_ago.date().isoformat(),
+                "end": datetime.now().date().isoformat(),
+            }
         }
-    }
+    except Exception as e:
+        return {
+            "total_stats": [],
+            "total_games": 0,
+            "error": str(e),
+            "date_range": {
+                "start": (datetime.now() - timedelta(days=365)).date().isoformat(),
+                "end": datetime.now().date().isoformat(),
+            }
+        }
 
 
-# Serve static files for the website under the root path
+# Direct web shortcuts
+@app.get("/", include_in_schema=False)
+async def serve_root():
+    return FileResponse("www/html/trifase.online/giochini/index.html")
+
+@app.get("/giochini", include_in_schema=False)
+@app.get("/giochini/", include_in_schema=False)
+async def serve_giochini_root():
+    return FileResponse("www/html/trifase.online/giochini/index.html")
+
+@app.get("/giochini/players.html", include_in_schema=False)
+async def serve_players_page():
+    return FileResponse("www/html/trifase.online/giochini/players.html")
+
+
+# Mount static files under root path
 app.mount("/", StaticFiles(directory="www/html/trifase.online", html=True), name="static")

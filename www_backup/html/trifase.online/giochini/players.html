@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Statistics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+            min-height: 100vh;
+        }
+        
+        .stat-card {
+            transition: all 0.3s ease;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: white;
+            overflow: hidden;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #2b5876, #4e4376);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-label-accent {
+            color: #2b5876;
+            font-size: 1rem;
+            font-weight: 500;
+            font-weight: bolder;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .game-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #3a7bd5, #00d2ff);
+            color: white;
+            display: inline-block;
+            margin-top: 0.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .player-header {
+            background: linear-gradient(45deg, #2b5876, #4e4376);
+            color: white;
+            padding: 2rem 0;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: white;
+            color: #2b5876;
+        }
+
+        .loading-container {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+
+        .achievement-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin: 2rem auto;
+            max-width: 600px;
+        }
+
+        [v-cloak] {
+            display: none !important;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak>
+        <!-- Loading State -->
+        <div v-if="isLoading" class="loading-container">
+            <div class="spinner-border custom-spinner text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="error" class="error-message">
+            <h3>😕 Oops!</h3>
+            <p>{{ error }}</p>
+        </div>
+
+        <!-- Content -->
+        <div v-else-if="stats"  class="container py-4">
+            <div class="player-header position-relative text-center">
+                <a href="index.html" class="back-button text-decoration-none">
+                    ← Back
+                </a>
+                <h1 class="display-4 mb-0">{{ stats.player }}</h1>
+                <p class="lead mb-0">Player Statistics</p>
+            </div>
+
+            <div class="stat-grid">
+                <!-- Total Plays -->
+                <div class="stat-card">
+                    <div class="card-body text-center p-4">
+                        <div class="achievement-icon">🎮</div>
+                        <div class="stat-value">{{ stats.total_plays }}</div>
+                        <div class="stat-label">Total Games Played</div>
+                    </div>
+                </div>
+
+                <!-- Total Time -->
+                <div class="stat-card">
+                    <div class="card-body text-center p-4">
+                        <div class="achievement-icon">⏱️</div>
+                        <div class="stat-value">{{ formatTime(stats.total_time_minutes) }}</div>
+                        <div class="stat-label">Time Played</div>
+                    </div>
+                </div>
+
+                <!-- Win Rate -->
+                <div class="stat-card">
+                    <div class="card-body text-center p-4">
+                        <div class="achievement-icon">🎯</div>
+                        <div class="stat-value">{{ calculateWinRate() }}%</div>
+                        <div class="stat-label">Win Rate</div>
+                    </div>
+                </div>
+
+                <!-- Longest Streak -->
+                <div class="stat-card">
+                    <div class="card-body text-center p-4">
+                        <div class="achievement-icon">🔥</div>
+                        <div class="stat-value">{{ stats.long_streak_game }}</div>
+                        <div class="stat-label">Longest Streak</div>
+                        <div class="stat-label-accent">{{ stats.long_streak_days }} Games Played</div>
+                    </div>
+                </div>
+
+                <!-- Most Played -->
+                <div class="stat-card">
+                    <div class="card-body text-center p-4">
+                        <div class="achievement-icon">⭐</div>
+                        <div class="stat-value">{{ stats.most_played_game }}</div>
+                        <div class="stat-label">Most Played Game</div>
+                        <div class="stat-label-accent">{{ stats.most_played_count }} Games Played</div>
+                    </div>
+                </div>
+
+                <!-- Least Played -->
+                <div class="stat-card">
+                    <div class="card-body text-center p-4">
+                        <div class="achievement-icon">🌱</div>
+                        <div class="stat-value">{{ stats.least_played_game }}</div>
+                        <div class="stat-label">Least Played Game</div>
+                        <div class="stat-label-accent">{{ stats.least_played_count }} Games Played</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.31/vue.global.min.js"></script>
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    stats: null,
+                    isLoading: true,
+                    error: null,
+                    initialized: false
+                }
+            },
+            methods: {
+                async fetchStats() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const player = urlParams.get('player');
+                    
+                    if (!player) {
+                        console.log('No player specified');
+                        this.error = 'No player specified';
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    try {
+                        console.log('Fetching stats for', player);
+                        let urlEncodedPlayer = encodeURIComponent(player);
+                        let urlEncodedUrl = '/api/stats/?player=' + urlEncodedPlayer;
+                        console.log('Fetching', urlEncodedUrl);
+                        const response = await fetch(urlEncodedUrl);
+                        if (!response.ok) throw new Error('Failed to fetch stats');
+                        this.stats = await response.json();
+                    } catch (err) {
+                        this.error = 'Error loading player statistics';
+                        console.error(err);
+                    } finally {
+                        this.isLoading = false;
+                        this.initialized = true;
+                    }
+                },
+                formatTime(minutes) {
+                    const hours = Math.floor(minutes / 60);
+                    const remainingMinutes = minutes % 60;
+                    return `${hours}h ${remainingMinutes}m`;
+                },
+                calculateWinRate() {
+                    if (!this.stats) return 0;
+                    const winRate = ((this.stats.total_plays - this.stats.total_loses) / this.stats.total_plays) * 100;
+                    return Math.round(winRate);
+                }
+            },
+            mounted() {
+                this.fetchStats();
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>
