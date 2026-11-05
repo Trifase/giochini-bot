@@ -196,6 +196,18 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
     emoji = GAMES[game]["emoji"]
     url = GAMES[game]["url"]
 
+    game_date = get_date_from_day(game, day)
+    today = datetime.date.today()
+    bonus_entry = None
+    if getattr(config, "BONUS_GAME_ENABLED", True):
+        if game_date == today:
+            bonus_entry = get_bonus_game(game_date) or pick_or_get_bonus_game(game_date)
+        else:
+            bonus_entry = get_bonus_game(game_date)
+
+    is_bonus = bonus_entry is not None and game == bonus_entry.game
+    multiplier = bonus_entry.multiplier if is_bonus else 1
+
     # user_id_found = False
     # if show_lost:
     query = (
@@ -215,13 +227,14 @@ def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int 
     classifica = Classifica()
     classifica.game = game
     classifica.day = day
-    classifica.date = datetime.date.today()
+    classifica.date = game_date
     classifica.emoji = emoji
-    classifica.header = f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>'
+    badge = f" [🎰 {multiplier}x]" if is_bonus else ""
+    classifica.header = f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>{badge}'
     classifica.giocate = [Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0) for g in query]
     classifica.order_and_position()
 
-    classifica.assign_stars('default')
+    classifica.assign_stars('default', multiplier=multiplier)
 
     if to_string:
         return classifica.to_string()
@@ -1732,26 +1745,25 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 )
                 for g in all_scores_query
             ]
+            mult = bonus_multiplier if (bonus_game_name and game == bonus_game_name) else 1
             cl.order_and_position()
-            cl.assign_stars("default")
+            cl.assign_stars("default", multiplier=mult)
             
             # Find the user's game in the classifica
             for giocata in cl.giocate:
                 if giocata.user_id == user_id:
                     # Only include non-lost games since lost games produce 0 points
                     if not giocata.lost:
-                        mult = bonus_multiplier if (bonus_game_name and game == bonus_game_name) else 1
-                        awarded_stars = giocata.stelle * mult
                         user_games.append({
                             "game": game,
                             "emoji": GAMES[game]["emoji"],
                             "position": giocata.posizione,
-                            "stars": awarded_stars,
+                            "stars": giocata.stelle,
                             "multiplier": mult,
                             "medal_emoji": giocata.emoji,
                             "tries": giocata.processed_tries,
                         })
-                        total_stars += awarded_stars
+                        total_stars += giocata.stelle
                     break
     
     # Build the message

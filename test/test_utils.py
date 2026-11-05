@@ -383,3 +383,59 @@ def test_daily_ranking_with_bonus_game():
     # Bob: 1 base * 3 = 3 stars
     assert scores["Alice"] == 6
     assert scores["Bob"] == 3
+
+
+def test_classifica_assign_stars_with_multiplier():
+    from utils import Classifica, Giocata
+
+    cl = Classifica(game="Wordle", day="100")
+    cl.giocate = [
+        Giocata(user_id=1, user_name="Alice", game="Wordle", tries=3),
+        Giocata(user_id=2, user_name="Bob", game="Wordle", tries=4),
+        Giocata(user_id=3, user_name="Charlie", game="Wordle", tries=9999999),
+    ]
+    cl.order_and_position()
+    cl.assign_stars("default", multiplier=3)
+
+    # Valid: 2 players -> Alice gets 2 * 3 = 6, Bob gets 1 * 3 = 3, Charlie lost gets 0
+    assert cl.giocate[0].stelle == 6
+    assert cl.giocate[1].stelle == 3
+    assert cl.giocate[2].stelle == 0
+
+
+def test_make_single_classifica_with_bonus_game():
+    from main import make_single_classifica
+    from games import get_day_from_date, ALL_GAMES
+
+    today = datetime.date.today()
+    wordle_day = get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today)
+
+    GiocoBonus.create(date=today, game="Wordle", multiplier=3)
+
+    Punteggio.create(
+        date=today,
+        timestamp=200,
+        chat_id=ID_GIOCHINI,
+        user_id=1,
+        user_name="Alice",
+        game="Wordle",
+        day=wordle_day,
+        tries=3,
+        lost=False,
+    )
+    Punteggio.create(
+        date=today,
+        timestamp=201,
+        chat_id=ID_GIOCHINI,
+        user_id=2,
+        user_name="Bob",
+        game="Wordle",
+        day=wordle_day,
+        tries=4,
+        lost=False,
+    )
+
+    result_text = make_single_classifica("Wordle", chat_id=ID_GIOCHINI, day=wordle_day)
+    assert "[🎰 3x]" in result_text
+    assert "6⭐" in result_text
+    assert "3⭐" in result_text

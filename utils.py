@@ -248,7 +248,7 @@ class Classifica:
         lost_giocate = [g for g in self.giocate if g.lost]
         self.giocate = sorted_giocate + lost_giocate
 
-    def assign_stars(self, model: str = 'default'):
+    def assign_stars(self, model: str = 'default', multiplier: int = 1):
         scoring_models = {
             "default": self._score_no_limit_with_lost_rank_based,
             "standard": self._score_standard,
@@ -267,6 +267,10 @@ class Classifica:
         #     print(gioc.user_name, gioc.tries, gioc.extra)
         if scoring_function:
             scoring_function()
+            if multiplier > 1:
+                for g in self.giocate:
+                    if not g.lost:
+                        g.stelle = g.stelle * multiplier
         else:
             raise ValueError(f"Modello di scoring '{model}' non valido.")
 
@@ -553,6 +557,8 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
         if not query:
             continue
 
+        current_multiplier = bonus_multiplier if (bonus_game_name and game == bonus_game_name) else 1
+
         cl = Classifica()
         cl.game = game
         cl.day = day
@@ -560,18 +566,15 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
         cl.emoji = GAMES[game]["emoji"]
         cl.giocate = [Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0) for g in query]
         cl.order_and_position()
-        cl.assign_stars(model)
+        cl.assign_stars(model, multiplier=current_multiplier)
         positions = cl.get_stars_list()
-
-        current_multiplier = bonus_multiplier if (bonus_game_name and game == bonus_game_name) else 1
 
         # sum this games stars to the player_scores dict
         for _position, user_id, user_name, stars in positions:
-            awarded = stars * current_multiplier
             if user_id in player_scores:
-                player_scores[user_id]["stars"] += awarded
+                player_scores[user_id]["stars"] += stars
             else:
-                player_scores[user_id] = {"user_name": user_name, "stars": awarded, "bonus": 0}
+                player_scores[user_id] = {"user_name": user_name, "stars": stars, "bonus": 0}
 
     # Query daily bonus/malus
     try:
