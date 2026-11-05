@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 import peewee
 
 import config
-from config import ID_GIOCHINI as CHAT_ID, Punteggio, Punti, Medaglia, PuntiBonus
+from config import ID_GIOCHINI as CHAT_ID, Punteggio, Punti, Medaglia
 from games import ALL_GAMES as GAMES, get_day_from_date
 from utils import (
     daily_ranking,
@@ -17,6 +17,7 @@ from utils import (
     Classifica,
     Giocata,
     GiocoBonus,
+    PuntiBonus,
 )
 
 
