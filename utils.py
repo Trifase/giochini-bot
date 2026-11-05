@@ -675,6 +675,8 @@ def seconds_to_time(seconds: int) -> str:
 
 
 def process_tries(game: str, tries: int | str) -> int | str:
+    if str(tries) in ['9999999', '9999999.0']:
+        return "N/A"
     # print(f"Processing tries for {game}: {tries} ({type(tries)})")
     # This is a little exception for HighFive scores, which are negative because in the game the more the better.
     # We want to show them as positive.

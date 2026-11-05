@@ -97,14 +97,17 @@ def get_game_leaderboard(target_date: date, game_name: str) -> dict:
 
         for g in cl.giocate:
             formatted = process_tries(game_name, g.tries)
+            is_lost = bool(g.lost or str(g.tries) in ["9999999", "9999999.0"] or str(formatted) in ["9999999", "N/A"])
+            if is_lost:
+                formatted = "N/A"
             posizioni.append({
                 "user_name": g.user_name,
                 "user_id": g.user_id,
                 "pos": g.posizione,
                 "stars": g.stelle,
                 "tries": g.tries,
-                "tries_formatted": str(formatted) if formatted is not None else str(g.tries),
-                "lost": bool(g.lost),
+                "tries_formatted": str(formatted) if formatted is not None else "N/A",
+                "lost": is_lost,
                 "extra": g.extra,
             })
 

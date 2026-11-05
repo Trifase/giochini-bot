@@ -447,11 +447,11 @@
                                         >
                                             <div class="flex items-center gap-2 truncate">
                                                 <span class="w-4 text-center font-bold">
-                                                    <span v-if="pIdx === 0 && !p.lost">🥇</span>
-                                                    <span v-else-if="pIdx === 1 && !p.lost">🥈</span>
-                                                    <span v-else-if="pIdx === 2 && !p.lost">🥉</span>
-                                                    <span v-else-if="p.lost" class="text-rose-500 text-[10px]">✕</span>
-                                                    <span v-else class="text-slate-400 dark:text-slate-500 text-[11px] font-mono">{{ pIdx + 1 }}</span>
+                                                    <span v-if="p.lost" class="text-rose-500 text-[10px]">✕</span>
+                                                    <span v-else-if="p.pos === 1">🥇</span>
+                                                    <span v-else-if="p.pos === 2">🥈</span>
+                                                    <span v-else-if="p.pos === 3">🥉</span>
+                                                    <span v-else class="text-slate-400 dark:text-slate-500 text-[11px] font-mono">{{ p.pos || (pIdx + 1) }}°</span>
                                                 </span>
                                                 <button 
                                                     @click="viewPlayerProfile(p.user_name)"
@@ -469,8 +469,15 @@
                                                 <span v-if="p.stars > 0" class="text-amber-700 dark:text-amber-400 font-bold text-[11px]">
                                                     +{{ p.stars }}⭐
                                                 </span>
-                                                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800/90 dark:text-slate-300 dark:border-slate-700/60 font-semibold text-[11px]">
-                                                    {{ p.tries_formatted }}
+                                                <span 
+                                                    :class="[
+                                                        'px-2 py-0.5 rounded font-semibold text-[11px] border',
+                                                        p.lost || p.tries_formatted === 'N/A' || p.tries_formatted === '9999999'
+                                                            ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40'
+                                                            : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/90 dark:text-slate-300 dark:border-slate-700/60'
+                                                    ]"
+                                                >
+                                                    {{ (p.lost || p.tries_formatted === '9999999' || p.tries === 9999999 || p.tries === '9999999') ? 'N/A' : p.tries_formatted }}
                                                 </span>
                                             </div>
                                         </div>
