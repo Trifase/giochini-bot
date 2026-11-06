@@ -260,6 +260,11 @@ class Classifica:
             "no_single_point_games": self._score_no_single_point_games,
             "only-popular-games": self._score_no_single_point_games,
             "only_popular_games": self._score_no_single_point_games,
+            "participation-bonus": self._score_participation_bonus,
+            "participation_bonus": self._score_participation_bonus,
+            "participation": self._score_participation_bonus,
+            "bonus-partecipazione": self._score_participation_bonus,
+            "bonus_partecipazione": self._score_participation_bonus,
         }
         
         scoring_function = scoring_models.get(model)
@@ -390,6 +395,22 @@ class Classifica:
                 g.stelle = 0
             return
         self._score_no_limit_with_lost_rank_based()
+
+    def _score_participation_bonus(self):
+        """
+        Punteggio pari al numero totale di giocatori (inclusi persi) a scendere:
+        - Per i giocatori validi: max(1, num_players - posizione + 1)
+        - Per i giocatori che hanno perso: 1 stella (bonus partecipazione).
+        """
+        num_players = len(self.giocate)
+        if num_players == 0:
+            return
+
+        for g in self.giocate:
+            if g.lost:
+                g.stelle = 1
+            else:
+                g.stelle = max(1, num_players - g.posizione + 1)
 
     def to_string(self) -> str:
         classifica = ""

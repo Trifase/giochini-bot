@@ -439,3 +439,42 @@ def test_make_single_classifica_with_bonus_game():
     assert "[🎰 3x]" in result_text
     assert "6⭐" in result_text
     assert "3⭐" in result_text
+
+
+def test_score_participation_bonus():
+    from utils import Classifica, Giocata
+
+    # Example 1: GuessTheMovie scenario from prompt
+    cl = Classifica(game="GuessTheMovie")
+    cl.giocate = [
+        Giocata(user_id=1, user_name="Stell", tries=3, game="GuessTheMovie"),
+        Giocata(user_id=2, user_name="Albar", tries=5, game="GuessTheMovie"),
+        Giocata(user_id=3, user_name="his dudeness", tries=5, game="GuessTheMovie"),
+        Giocata(user_id=4, user_name="Louis", tries=6, game="GuessTheMovie"),
+        Giocata(user_id=5, user_name="Lord Davide", tries=9999999, game="GuessTheMovie"),
+    ]
+    cl.order_and_position()
+    cl.assign_stars("participation-bonus")
+
+    assert cl.giocate[0].stelle == 5  # Stell
+    assert cl.giocate[1].stelle == 4  # Albar
+    assert cl.giocate[2].stelle == 4  # his dudeness
+    assert cl.giocate[3].stelle == 2  # Louis
+    assert cl.giocate[4].stelle == 1  # Lord Davide (perso)
+
+    # Example 2: 8 players (6 top, 1 middle, 1 lost)
+    cl2 = Classifica(game="TestGame")
+    cl2.giocate = [
+        Giocata(user_id=i, user_name=f"Top{i}", tries=1, game="TestGame") for i in range(1, 7)
+    ] + [
+        Giocata(user_id=7, user_name="Mid", tries=2, game="TestGame"),
+        Giocata(user_id=8, user_name="Lost", tries=9999999, game="TestGame"),
+    ]
+    cl2.order_and_position()
+    cl2.assign_stars("participation-bonus")
+
+    for i in range(6):
+        assert cl2.giocate[i].stelle == 8
+    assert cl2.giocate[6].stelle == 2
+    assert cl2.giocate[7].stelle == 1
+

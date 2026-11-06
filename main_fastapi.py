@@ -292,6 +292,12 @@ async def algorithm_comparison(day: str | None = None):
             "description": "Punti = totale partecipanti (inclusi persi) meno posizione + 1. Ogni giocata persa alza il montepremi.",
         },
         {
+            "id": "participation-bonus",
+            "title": "Participation Bonus",
+            "badge": "Bonus Persi",
+            "description": "Punti da totale giocatori a scendere per posizione. Chi perde riceve comunque 1 punto di partecipazione.",
+        },
+        {
             "id": "alternate-with-lost",
             "title": "Alternate with Lost",
             "badge": "Cap a 3",

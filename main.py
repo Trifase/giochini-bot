@@ -2257,6 +2257,9 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "no_single_point_games": "No single player (min. 2 giocate)",
         "only-popular-games": "Only popular games (min. 2 giocate)",
         "only_popular_games": "Only popular games (min. 2 giocate)",
+        "participation-bonus": "Participation Bonus (1pt ai persi)",
+        "participation_bonus": "Participation Bonus (1pt ai persi)",
+        "participation": "Participation Bonus (1pt ai persi)",
     }
 
     selected_model = "no_limit_with_lost"
@@ -2285,6 +2288,7 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         msg += f"<code>{stelle_str}</code>⭐ <b>{user_name}</b>{bonus_str}\n"
 
     msg += f"\n<i>Prova altri modelli:</i>\n"
+    msg += f"• <code>/simuladaily participation-bonus</code>\n"
     msg += f"• <code>/simuladaily no_limit_with_lost</code>\n"
     msg += f"• <code>/simuladaily default</code>\n"
     msg += f"• <code>/simuladaily no-single-point-games</code>\n"
