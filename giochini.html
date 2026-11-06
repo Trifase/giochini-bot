@@ -1009,7 +1009,7 @@
                         Tutti i modelli
                     </button>
                     <button 
-                        v-for="m in (comparisonData ? comparisonData.comparisons : [])" 
+                        v-for="m in comparisonModelsList" 
                         :key="m.id"
                         @click="selectedComparisonModel = m.id"
                         :class="[
@@ -1048,19 +1048,19 @@
                                     </div>
                                 </div>
                                 <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 font-mono font-bold border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30">
-                                    {{ comparisonData.default_ranking.length }} giocatori
+                                    {{ (comparisonData.default_ranking || []).length }} giocatori
                                 </span>
                             </div>
 
                             <!-- Empty message -->
-                            <div v-if="!comparisonData.default_ranking.length" class="p-8 text-center text-slate-500">
+                            <div v-if="!(comparisonData.default_ranking && comparisonData.default_ranking.length)" class="p-8 text-center text-slate-500">
                                 Nessun dato per questo giorno.
                             </div>
 
                             <!-- List -->
                             <ul v-else class="divide-y divide-slate-200 dark:divide-slate-800/60">
                                 <li 
-                                    v-for="r in comparisonData.default_ranking" 
+                                    v-for="r in (comparisonData.default_ranking || [])" 
                                     :key="r.name"
                                     class="p-3.5 flex items-center justify-between hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                                     @click="viewPlayerProfile(r.name)"
@@ -1108,19 +1108,19 @@
                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ m.description }}</p>
                                 </div>
                                 <span class="text-xs font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap self-start sm:self-auto">
-                                    {{ m.players.length }} partecipanti
+                                    {{ (m.players || []).length }} partecipanti
                                 </span>
                             </div>
 
                             <!-- Empty message -->
-                            <div v-if="!m.players.length" class="p-8 text-center text-slate-500">
+                            <div v-if="!(m.players && m.players.length)" class="p-8 text-center text-slate-500">
                                 Nessun risultato registrato per questo algoritmo.
                             </div>
 
                             <!-- Alternative Model Player List -->
                             <div v-else class="divide-y divide-slate-200 dark:divide-slate-800/60">
                                 <div 
-                                    v-for="p in m.players" 
+                                    v-for="p in (m.players || [])" 
                                     :key="p.name"
                                     class="p-3.5 flex items-center justify-between hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition-colors"
                                 >
@@ -1273,10 +1273,18 @@
                 };
             },
             computed: {
-                displayedComparisonModels() {
+                comparisonModelsList() {
                     if (!this.comparisonData || !this.comparisonData.comparisons) return [];
-                    if (this.selectedComparisonModel === 'all') return this.comparisonData.comparisons;
-                    return this.comparisonData.comparisons.filter(m => m.id === this.selectedComparisonModel);
+                    return this.comparisonData.comparisons.map(m => ({
+                        ...m,
+                        id: m.id || m.model_id,
+                        players: m.players || m.rankings || []
+                    }));
+                },
+                displayedComparisonModels() {
+                    const list = this.comparisonModelsList;
+                    if (this.selectedComparisonModel === 'all') return list;
+                    return list.filter(m => m.id === this.selectedComparisonModel);
                 },
                 availableCategories() {
                     const cats = new Set(this.gamesData.map(g => g.category).filter(Boolean));

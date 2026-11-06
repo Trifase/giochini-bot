@@ -359,10 +359,12 @@ async def algorithm_comparison(day: str | None = None):
                 })
 
         comparisons.append({
+            "id": m["id"],
             "model_id": m["id"],
             "title": m["title"],
             "badge": m["badge"],
             "description": m["description"],
+            "players": alt_players,
             "rankings": alt_players,
         })
 

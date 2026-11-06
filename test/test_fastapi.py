@@ -171,5 +171,7 @@ def test_api_algorithm_comparison():
     assert len(data["comparisons"]) == 5
     for comp in data["comparisons"]:
         assert "model_id" in comp
+        assert "id" in comp
         assert "rankings" in comp
+        assert "players" in comp
 
