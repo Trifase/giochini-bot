@@ -1276,6 +1276,12 @@ async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
     msg_eph_id = extract_ephemeral_id(mymsg)
+    chat_user_key = f"myonly_eph_{update.effective_chat.id}_{user_id}"
+    context.bot_data[chat_user_key] = {
+        "ephemeral_message_id": msg_eph_id,
+        "message": mymsg,
+    }
+
     if solo_preferiti and msg_eph_id:
         try:
             updated_kb = InlineKeyboardMarkup([
@@ -1404,66 +1410,26 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             message += f"\n\nProgresso preferiti:"
             message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
 
-    eph_id = (
-        cb_eph_id
-        or extract_ephemeral_id(update.callback_query.message)
-        or extract_ephemeral_id(update.effective_message)
-    )
     chat_id = update.effective_chat.id
     receiver_user_id = update.effective_user.id
     cq_id = update.callback_query.id
+    chat_user_key = f"myonly_eph_{chat_id}_{receiver_user_id}"
+
+    saved_data = context.bot_data.get(chat_user_key, {})
+    saved_eph_id = saved_data.get("ephemeral_message_id") if isinstance(saved_data, dict) else None
+    saved_msg = saved_data.get("message") if isinstance(saved_data, dict) else None
+
+    eph_id = (
+        cb_eph_id
+        or saved_eph_id
+        or extract_ephemeral_id(update.callback_query.message)
+        or extract_ephemeral_id(update.effective_message)
+    )
 
     edited = False
 
-    # Attempt 1: If callback_data carries the ephemeral ID, use editEphemeralMessageText
-    if cb_eph_id:
-        try:
-            await context.bot._post(
-                "editEphemeralMessageText",
-                data={
-                    "chat_id": chat_id,
-                    "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": cb_eph_id,
-                    "text": message,
-                    "parse_mode": "HTML",
-                }
-            )
-            edited = True
-        except Exception as e:
-            logger.warning(f"editEphemeralMessageText with cb_eph_id {cb_eph_id} failed: {e}")
-
-    # Attempt 2: Use replace_callback_query_message BEFORE answering the callback query (query must be active)
-    if not edited and cq_id:
-        try:
-            repl_msg = await context.bot.send_message(
-                chat_id=chat_id,
-                text=message,
-                parse_mode="HTML",
-                api_kwargs={
-                    "ephemeral_message_parameters": {
-                        "receiver_user_id": receiver_user_id,
-                        "callback_query_id": cq_id,
-                        "replace_callback_query_message": True,
-                    }
-                }
-            )
-            edited = True
-            context.job_queue.run_once(
-                delete_ephemeral_post,
-                60,
-                data=[{
-                    "chat_id": chat_id,
-                    "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": extract_ephemeral_id(repl_msg),
-                    "message": repl_msg,
-                }],
-                name=f"myonly_more_delete_{str(update.effective_message.id)}"
-            )
-        except Exception as e:
-            logger.warning(f"send_message replace_callback_query_message failed: {e}")
-
-    # Attempt 3: editEphemeralMessageText with any extracted eph_id
-    if not edited and eph_id and eph_id != 0 and eph_id != cb_eph_id:
+    # Attempt 1: Try editEphemeralMessageText with eph_id
+    if eph_id and eph_id != 0:
         try:
             await context.bot._post(
                 "editEphemeralMessageText",
@@ -1479,7 +1445,60 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         except Exception as e:
             logger.warning(f"editEphemeralMessageText with eph_id {eph_id} failed: {e}")
 
-    # Attempt 4: regular edit_text
+    # Attempt 2: If edit failed, send new ephemeral message targeted by callback_query_id
+    # Note: replace_callback_query_message MUST be omitted/False for callback queries from ephemeral messages
+    if not edited and cq_id:
+        try:
+            new_msg = await context.bot.send_message(
+                chat_id=chat_id,
+                text=message,
+                parse_mode="HTML",
+                disable_web_page_preview=True,
+                api_kwargs={
+                    "ephemeral_message_parameters": {
+                        "receiver_user_id": receiver_user_id,
+                        "callback_query_id": cq_id,
+                    }
+                }
+            )
+            edited = True
+            new_eph_id = extract_ephemeral_id(new_msg)
+            context.bot_data[chat_user_key] = {
+                "ephemeral_message_id": new_eph_id,
+                "message": new_msg,
+            }
+            context.job_queue.run_once(
+                delete_ephemeral_post,
+                60,
+                data=[{
+                    "chat_id": chat_id,
+                    "receiver_user_id": receiver_user_id,
+                    "ephemeral_message_id": new_eph_id,
+                    "message": new_msg,
+                }],
+                name=f"myonly_more_delete_{str(update.effective_message.id)}"
+            )
+            if eph_id and eph_id != 0:
+                try:
+                    await context.bot._post(
+                        "deleteEphemeralMessage",
+                        data={
+                            "chat_id": chat_id,
+                            "receiver_user_id": receiver_user_id,
+                            "ephemeral_message_id": eph_id,
+                        }
+                    )
+                except Exception:
+                    pass
+            if saved_msg and hasattr(saved_msg, "delete"):
+                try:
+                    await saved_msg.delete()
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.warning(f"send_message ephemeral with callback_query_id failed: {e}")
+
+    # Attempt 3: regular edit_text if non-ephemeral
     if not edited and update.effective_message and getattr(update.effective_message, "message_id", 0) != 0:
         try:
             await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
@@ -1487,13 +1506,14 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         except Exception as e:
             logger.warning(f"effective_message.edit_text failed: {e}")
 
-    # Attempt 5: Fallback send fresh ephemeral message
+    # Attempt 4: Fallback send fresh ephemeral message (without callback_query_id)
     if not edited:
         try:
             fresh_msg = await context.bot.send_message(
                 chat_id=chat_id,
                 text=message,
                 parse_mode="HTML",
+                disable_web_page_preview=True,
                 api_kwargs={
                     "ephemeral_message_parameters": {
                         "receiver_user_id": receiver_user_id,
@@ -1501,13 +1521,14 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 }
             )
             edited = True
+            fresh_eph_id = extract_ephemeral_id(fresh_msg)
             context.job_queue.run_once(
                 delete_ephemeral_post,
                 60,
                 data=[{
                     "chat_id": chat_id,
                     "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": extract_ephemeral_id(fresh_msg),
+                    "ephemeral_message_id": fresh_eph_id,
                     "message": fresh_msg,
                 }],
                 name=f"myonly_fresh_delete_{str(update.effective_message.id)}"
@@ -1515,7 +1536,7 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         except Exception as e:
             logger.warning(f"fallback fresh send_message failed: {e}")
 
-    # Answer the callback query once operations are complete
+    # Always answer the callback query at the end
     try:
         await update.callback_query.answer()
     except Exception:

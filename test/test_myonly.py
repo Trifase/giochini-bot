@@ -208,7 +208,6 @@ async def test_myonly_full_callback_replace_fallback():
     assert kwargs["api_kwargs"]["ephemeral_message_parameters"] == {
         "receiver_user_id": 12345,
         "callback_query_id": "cq_456",
-        "replace_callback_query_message": True,
     }
     assert query.answer.called
 
