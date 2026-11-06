@@ -954,7 +954,7 @@ async def manual_riassunto(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return await riassunto_serale(context)
 
 
-async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def mytoday_classic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # message = 'Ecco a cosa hai già giocato oggi:\n'
     # played_today = set()
     # not_played_today = set()
@@ -1050,7 +1050,7 @@ async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.job_queue.run_once(delete_post, 60, data=messages_to_delete, name=f"myday_delete_{str(update.effective_message.id)}")
 
 
-async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def mytoday_full_classic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
     target_uid = update.callback_query.data.split("_")[2]
     if user_id != target_uid:
@@ -1474,6 +1474,22 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             )
         except Exception:
             pass
+
+
+async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Wrapper that triggers the ephemeral message (myonly).
+    To revert to classic message behavior, change to:
+        return await mytoday_classic(update, context)
+    """
+    return await myonly(update, context)
+
+
+async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Wrapper that triggers the ephemeral callback query handler (myonly_full).
+    To revert to classic behavior, change to:
+        return await mytoday_full_classic(update, context)
+    """
+    return await myonly_full(update, context)
 
 
 async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2548,7 +2564,7 @@ async def post_init(app: Application) -> None:
         app.bot_data["settings"] = settings
 
     my_commands = [
-        ('myday', 'Quali giochi devi ancora giocare oggi?'),
+        BotCommand('myday', 'Quali giochi devi ancora giocare oggi?', api_kwargs={'is_ephemeral': True}),
         BotCommand('myonly', 'Quali giochi devi ancora giocare oggi? (solo per te)', api_kwargs={'is_ephemeral': True}),
         ('myscore', 'Mostra il tuo punteggio di oggi'),
         ('jolly', 'Gioco Jolly di oggi (punti moltiplicati)'),

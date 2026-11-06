@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from config import Punteggio, Medaglia
 from utils import PuntiBonus, GiocoBonus, GameStatus
-from main import myonly, myonly_full, delete_ephemeral_post, extract_ephemeral_id
+from main import myonly, myonly_full, delete_ephemeral_post, extract_ephemeral_id, mytoday, mytoday_classic, mytoday_full, mytoday_full_classic
 
 
 @pytest.fixture(autouse=True)
@@ -165,3 +165,52 @@ async def test_myonly_full_callback_ephemeral():
             "parse_mode": "HTML",
         }
     )
+
+
+@pytest.mark.anyio
+async def test_mytoday_delegates_to_myonly():
+    user = MagicMock()
+    user.id = 12345
+
+    chat = MagicMock()
+    chat.id = 999
+    chat.type = "supergroup"
+
+    bot_msg = MagicMock()
+    bot_msg.message_id = 100
+    bot_msg.api_kwargs = {"ephemeral_message_id": 777}
+
+    message = MagicMock()
+    message.message_id = 42
+    message.from_user = user
+    message.reply_text = AsyncMock(return_value=bot_msg)
+
+    update = MagicMock()
+    update.message = message
+    update.effective_user = user
+    update.effective_chat = chat
+    update.effective_message = message
+
+    job_queue = MagicMock()
+    context = MagicMock()
+    context.bot_data = {"settings": {}}
+    context.job_queue = job_queue
+
+    # Calling mytoday now sends ephemeral message via myonly
+    await mytoday(update, context)
+
+    assert message.reply_text.called
+    kwargs = message.reply_text.call_args.kwargs
+    assert kwargs["api_kwargs"] == {
+        "ephemeral_message_parameters": {
+            "receiver_user_id": 12345
+        }
+    }
+
+
+def test_mytoday_classic_preserved():
+    assert callable(mytoday_classic)
+    assert callable(mytoday_full_classic)
+    assert callable(mytoday)
+    assert callable(mytoday_full)
+
