@@ -1718,11 +1718,13 @@ class Farflung(Giochino):
         "Farflung #18 · 195/500 km\nMiss · Rare · Miss · Uncommon · Rare\nhttps://farflung.game/s/fqpfgh?e=18",
         "Farflung #16 · 395/500 km\nRare · Farflung · Uncommon · Rare · Farflung\nhttps://farflung.game/s/35mncg?e=16",
         "Farflung #14 · 280/500 km\nRare · Rare · Rare · Rare · Miss\nhttps://farflung.game/s/xvj97g?e=14",
+        "Farflung #18 · 0/500 km\nMiss · Miss · Miss · Miss · Miss\nhttps://farflung.game/s/000000?e=18",
     ]
     expected = [
         {"day": "18", "name": "Farflung", "stars": None, "timestamp": 10, "tries": -195, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "16", "name": "Farflung", "stars": None, "timestamp": 10, "tries": -395, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "14", "name": "Farflung", "stars": None, "timestamp": 10, "tries": -280, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "18", "name": "Farflung", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -1738,7 +1740,7 @@ class Farflung(Giochino):
         score_match = re.search(r"(\d+)\s*/\s*500\s*km", text, re.IGNORECASE)
         if score_match:
             score = int(score_match.group(1))
-            self.tries = -score
+            self.tries = "X" if score == 0 else -score
         else:
             self.tries = None
 
@@ -2537,7 +2539,7 @@ class HigherLower(Giochino):
         "Play Higher Lower — Daily Challenge — Box Office Movies — 2026-10-14 — Score: 15\nhttps://playhigherlower.com/daily",
     ]
     expected = [
-        {"day": "1", "name": "HigherLower", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "HigherLower", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1", "name": "HigherLower", "timestamp": 10, "tries": -7, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "2", "name": "HigherLower", "timestamp": 10, "tries": -15, "user_id": 456481297, "user_name": "Trifase"},
     ]
@@ -2561,7 +2563,8 @@ class HigherLower(Giochino):
 
         score_match = re.search(r"Score:\s*(\d+)", text, re.IGNORECASE)
         if score_match:
-            self.tries = -int(score_match.group(1))
+            score = int(score_match.group(1))
+            self.tries = "X" if score == 0 else -score
         else:
             self.tries = None
         self.stars = None
@@ -2628,12 +2631,14 @@ class Krillion(Giochino):
         "Krillion #70 🦐\n320\n\n🏮🏮⬛🦑🦑🐟⬛\n",
         "Krillion #68 🦐\n230\n\n🦑🫧🦑⬛🦑🫧🐟\n",
         "Krillion #61 🦐\n205\n\n🦑⬛️🫧🏮🫧🐟🫧\n",
+        "Krillion #70 🦐\n0\n\n⬛⬛⬛⬛⬛⬛⬛\n",
     ]
     expected = [
         {"day": "70", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -385, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "70", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -320, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "68", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -230, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "61", "name": "Krillion", "stars": None, "timestamp": 10, "tries": -205, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "70", "name": "Krillion", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -2649,7 +2654,7 @@ class Krillion(Giochino):
         score_match = re.search(r"Krillion\s*#\d+[^\n]*\s*\n\s*(\d+)", text, re.IGNORECASE)
         if score_match:
             score = int(score_match.group(1))
-            self.tries = -score
+            self.tries = "X" if score == 0 else -score
         else:
             self.tries = None
 
