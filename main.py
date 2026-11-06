@@ -1122,6 +1122,53 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         context.job_queue.run_once(delete_post, 60, data=[emojimsg], name=f"myday_emoji_delete_{str(update.effective_message.id)}")
 
 
+def extract_ephemeral_id(message) -> int | None:
+    if not message:
+        return None
+    if hasattr(message, "api_kwargs") and isinstance(message.api_kwargs, dict):
+        if "ephemeral_message_id" in message.api_kwargs:
+            return message.api_kwargs["ephemeral_message_id"]
+    if hasattr(message, "ephemeral_message_id") and message.ephemeral_message_id is not None:
+        return message.ephemeral_message_id
+    return getattr(message, "message_id", None)
+
+
+async def delete_ephemeral_post(context: ContextTypes.DEFAULT_TYPE) -> None:
+    items = context.job.data
+    if not isinstance(items, list):
+        items = [items]
+    for item in items:
+        if isinstance(item, dict):
+            chat_id = item.get("chat_id")
+            receiver_user_id = item.get("receiver_user_id")
+            ephemeral_message_id = item.get("ephemeral_message_id")
+            msg_obj = item.get("message")
+
+            if chat_id and receiver_user_id and ephemeral_message_id:
+                try:
+                    await context.bot._post(
+                        "deleteEphemeralMessage",
+                        data={
+                            "chat_id": chat_id,
+                            "receiver_user_id": receiver_user_id,
+                            "ephemeral_message_id": ephemeral_message_id,
+                        }
+                    )
+                except Exception as e:
+                    logger.debug(f"deleteEphemeralMessage failed: {e}")
+
+            if msg_obj and hasattr(msg_obj, "delete"):
+                try:
+                    await msg_obj.delete()
+                except Exception:
+                    pass
+        elif hasattr(item, "delete"):
+            try:
+                await item.delete()
+            except Exception:
+                pass
+
+
 async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.effective_user:
         return
@@ -1219,7 +1266,7 @@ async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             reply_params = ReplyParameters(message_id=update.message.message_id)
 
-    await update.message.reply_text(
+    mymsg = await update.message.reply_text(
         message,
         parse_mode="HTML",
         disable_web_page_preview=True,
@@ -1228,19 +1275,39 @@ async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         api_kwargs={"ephemeral_message_parameters": ephemeral_params},
     )
 
-    if tot_favs > 0 and favs_played_today == tot_favs:
-        await update.message.reply_text(
-            "🥳",
-            reply_parameters=reply_params,
-            api_kwargs={"ephemeral_message_parameters": ephemeral_params},
-        )
+    command_msg = update.message
+    messages_to_delete = [{
+        "chat_id": update.effective_chat.id,
+        "receiver_user_id": user_id,
+        "ephemeral_message_id": extract_ephemeral_id(mymsg),
+        "message": mymsg,
+    }]
 
-    # In public group chats, delete the caller's message so no trace remains in the public timeline
-    if update.effective_chat and update.effective_chat.type != "private":
+    if command_msg:
+        messages_to_delete.append(command_msg)
+
+    if tot_favs > 0 and favs_played_today == tot_favs:
         try:
-            await update.message.delete()
+            emojimsg = await update.message.reply_text(
+                "🥳",
+                reply_parameters=reply_params,
+                api_kwargs={"ephemeral_message_parameters": ephemeral_params},
+            )
+            messages_to_delete.append({
+                "chat_id": update.effective_chat.id,
+                "receiver_user_id": user_id,
+                "ephemeral_message_id": extract_ephemeral_id(emojimsg),
+                "message": emojimsg,
+            })
         except Exception:
             pass
+
+    context.job_queue.run_once(
+        delete_ephemeral_post,
+        60,
+        data=messages_to_delete,
+        name=f"myonly_delete_{str(update.effective_message.id)}"
+    )
 
 
 async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1309,32 +1376,101 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     await update.callback_query.answer()
 
-    # Edit the ephemeral message
-    try:
-        await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    except Exception:
+    eph_id = extract_ephemeral_id(update.callback_query.message) or extract_ephemeral_id(update.effective_message)
+    chat_id = update.effective_chat.id
+    receiver_user_id = update.effective_user.id
+
+    edited = False
+    # Attempt 1: editEphemeralMessageText with extracted eph_id
+    if eph_id:
         try:
             await context.bot._post(
                 "editEphemeralMessageText",
                 data={
-                    "chat_id": update.effective_chat.id,
-                    "receiver_user_id": update.effective_user.id,
-                    "ephemeral_message_id": getattr(update.effective_message, "ephemeral_message_id", update.effective_message.message_id),
+                    "chat_id": chat_id,
+                    "receiver_user_id": receiver_user_id,
+                    "ephemeral_message_id": eph_id,
                     "text": message,
                     "parse_mode": "HTML",
-                    "link_preview_options": {"is_disabled": True},
                 }
             )
+            edited = True
         except Exception as e:
-            logger.error(f"Error editing ephemeral message: {e}")
+            logger.warning(f"editEphemeralMessageText with eph_id {eph_id} failed: {e}")
+
+    # Attempt 2: editEphemeralMessageText with message_id (if distinct from eph_id)
+    if not edited and update.effective_message and getattr(update.effective_message, "message_id", None) != eph_id:
+        try:
+            await context.bot._post(
+                "editEphemeralMessageText",
+                data={
+                    "chat_id": chat_id,
+                    "receiver_user_id": receiver_user_id,
+                    "ephemeral_message_id": update.effective_message.message_id,
+                    "text": message,
+                    "parse_mode": "HTML",
+                }
+            )
+            edited = True
+        except Exception as e:
+            logger.warning(f"editEphemeralMessageText with message_id failed: {e}")
+
+    # Attempt 3: regular edit_text
+    if not edited and update.effective_message:
+        try:
+            await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
+            edited = True
+        except Exception as e:
+            logger.warning(f"effective_message.edit_text failed: {e}")
+
+    # Attempt 4: sendMessage replacing callback query message
+    if not edited:
+        try:
+            repl_msg = await context.bot.send_message(
+                chat_id=chat_id,
+                text=message,
+                parse_mode="HTML",
+                api_kwargs={
+                    "ephemeral_message_parameters": {
+                        "receiver_user_id": receiver_user_id,
+                        "callback_query_id": update.callback_query.id,
+                        "replace_callback_query_message": True
+                    }
+                }
+            )
+            edited = True
+            context.job_queue.run_once(
+                delete_ephemeral_post,
+                60,
+                data=[{
+                    "chat_id": chat_id,
+                    "receiver_user_id": receiver_user_id,
+                    "ephemeral_message_id": extract_ephemeral_id(repl_msg),
+                    "message": repl_msg,
+                }],
+                name=f"myonly_more_delete_{str(update.effective_message.id)}"
+            )
+        except Exception as e:
+            logger.warning(f"send_message replace_callback_query_message failed: {e}")
 
     if tot_favs > 0 and favs_played_today == tot_favs:
         try:
-            ephemeral_params = {"receiver_user_id": update.effective_user.id}
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
+            ephemeral_params = {"receiver_user_id": receiver_user_id}
+            emojimsg = await context.bot.send_message(
+                chat_id=chat_id,
                 text="🥳",
                 api_kwargs={"ephemeral_message_parameters": ephemeral_params}
+            )
+            context.job_queue.run_once(
+                delete_ephemeral_post,
+                60,
+                data=[{
+                    "chat_id": chat_id,
+                    "receiver_user_id": receiver_user_id,
+                    "ephemeral_message_id": extract_ephemeral_id(emojimsg),
+                    "message": emojimsg,
+                }],
+                name=f"myonly_emoji_delete_{str(update.effective_message.id)}"
             )
         except Exception:
             pass
