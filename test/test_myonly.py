@@ -120,7 +120,7 @@ async def test_delete_ephemeral_post():
 
 
 @pytest.mark.anyio
-async def test_myonly_full_callback_ephemeral():
+async def test_myonly_full_callback_with_cb_eph_id():
     user = MagicMock()
     user.id = 12345
 
@@ -131,10 +131,10 @@ async def test_myonly_full_callback_ephemeral():
     effective_msg = MagicMock()
     effective_msg.message_id = 55
     effective_msg.api_kwargs = {"ephemeral_message_id": 777}
-    effective_msg.edit_text = AsyncMock()
 
     query = MagicMock()
-    query.data = "myonly_more_12345"
+    query.id = "cq_123"
+    query.data = "myonly_more_12345_777"
     query.answer = AsyncMock()
     query.message = effective_msg
 
@@ -154,7 +154,6 @@ async def test_myonly_full_callback_ephemeral():
     await myonly_full(update, context)
 
     assert query.answer.called
-    # It should have called editEphemeralMessageText
     bot._post.assert_awaited_with(
         "editEphemeralMessageText",
         data={
@@ -165,6 +164,53 @@ async def test_myonly_full_callback_ephemeral():
             "parse_mode": "HTML",
         }
     )
+
+
+@pytest.mark.anyio
+async def test_myonly_full_callback_replace_fallback():
+    user = MagicMock()
+    user.id = 12345
+
+    chat = MagicMock()
+    chat.id = 999
+    chat.type = "supergroup"
+
+    effective_msg = MagicMock()
+    effective_msg.message_id = 55
+    effective_msg.api_kwargs = {}
+
+    query = MagicMock()
+    query.id = "cq_456"
+    query.data = "myonly_more_12345"
+    query.answer = AsyncMock()
+    query.message = effective_msg
+
+    update = MagicMock()
+    update.effective_user = user
+    update.effective_chat = chat
+    update.effective_message = effective_msg
+    update.callback_query = query
+
+    bot = MagicMock()
+    bot.send_message = AsyncMock(return_value=effective_msg)
+
+    job_queue = MagicMock()
+    context = MagicMock()
+    context.bot_data = {"settings": {}}
+    context.bot = bot
+    context.job_queue = job_queue
+
+    await myonly_full(update, context)
+
+    # Should send message replacing callback query BEFORE answering
+    assert bot.send_message.called
+    kwargs = bot.send_message.call_args.kwargs
+    assert kwargs["api_kwargs"]["ephemeral_message_parameters"] == {
+        "receiver_user_id": 12345,
+        "callback_query_id": "cq_456",
+        "replace_callback_query_message": True,
+    }
+    assert query.answer.called
 
 
 @pytest.mark.anyio

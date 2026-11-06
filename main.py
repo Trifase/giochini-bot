@@ -1275,11 +1275,29 @@ async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         api_kwargs={"ephemeral_message_parameters": ephemeral_params},
     )
 
+    msg_eph_id = extract_ephemeral_id(mymsg)
+    if solo_preferiti and msg_eph_id:
+        try:
+            updated_kb = InlineKeyboardMarkup([
+                [InlineKeyboardButton("Tutti i giochi", callback_data=f"myonly_more_{user_id}_{msg_eph_id}")]
+            ])
+            await context.bot._post(
+                "editEphemeralMessageReplyMarkup",
+                data={
+                    "chat_id": update.effective_chat.id,
+                    "receiver_user_id": user_id,
+                    "ephemeral_message_id": msg_eph_id,
+                    "reply_markup": updated_kb.to_dict(),
+                }
+            )
+        except Exception as e:
+            logger.debug(f"editEphemeralMessageReplyMarkup failed: {e}")
+
     command_msg = update.message
     messages_to_delete = [{
         "chat_id": update.effective_chat.id,
         "receiver_user_id": user_id,
-        "ephemeral_message_id": extract_ephemeral_id(mymsg),
+        "ephemeral_message_id": msg_eph_id,
         "message": mymsg,
     }]
 
@@ -1311,10 +1329,22 @@ async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = str(update.effective_user.id)
-    target_uid = update.callback_query.data.split("_")[2]
-    if user_id != target_uid:
+    if not update.callback_query or not update.effective_user:
         return
+
+    user_id = str(update.effective_user.id)
+    parts = update.callback_query.data.split("_")
+    target_uid = parts[2] if len(parts) > 2 else ""
+    if user_id != target_uid:
+        try:
+            await update.callback_query.answer("Non puoi toccare i pulsanti degli altri!", show_alert=True)
+        except Exception:
+            pass
+        return
+
+    cb_eph_id = None
+    if len(parts) > 3 and parts[3].isdigit():
+        cb_eph_id = int(parts[3])
 
     played_today = []
     not_played_today = []
@@ -1374,57 +1404,36 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             message += f"\n\nProgresso preferiti:"
             message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
 
-    await update.callback_query.answer()
-
-    eph_id = extract_ephemeral_id(update.callback_query.message) or extract_ephemeral_id(update.effective_message)
+    eph_id = (
+        cb_eph_id
+        or extract_ephemeral_id(update.callback_query.message)
+        or extract_ephemeral_id(update.effective_message)
+    )
     chat_id = update.effective_chat.id
     receiver_user_id = update.effective_user.id
+    cq_id = update.callback_query.id
 
     edited = False
-    # Attempt 1: editEphemeralMessageText with extracted eph_id
-    if eph_id:
+
+    # Attempt 1: If callback_data carries the ephemeral ID, use editEphemeralMessageText
+    if cb_eph_id:
         try:
             await context.bot._post(
                 "editEphemeralMessageText",
                 data={
                     "chat_id": chat_id,
                     "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": eph_id,
+                    "ephemeral_message_id": cb_eph_id,
                     "text": message,
                     "parse_mode": "HTML",
                 }
             )
             edited = True
         except Exception as e:
-            logger.warning(f"editEphemeralMessageText with eph_id {eph_id} failed: {e}")
+            logger.warning(f"editEphemeralMessageText with cb_eph_id {cb_eph_id} failed: {e}")
 
-    # Attempt 2: editEphemeralMessageText with message_id (if distinct from eph_id)
-    if not edited and update.effective_message and getattr(update.effective_message, "message_id", None) != eph_id:
-        try:
-            await context.bot._post(
-                "editEphemeralMessageText",
-                data={
-                    "chat_id": chat_id,
-                    "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": update.effective_message.message_id,
-                    "text": message,
-                    "parse_mode": "HTML",
-                }
-            )
-            edited = True
-        except Exception as e:
-            logger.warning(f"editEphemeralMessageText with message_id failed: {e}")
-
-    # Attempt 3: regular edit_text
-    if not edited and update.effective_message:
-        try:
-            await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
-            edited = True
-        except Exception as e:
-            logger.warning(f"effective_message.edit_text failed: {e}")
-
-    # Attempt 4: sendMessage replacing callback query message
-    if not edited:
+    # Attempt 2: Use replace_callback_query_message BEFORE answering the callback query (query must be active)
+    if not edited and cq_id:
         try:
             repl_msg = await context.bot.send_message(
                 chat_id=chat_id,
@@ -1433,8 +1442,8 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 api_kwargs={
                     "ephemeral_message_parameters": {
                         "receiver_user_id": receiver_user_id,
-                        "callback_query_id": update.callback_query.id,
-                        "replace_callback_query_message": True
+                        "callback_query_id": cq_id,
+                        "replace_callback_query_message": True,
                     }
                 }
             )
@@ -1452,6 +1461,65 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             )
         except Exception as e:
             logger.warning(f"send_message replace_callback_query_message failed: {e}")
+
+    # Attempt 3: editEphemeralMessageText with any extracted eph_id
+    if not edited and eph_id and eph_id != 0 and eph_id != cb_eph_id:
+        try:
+            await context.bot._post(
+                "editEphemeralMessageText",
+                data={
+                    "chat_id": chat_id,
+                    "receiver_user_id": receiver_user_id,
+                    "ephemeral_message_id": eph_id,
+                    "text": message,
+                    "parse_mode": "HTML",
+                }
+            )
+            edited = True
+        except Exception as e:
+            logger.warning(f"editEphemeralMessageText with eph_id {eph_id} failed: {e}")
+
+    # Attempt 4: regular edit_text
+    if not edited and update.effective_message and getattr(update.effective_message, "message_id", 0) != 0:
+        try:
+            await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
+            edited = True
+        except Exception as e:
+            logger.warning(f"effective_message.edit_text failed: {e}")
+
+    # Attempt 5: Fallback send fresh ephemeral message
+    if not edited:
+        try:
+            fresh_msg = await context.bot.send_message(
+                chat_id=chat_id,
+                text=message,
+                parse_mode="HTML",
+                api_kwargs={
+                    "ephemeral_message_parameters": {
+                        "receiver_user_id": receiver_user_id,
+                    }
+                }
+            )
+            edited = True
+            context.job_queue.run_once(
+                delete_ephemeral_post,
+                60,
+                data=[{
+                    "chat_id": chat_id,
+                    "receiver_user_id": receiver_user_id,
+                    "ephemeral_message_id": extract_ephemeral_id(fresh_msg),
+                    "message": fresh_msg,
+                }],
+                name=f"myonly_fresh_delete_{str(update.effective_message.id)}"
+            )
+        except Exception as e:
+            logger.warning(f"fallback fresh send_message failed: {e}")
+
+    # Answer the callback query once operations are complete
+    try:
+        await update.callback_query.answer()
+    except Exception:
+        pass
 
     if tot_favs > 0 and favs_played_today == tot_favs:
         try:
