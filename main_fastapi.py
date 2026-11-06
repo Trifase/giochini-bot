@@ -244,6 +244,135 @@ async def dailyranking(day: str | None = None, model: str = "default"):
     }
 
 
+@app.get("/algorithm-comparison/")
+@app.get("/api/algorithm-comparison/")
+async def algorithm_comparison(day: str | None = None):
+    """Compares the default daily ranking against various alternative scoring models."""
+    today = date.today()
+    if not day:
+        dates = today
+    else:
+        try:
+            dates = datetime.strptime(day, '%Y-%m-%d').date()
+        except Exception:
+            dates = today
+
+    # 1. Default ranking
+    try:
+        raw_default = daily_ranking("default", dates)
+    except Exception:
+        raw_default = []
+
+    default_rankings = []
+    default_map = {}
+    for pos, uid, name, pts, *rest in raw_default:
+        bonus = rest[0] if rest else 0
+        p_obj = {
+            "name": name,
+            "user_id": uid,
+            "pos": pos,
+            "points": int(pts),
+            "bonus": bonus,
+        }
+        default_rankings.append(p_obj)
+        default_map[name] = {"pos": pos, "points": int(pts)}
+        default_map[uid] = {"pos": pos, "points": int(pts)}
+
+    models_config = [
+        {
+            "id": "no-single-point-games",
+            "title": "No Single-Point Games",
+            "badge": "Anti-Farming",
+            "description": "0 punti per partite con 1 solo giocatore: se nessuno ha rivaleggiato, le stelle non vengono assegnate.",
+        },
+        {
+            "id": "no_limit_with_lost",
+            "title": "No Limit with Lost",
+            "badge": "Stack Punti",
+            "description": "Punti = totale partecipanti (inclusi persi) meno posizione + 1. Ogni giocata persa alza il montepremi.",
+        },
+        {
+            "id": "alternate-with-lost",
+            "title": "Alternate with Lost",
+            "badge": "Cap a 3",
+            "description": "Progressivo fino a 3 punti max (3, 2, 1), conteggiando anche i giocatori che hanno perso nel pool.",
+        },
+        {
+            "id": "standard",
+            "title": "Standard Classico (3-2-1)",
+            "badge": "Fisso Podio",
+            "description": "3 punti al 1°, 2 al 2°, 1 al 3° fisso per ogni gioco, a prescindere dal numero di partecipanti.",
+        },
+        {
+            "id": "alternate",
+            "title": "Alternate (Solo Validi)",
+            "badge": "No Persi",
+            "description": "Progressivo fino a 3 punti (3, 2, 1) conteggiando solo ed esclusivamente le partite vinte/valide.",
+        },
+    ]
+
+    comparisons = []
+    for m in models_config:
+        try:
+            raw_alt = daily_ranking(m["id"], dates)
+        except Exception:
+            raw_alt = []
+
+        alt_players = []
+        seen_names = set()
+        seen_uids = set()
+
+        for pos, uid, name, pts, *rest in raw_alt:
+            ref = default_map.get(name) or default_map.get(uid)
+            ref_pos = ref["pos"] if ref else None
+            ref_pts = ref["points"] if ref else 0
+
+            int_pts = int(pts)
+            diff_pts = int_pts - ref_pts
+            diff_pos = (ref_pos - pos) if ref_pos is not None else 0
+
+            alt_players.append({
+                "name": name,
+                "user_id": uid,
+                "pos": pos,
+                "points": int_pts,
+                "ref_pos": ref_pos,
+                "ref_points": ref_pts,
+                "diff_points": diff_pts,
+                "diff_pos": diff_pos,
+            })
+            seen_names.add(name)
+            seen_uids.add(uid)
+
+        fallback_pos = (max([p["pos"] for p in alt_players], default=0)) + 1
+        for p_def in default_rankings:
+            if p_def["name"] not in seen_names and p_def["user_id"] not in seen_uids:
+                alt_players.append({
+                    "name": p_def["name"],
+                    "user_id": p_def["user_id"],
+                    "pos": fallback_pos,
+                    "points": 0,
+                    "ref_pos": p_def["pos"],
+                    "ref_points": p_def["points"],
+                    "diff_points": -p_def["points"],
+                    "diff_pos": p_def["pos"] - fallback_pos,
+                })
+
+        comparisons.append({
+            "model_id": m["id"],
+            "title": m["title"],
+            "badge": m["badge"],
+            "description": m["description"],
+            "rankings": alt_players,
+        })
+
+    return {
+        "date": dates.strftime("%Y-%m-%d"),
+        "default_ranking": default_rankings,
+        "comparisons": comparisons,
+    }
+
+
 @app.get("/monthlyranking/")
 @app.get("/api/monthlyranking/")
 async def monthlyranking(month: str | None = None):

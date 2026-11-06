@@ -941,13 +941,274 @@
                     </div>
                 </div>
             </div>
+
+            <!-- TAB 8: CONFRONTO ALGORITMI (SCORING SIMULATOR) -->
+            <div v-show="currentTab === 'algorithms'" class="space-y-6">
+                <!-- Header / Controls Bar -->
+                <div class="glass-panel rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 text-center sm:text-left">
+                        <span class="text-3xl">⚖️</span>
+                        <div>
+                            <div class="flex items-center justify-center sm:justify-start gap-2">
+                                <h2 class="text-xl font-bold text-slate-900 dark:text-white">Simulatore Algoritmi</h2>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-mono font-bold border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30">
+                                    Confronto Live
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Classifica ufficiale a sinistra e modelli alternativi a destra con scarti di punti e posizioni.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Date Navigation Controls -->
+                    <div class="flex items-center gap-2">
+                        <button 
+                            @click="stepDate(-1)" 
+                            class="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-sm transition-all dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
+                            title="Giorno precedente"
+                        >
+                            ◀
+                        </button>
+                        <input 
+                            type="date" 
+                            v-model="selectedDate" 
+                            :max="today"
+                            @change="onDateChange"
+                            class="bg-white text-slate-800 font-mono font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-500 shadow-sm transition-all cursor-pointer dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+                        />
+                        <button 
+                            v-if="selectedDate !== today"
+                            @click="goToToday" 
+                            class="px-2.5 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold border border-indigo-200 transition-all dark:bg-indigo-600/30 dark:hover:bg-indigo-600/50 dark:text-indigo-300 dark:border-indigo-500/40"
+                        >
+                            Oggi
+                        </button>
+                        <button 
+                            @click="stepDate(1)" 
+                            :disabled="selectedDate >= today"
+                            class="p-2 rounded-xl bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 border border-slate-300 shadow-sm transition-all dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
+                            title="Giorno successivo"
+                        >
+                            ▶
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Model Selector Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
+                    <button 
+                        @click="selectedComparisonModel = 'all'"
+                        :class="[
+                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap shadow-sm',
+                            selectedComparisonModel === 'all'
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-500/20'
+                                : 'bg-white text-slate-600 border-slate-300 hover:text-slate-900 hover:bg-slate-50 dark:bg-slate-900/80 dark:text-slate-400 dark:border-slate-800 dark:hover:text-slate-200'
+                        ]"
+                    >
+                        Tutti i modelli
+                    </button>
+                    <button 
+                        v-for="m in (comparisonData ? comparisonData.comparisons : [])" 
+                        :key="m.id"
+                        @click="selectedComparisonModel = m.id"
+                        :class="[
+                            'px-3 py-1.5 rounded-full border transition-all whitespace-nowrap shadow-sm',
+                            selectedComparisonModel === m.id
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-500/20'
+                                : 'bg-white text-slate-600 border-slate-300 hover:text-slate-900 hover:bg-slate-50 dark:bg-slate-900/80 dark:text-slate-400 dark:border-slate-800 dark:hover:text-slate-200'
+                        ]"
+                    >
+                        {{ m.title }}
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div v-if="loadingComparison" class="glass-panel rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400">
+                    <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                    <p class="text-sm font-semibold">Calcolo classifiche e differenze...</p>
+                </div>
+
+                <!-- Main Comparison Layout: 2 Columns (Left: Official Default; Right: Alternative Models) -->
+                <div v-else-if="comparisonData" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- Left Column: Default Official Ranking (lg: 4 cols) -->
+                    <div class="lg:col-span-4 space-y-4">
+                        <div class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl sticky top-20">
+                            <!-- Header -->
+                            <div class="p-4 bg-gradient-to-r from-slate-100 to-indigo-50/70 border-b border-slate-200 dark:from-slate-900 dark:to-indigo-950/60 dark:border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">🏆</span>
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <h3 class="font-bold text-base text-slate-900 dark:text-white">Default Ufficiale</h3>
+                                            <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">Baseline</span>
+                                        </div>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ comparisonData.date }}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 font-mono font-bold border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30">
+                                    {{ comparisonData.default_ranking.length }} giocatori
+                                </span>
+                            </div>
+
+                            <!-- Empty message -->
+                            <div v-if="!comparisonData.default_ranking.length" class="p-8 text-center text-slate-500">
+                                Nessun dato per questo giorno.
+                            </div>
+
+                            <!-- List -->
+                            <ul v-else class="divide-y divide-slate-200 dark:divide-slate-800/60">
+                                <li 
+                                    v-for="r in comparisonData.default_ranking" 
+                                    :key="r.name"
+                                    class="p-3.5 flex items-center justify-between hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                    @click="viewPlayerProfile(r.name)"
+                                >
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-7 text-center font-bold font-mono">
+                                            <span v-if="r.pos === 1" class="text-base">🥇</span>
+                                            <span v-else-if="r.pos === 2" class="text-base">🥈</span>
+                                            <span v-else-if="r.pos === 3" class="text-base">🥉</span>
+                                            <span v-else class="text-xs text-slate-500">{{ r.pos }}°</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-sm text-slate-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-300 leading-tight">
+                                                {{ r.name }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-mono font-bold text-sm text-indigo-700 dark:text-indigo-300">
+                                            {{ r.points }}
+                                        </span>
+                                        <span class="text-xs text-amber-500 ml-0.5">⭐</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Alternative Ranking Models (lg: 8 cols) -->
+                    <div class="lg:col-span-8 space-y-6">
+                        <div 
+                            v-for="m in displayedComparisonModels" 
+                            :key="m.id"
+                            class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl"
+                        >
+                            <!-- Model Header Card -->
+                            <div class="p-4 bg-gradient-to-r from-slate-50 to-purple-50/50 border-b border-slate-200 dark:from-slate-900/90 dark:to-purple-950/40 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ m.title }}</h3>
+                                        <span class="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800">
+                                            {{ m.badge }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ m.description }}</p>
+                                </div>
+                                <span class="text-xs font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap self-start sm:self-auto">
+                                    {{ m.players.length }} partecipanti
+                                </span>
+                            </div>
+
+                            <!-- Empty message -->
+                            <div v-if="!m.players.length" class="p-8 text-center text-slate-500">
+                                Nessun risultato registrato per questo algoritmo.
+                            </div>
+
+                            <!-- Alternative Model Player List -->
+                            <div v-else class="divide-y divide-slate-200 dark:divide-slate-800/60">
+                                <div 
+                                    v-for="p in m.players" 
+                                    :key="p.name"
+                                    class="p-3.5 flex items-center justify-between hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition-colors"
+                                >
+                                    <!-- Player & Position -->
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-7 text-center font-bold font-mono">
+                                            <span v-if="p.pos === 1" class="text-base">🥇</span>
+                                            <span v-else-if="p.pos === 2" class="text-base">🥈</span>
+                                            <span v-else-if="p.pos === 3" class="text-base">🥉</span>
+                                            <span v-else class="text-xs text-slate-500">{{ p.pos }}°</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span 
+                                                class="font-semibold text-sm text-slate-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-300 cursor-pointer"
+                                                @click="viewPlayerProfile(p.name)"
+                                            >
+                                                {{ p.name }}
+                                            </span>
+
+                                            <!-- Pos Delta Badge -->
+                                            <span 
+                                                v-if="p.diff_pos > 0" 
+                                                class="text-[11px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700/60"
+                                                title="Posizioni guadagnate rispetto alla classifica di default"
+                                            >
+                                                ▲ +{{ p.diff_pos }}
+                                            </span>
+                                            <span 
+                                                v-else-if="p.diff_pos < 0" 
+                                                class="text-[11px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700/60"
+                                                title="Posizioni perse rispetto alla classifica di default"
+                                            >
+                                                ▼ {{ p.diff_pos }}
+                                            </span>
+                                            <span 
+                                                v-else 
+                                                class="text-[11px] font-mono text-slate-400 dark:text-slate-500 px-1"
+                                                title="Stessa posizione di default"
+                                            >
+                                                =
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Points & Diff Points -->
+                                    <div class="flex items-center gap-2 text-right">
+                                        <div class="font-mono font-bold text-sm text-slate-800 dark:text-slate-200">
+                                            {{ p.points }} <span class="text-xs text-amber-500">⭐</span>
+                                        </div>
+
+                                        <!-- Points Delta Badge -->
+                                        <div 
+                                            class="text-xs font-mono font-bold min-w-[4rem] text-right"
+                                            :class="[
+                                                p.diff_points > 0 
+                                                    ? 'text-emerald-700 dark:text-emerald-400' 
+                                                    : (p.diff_points < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500')
+                                            ]"
+                                        >
+                                            <span v-if="p.diff_points > 0">(+{{ p.diff_points }} pts)</span>
+                                            <span v-else-if="p.diff_points < 0">({{ p.diff_points }} pts)</span>
+                                            <span v-else class="text-slate-400">(=)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </main>
 
         <!-- Footer -->
         <footer class="glass-panel border-t border-slate-200 dark:border-slate-800 mt-12 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
             <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <p>Made with ❤️ per il gruppo Giochini Telegram · <a href="https://trifase.online" class="underline hover:text-indigo-600 dark:hover:text-indigo-400">trifase.online</a></p>
-                <p class="font-mono">Punteggi calcolati con Zip War Airganon SWG4</p>
+                <p class="font-mono">
+                    <button 
+                        @click="setTab('algorithms')" 
+                        class="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                        title="Visualizza confronto algoritmi di punteggio"
+                    >
+                        <span>⚖️</span>
+                        <span>Punteggi calcolati con Zip War Airganon SWG4</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 font-sans font-bold">Simulatore</span>
+                    </button>
+                </p>
             </div>
         </footer>
     </div>
@@ -989,6 +1250,7 @@
                         { id: 'activity', label: 'Attività', icon: '📈' },
                         { id: 'games', label: 'Giochi', icon: '🎮' },
                         { id: 'player', label: 'Giocatori', icon: '👤' },
+                        { id: 'algorithms', label: 'Algoritmi', icon: '⚖️' },
                     ],
                     searchQuery: '',
                     selectedCategory: 'all',
@@ -1005,9 +1267,17 @@
                     allPlayers: [],
                     selectedPlayer: '',
                     playerData: null,
+                    loadingComparison: false,
+                    comparisonData: null,
+                    selectedComparisonModel: 'all',
                 };
             },
             computed: {
+                displayedComparisonModels() {
+                    if (!this.comparisonData || !this.comparisonData.comparisons) return [];
+                    if (this.selectedComparisonModel === 'all') return this.comparisonData.comparisons;
+                    return this.comparisonData.comparisons.filter(m => m.id === this.selectedComparisonModel);
+                },
                 availableCategories() {
                     const cats = new Set(this.gamesData.map(g => g.category).filter(Boolean));
                     return Array.from(cats);
@@ -1103,6 +1373,7 @@
                     if (tabId === 'activity' && !this.heatmapData.total_games) this.fetchHeatmap();
                     if (tabId === 'games' && !this.allGamesList.length) this.fetchAllGamesList();
                     if (tabId === 'player' && !this.allPlayers.length) this.fetchPlayersList();
+                    if (tabId === 'algorithms') this.fetchAlgorithmComparison();
                 },
                 formatCategory(cat) {
                     const map = {
@@ -1133,6 +1404,9 @@
                 onDateChange() {
                     this.fetchDailyData();
                     this.fetchJolly();
+                    if (this.currentTab === 'algorithms') {
+                        this.fetchAlgorithmComparison();
+                    }
                 },
                 isPoop(pos, pts) {
                     if (this.dailyRankings.rankings.length < 4) return false;
@@ -1164,6 +1438,7 @@
                     if (this.currentTab === 'activity') this.fetchHeatmap();
                     if (this.currentTab === 'games') this.fetchAllGamesList();
                     if (this.currentTab === 'player') this.fetchPlayerStats();
+                    if (this.currentTab === 'algorithms') this.fetchAlgorithmComparison();
                 },
 
                 // API Calls
@@ -1290,6 +1565,19 @@
                     } finally {
                         this.loadingPlayer = false;
                     }
+                },
+                async fetchAlgorithmComparison() {
+                    this.loadingComparison = true;
+                    try {
+                        const res = await fetch(`/api/algorithm-comparison/?day=${this.selectedDate}`);
+                        if (res.ok) {
+                            this.comparisonData = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Error fetching algorithm comparison:', e);
+                    } finally {
+                        this.loadingComparison = false;
+                    }
                 }
             },
             mounted() {
@@ -1310,6 +1598,7 @@
                     if (tab === 'giochi') tab = 'games';
                     if (tab === 'medaglie') tab = 'medals';
                     if (tab === 'attivita') tab = 'activity';
+                    if (tab === 'algorithms' || tab === 'algoritmi' || tab === 'simulator') tab = 'algorithms';
                     this.currentTab = tab;
                 }
                 if (params.get('player')) {
@@ -1330,6 +1619,7 @@
                 if (this.currentTab === 'medals') this.fetchMedals();
                 if (this.currentTab === 'activity') this.fetchHeatmap();
                 if (this.currentTab === 'player' && this.selectedPlayer) this.fetchPlayerStats();
+                if (this.currentTab === 'algorithms') this.fetchAlgorithmComparison();
             }
         }).mount('#app');
     </script>

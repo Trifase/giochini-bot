@@ -130,3 +130,46 @@ def test_api_medals_and_jolly():
     assert jolly_data["active"] is True
     assert jolly_data["bonus"]["game"] == "Wordle"
     assert jolly_data["bonus"]["multiplier"] == 3
+
+
+def test_api_algorithm_comparison():
+    client = TestClient(app)
+    today = datetime.date.today()
+    from games import get_day_from_date, ALL_GAMES
+    wordle_day = get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today)
+
+    # Insert test data
+    Punteggio.create(
+        date=today,
+        timestamp=100,
+        chat_id=ID_GIOCHINI,
+        user_id=1,
+        user_name="Mario",
+        game="Wordle",
+        day=wordle_day,
+        tries=3,
+        lost=False,
+    )
+    Punteggio.create(
+        date=today,
+        timestamp=200,
+        chat_id=ID_GIOCHINI,
+        user_id=2,
+        user_name="Luigi",
+        game="Wordle",
+        day=wordle_day,
+        tries=4,
+        lost=False,
+    )
+
+    res = client.get("/api/algorithm-comparison/")
+    assert res.status_code == 200
+    data = res.json()
+    assert "default_ranking" in data
+    assert "comparisons" in data
+    assert len(data["default_ranking"]) == 2
+    assert len(data["comparisons"]) == 5
+    for comp in data["comparisons"]:
+        assert "model_id" in comp
+        assert "rankings" in comp
+
