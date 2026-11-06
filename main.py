@@ -15,12 +15,14 @@ import httpx
 import peewee
 import pytz
 from telegram import (
+    BotCommand,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
     LinkPreviewOptions,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
+    ReplyParameters,
     Update,
     WebAppInfo,
 )
@@ -455,6 +457,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "📌 /nomegioco - Incolla il link per accedere alla partita odierna, dura solo 5 secondi, ad esempio: <code>/connections</code>",
         "",
         "📌 /myday - Mostra i giochi a cui non hai ancora giocato oggi",
+        "📌 /myonly - Versione effimera di /myday (visibile solo a te)",
         "📌 /myscore - Mostra il tuo punteggio e le tue posizioni di oggi",
         "📌 /jolly - Mostra il gioco Jolly di oggi (punti moltiplicati)",
         "📌 /dailyranking - Mostra i punti del giorno corrente",
@@ -1117,6 +1120,224 @@ async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if tot_favs > 0 and favs_played_today == tot_favs:
         emojimsg = await update.effective_message.reply_text("🥳")
         context.job_queue.run_once(delete_post, 60, data=[emojimsg], name=f"myday_emoji_delete_{str(update.effective_message.id)}")
+
+
+async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.effective_user:
+        return
+
+    played_today = []
+    not_played_today = []
+    not_played_favs = []
+    not_played_regs = []
+    favorites = []
+    solo_preferiti = False
+    user_id = update.effective_user.id
+
+    if str(user_id) in context.bot_data.get("settings", {}):
+        favorites = context.bot_data["settings"][str(user_id)].get("favs", [])
+        solo_preferiti = context.bot_data["settings"][str(user_id)].get("favs_extra_button", False)
+
+    bonus_today = (get_bonus_game(datetime.date.today()) or pick_or_get_bonus_game(datetime.date.today())) if getattr(config, "BONUS_GAME_ENABLED", True) else None
+    bonus_game_name = bonus_today.game if bonus_today else None
+    bonus_multiplier = bonus_today.multiplier if bonus_today else 1
+
+    def get_game_badge(g_name: str) -> str:
+        if bonus_game_name and g_name == bonus_game_name:
+            return f" [🎰 {bonus_multiplier}x]"
+        return ""
+
+    # Divido i giochi in giocati e non giocati
+    for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
+        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
+
+        if query:
+            played_today.append(game)
+        else:
+            not_played_today.append(game)
+
+    # divido i non giocati tra favs e regulars
+    for game in not_played_today:
+        if game in favorites:
+            not_played_favs.append(game)
+        else:
+            not_played_regs.append(game)
+
+    # non ha giocate
+    if not played_today:
+        message = "Non hai giocato a nulla oggi.\n\n"
+
+    # ha giocato a tutti i giochi
+    elif not not_played_today:
+        message = "Hai giocato a tutto!"
+
+    # ha giocato a qualcosa
+    else:
+        if not_played_favs:
+            message = "Ti manca da giocare:\n\n"
+
+        elif not not_played_favs and favorites:
+            message = "Hai giocato a tutti i preferiti!\n\n"
+
+        else:
+            message = "Ti manca da giocare:\n\n"
+
+    if not_played_favs:
+        for game in not_played_favs:
+            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
+
+    message += "\n"
+
+    if not_played_regs and not solo_preferiti:
+        for game in not_played_regs:
+            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
+
+    active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
+    tot_favs = len(active_favorites)
+    favs_played_today = 0
+    if tot_favs > 0:
+        favs_played_today = len([g for g in played_today if g in active_favorites])
+        if favs_played_today < tot_favs:
+            message = message.strip()
+            message += f"\n\nProgresso preferiti:"
+            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+
+    keyboard = None
+    if solo_preferiti:
+        buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myonly_more_{user_id}")]]
+        keyboard = InlineKeyboardMarkup(buttons)
+
+    ephemeral_params = {"receiver_user_id": user_id}
+    reply_params = None
+    if update.message:
+        eph_id = getattr(update.message, "ephemeral_message_id", None)
+        if eph_id:
+            reply_params = ReplyParameters(message_id=update.message.message_id, api_kwargs={"ephemeral_message_id": eph_id})
+        else:
+            reply_params = ReplyParameters(message_id=update.message.message_id)
+
+    await update.message.reply_text(
+        message,
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+        reply_markup=keyboard,
+        reply_parameters=reply_params,
+        api_kwargs={"ephemeral_message_parameters": ephemeral_params},
+    )
+
+    if tot_favs > 0 and favs_played_today == tot_favs:
+        await update.message.reply_text(
+            "🥳",
+            reply_parameters=reply_params,
+            api_kwargs={"ephemeral_message_parameters": ephemeral_params},
+        )
+
+    # In public group chats, delete the caller's message so no trace remains in the public timeline
+    if update.effective_chat and update.effective_chat.type != "private":
+        try:
+            await update.message.delete()
+        except Exception:
+            pass
+
+
+async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = str(update.effective_user.id)
+    target_uid = update.callback_query.data.split("_")[2]
+    if user_id != target_uid:
+        return
+
+    played_today = []
+    not_played_today = []
+    for game in GAMES.keys():
+        if GAMES[game].get("disabled", False):
+            continue
+        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
+        if query:
+            played_today.append(game)
+        else:
+            not_played_today.append(game)
+
+    if not played_today:
+        message = "Non hai giocato a nulla oggi.\n\n"
+    elif not_played_today:
+        message = "Ti manca da giocare:\n\n"
+
+    favs = []
+    regs = []
+    favorites = []
+    if str(user_id) in context.bot_data.get("settings", {}):
+        favorites = context.bot_data["settings"][str(user_id)].get("favs", [])
+
+    for game in not_played_today:
+        if game in favorites:
+            favs.append(game)
+        else:
+            regs.append(game)
+    bonus_today = (get_bonus_game(datetime.date.today()) or pick_or_get_bonus_game(datetime.date.today())) if getattr(config, "BONUS_GAME_ENABLED", True) else None
+    bonus_game_name = bonus_today.game if bonus_today else None
+    bonus_multiplier = bonus_today.multiplier if bonus_today else 1
+
+    def get_game_badge(g_name: str) -> str:
+        if bonus_game_name and g_name == bonus_game_name:
+            return f" [🎰 {bonus_multiplier}x]"
+        return ""
+
+    if favs:
+        for game in favs:
+            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
+    message += "\n"
+    if regs:
+        for game in regs:
+            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
+
+    elif not not_played_today:
+        message = "Hai giocato a tutto!"
+
+    active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
+    tot_favs = len(active_favorites)
+    favs_played_today = 0
+    if tot_favs > 0:
+        favs_played_today = len([g for g in played_today if g in active_favorites])
+        if favs_played_today < tot_favs:
+            message = message.strip()
+            message += f"\n\nProgresso preferiti:"
+            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+
+    await update.callback_query.answer()
+
+    # Edit the ephemeral message
+    try:
+        await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    except Exception:
+        try:
+            await context.bot._post(
+                "editEphemeralMessageText",
+                data={
+                    "chat_id": update.effective_chat.id,
+                    "receiver_user_id": update.effective_user.id,
+                    "ephemeral_message_id": getattr(update.effective_message, "ephemeral_message_id", update.effective_message.message_id),
+                    "text": message,
+                    "parse_mode": "HTML",
+                    "link_preview_options": {"is_disabled": True},
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error editing ephemeral message: {e}")
+
+    if tot_favs > 0 and favs_played_today == tot_favs:
+        try:
+            ephemeral_params = {"receiver_user_id": update.effective_user.id}
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="🥳",
+                api_kwargs={"ephemeral_message_parameters": ephemeral_params}
+            )
+        except Exception:
+            pass
 
 
 async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2192,6 +2413,7 @@ async def post_init(app: Application) -> None:
 
     my_commands = [
         ('myday', 'Quali giochi devi ancora giocare oggi?'),
+        BotCommand('myonly', 'Quali giochi devi ancora giocare oggi? (solo per te)', api_kwargs={'is_ephemeral': True}),
         ('myscore', 'Mostra il tuo punteggio di oggi'),
         ('jolly', 'Gioco Jolly di oggi (punti moltiplicati)'),
         ('mystats', 'Le tue statistiche'),
@@ -2238,6 +2460,7 @@ def main():
 
     app.add_handler(CommandHandler("classificona", classificona), 1)
     app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)
+    app.add_handler(CommandHandler(["myonly"], myonly), 1)
     app.add_handler(CommandHandler(["myscore", "score"], myscore), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "statistiche"], mystats), 1)
     app.add_handler(CommandHandler(["groupstats", "gstats", "statsgroup"], groupstats_command), 1)
@@ -2270,6 +2493,7 @@ def main():
     app.add_handler(CallbackQueryHandler(fav_extra_toggle, pattern=r"^fav_more"))
 
     app.add_handler(CallbackQueryHandler(mytoday_full, pattern=r"^myday_more"))
+    app.add_handler(CallbackQueryHandler(myonly_full, pattern=r"^myonly_more"))
 
     app.add_handler(MessageHandler(filters.ALL, spell_message), -150)
     app.add_handler(CommandHandler("enable_debug", enable_debug), 211)
