@@ -4008,8 +4008,8 @@ class Spellcheck(Giochino):
 class Songless(Giochino):
     _name = "Songless"
     _category = "Musica"
-    _date = datetime.date(2026, 10, 2)
-    _day = "400"
+    _date = datetime.date(2026, 11, 7)
+    _day = "436"
     _emoji = "🎶"
     _url = "https://less.gg/songless"
 
@@ -4019,6 +4019,7 @@ class Songless(Giochino):
         "Songless #368\n\n🟩⬛️⬛️⬛️⬛️⬛️ [All]\n⬜️🟩⬛️⬛️⬛️⬛️ [Rock]\n⬜️🟩⬛️⬛️⬛️⬛️ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
         "Songless #335\n\n🟥🟩⬛️⬛️⬛️⬛️ [All]\n🟩⬛️⬛️⬛️⬛️⬛️ [Rock]\n⬜️⬜️⬜️⬜️⬜️⬜️ [Hip Hop]\nPlay Today's Game: https://less.gg/songless",
         "Songless #401\n\n🟥⬜⬜⬜⬜ [All]\n⬜🟨🟩⬛⬛ [Rock]\n⬜⬜⬜⬜⬜ [Hip Hop]\n\nPlay Today's Game: https://less.gg/songless",
+        "Songless #436\n\n🟩⬛️⬛️⬛️⬛️ [Top Hits]\n⬜️🟩⬛️⬛️⬛️ [Pop]\n🟩⬛️⬛️⬛️⬛️ [Rock]\n⬜️🟩⬛️⬛️⬛️ [Hip Hop]\n⬜️⬜️⬜️⬜️🟩 [EDM]\n\nPlay Today's Game: https://less.gg/songless",
     ]
     expected = [
         {"day": "400", "name": "Songless", "stars": None, "timestamp": 10, "tries": 8, "user_id": 456481297, "user_name": "Trifase"},
@@ -4026,6 +4027,7 @@ class Songless(Giochino):
         {"day": "368", "name": "Songless", "stars": None, "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "335", "name": "Songless", "stars": None, "timestamp": 10, "tries": 10, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "401", "name": "Songless", "stars": None, "timestamp": 10, "tries": 15, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "436", "name": "Songless", "stars": None, "timestamp": 10, "tries": 11, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -4038,22 +4040,21 @@ class Songless(Giochino):
         day_match = re.search(r"Songless\s*#(\d+)", text, re.IGNORECASE)
         self.day = day_match.group(1) if day_match else None
 
-        genres = [r"\[All\]", r"\[Rock\]", r"\[Hip Hop\]"]
         total_tries = 0
         has_any_green = False
 
-        for genre in genres:
-            m = re.search(rf"([^\n]+)\s*{genre}", text, re.IGNORECASE)
-            if m:
-                line = m.group(1).strip()
-                squares = [c for c in line if c in "🟩🟨🟥⬜⬛🟧🟦🟪\U0001f7e0\U0001f7e1\U0001f7e2\U0001f7e3\U0001f7e4\U0001f7e5\U0001f7e6\U0001f7e7\U0001f7e8\U0001f7e9\u2b1c\u2b1b"]
-                green_idx = next((i + 1 for i, c in enumerate(squares) if c in "🟩\U0001f7e9"), None)
-                if green_idx is not None:
-                    has_any_green = True
-                    total_tries += green_idx
-                else:
-                    penalty = len(squares) + 1 if squares else 7
-                    total_tries += penalty
+        for m in re.finditer(r"([^\n]+)\s*\[([^\]]+)\]", text):
+            line = m.group(1).strip()
+            squares = [c for c in line if c in "🟩🟨🟥⬜⬛🟧🟦🟪\U0001f7e0\U0001f7e1\U0001f7e2\U0001f7e3\U0001f7e4\U0001f7e5\U0001f7e6\U0001f7e7\U0001f7e8\U0001f7e9\u2b1c\u2b1b"]
+            if not squares:
+                continue
+            green_idx = next((i + 1 for i, c in enumerate(squares) if c in "🟩\U0001f7e9"), None)
+            if green_idx is not None:
+                has_any_green = True
+                total_tries += green_idx
+            else:
+                penalty = len(squares) + 1 if squares else 6
+                total_tries += penalty
 
         if not has_any_green:
             self.tries = "X"
