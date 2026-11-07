@@ -2499,17 +2499,31 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
+    today = datetime.date.today()
+    bonus_today = (get_bonus_game(today) or pick_or_get_bonus_game(today)) if getattr(config, "BONUS_GAME_ENABLED", True) else None
+    bonus_game_name = bonus_today.game if bonus_today else None
+    bonus_multiplier = bonus_today.multiplier if bonus_today else 1
+
     categorie = set([GAMES[x]["category"] for x in GAMES.keys()])
     categorie = sorted(list(categorie)) # alphabetical order
     message = "Buongiorno, ecco a cosa si gioca oggi!\n\n"
+
+    if bonus_today and bonus_game_name in GAMES:
+        b_emoji = GAMES[bonus_game_name].get("emoji", "🎮")
+        b_url = GAMES[bonus_game_name].get("url", "")
+        b_day = get_day_from_date(GAMES[bonus_game_name]["date"], GAMES[bonus_game_name]["day"], bonus_game_name, today)
+        b_link = f'<a href="{b_url}">{b_emoji} {bonus_game_name} #{b_day}</a>' if b_url else f"<b>{b_emoji} {bonus_game_name} #{b_day}</b>"
+        message += f"🎰 <b>Gioco Jolly di oggi ({bonus_multiplier}x):</b> {b_link}\n\n"
+
     for categoria in categorie:
         message += f"<b>{categoria}</b>\n"
         for game in GAMES.keys():
             if GAMES[game].get("disabled", False):
                 continue
             if GAMES[game]["category"] == categoria:
-                day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-                message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
+                day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, today)
+                badge = f" <b>[🎰 {bonus_multiplier}x]</b>" if (bonus_game_name and game == bonus_game_name) else ""
+                message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>{badge}\n'
         message += "\n"
     # for game in GAMES.keys():
     #     day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
