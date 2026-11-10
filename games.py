@@ -149,6 +149,40 @@ def time_to_seconds(time_str: str) -> int:
     return seconds
 
 
+def _can_handle_guessdash(raw_text: str, game_slug: str, max_thousands: int) -> bool:
+    text_lower = raw_text.lower()
+    return (
+        game_slug in text_lower
+        and (f"guessdash.com/{game_slug}" in text_lower or f"{game_slug} ·" in text_lower)
+        and bool(re.search(rf"\d[\d,.]*\s*/\s*{max_thousands}[,.]?000", text_lower))
+    )
+
+
+def _parse_guessdash(raw_text: str, game_cls, max_thousands: int) -> tuple[str | None, int | str | None]:
+    date_match = re.search(
+        rf"{re.escape(game_cls._name)}\s*[·\-—]\s*([a-zA-Z]+)\s+(\d+),\s*(\d{{4}})",
+        raw_text,
+        re.IGNORECASE,
+    )
+    parsed_date = datetime.date.today()
+    if date_match:
+        months = {
+            "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+            "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+        }
+        month_num = months.get(date_match.group(1).lower()[:3])
+        if month_num:
+            parsed_date = datetime.date(int(date_match.group(3)), month_num, int(date_match.group(2)))
+    day = get_day_from_date(game_cls._date, game_cls._day, game_cls._name, parsed_date)
+
+    score_match = re.search(rf"(\d[\d,.]*)\s*/\s*{max_thousands}[,.]?000", raw_text)
+    if not score_match:
+        return day, None
+    score = int(score_match.group(1).replace(",", "").replace(".", ""))
+    tries = "X" if score == 0 else -score
+    return day, tries
+
+
 class GameFilter(MessageFilter):
     def __init__(self):
         self.data_filter = True
@@ -459,6 +493,37 @@ class Borderline(Giochino):
         else:
             self.tries = None
 
+        self.stars = None
+
+
+@dataclass
+class Bordivide(Giochino):
+    _name = "Bordivide"
+    _category = "Bandiere e geografia"
+    _date = datetime.date(2026, 11, 10)
+    _day = "100"
+    _emoji = "🗺️"
+    _url = "https://guessdash.com/bordivide"
+
+    examples = [
+        "Bordivide · Nov 10, 2026\n🟩⬜⬜🟩⬜⬜ 1,803 / 6,000\n\nCan you beat 1,803?\nhttps://guessdash.com/bordivide?c=hd9kn6",
+        "Bordivide · Nov 11, 2026\n🟩🟩🟩🟨🟩🟩 4.520 / 6.000\n\nCan you beat 4.520?\nhttps://guessdash.com/bordivide?c=abc123",
+        "Bordivide · Nov 9, 2026\n🟩⬜🟨⬜⬜⬜ 1803 / 6000\n\nCan you beat 1803?\nhttps://guessdash.com/bordivide?c=xyz789",
+        "Bordivide · Nov 10, 2026\n⬜⬜⬜⬜⬜⬜ 0 / 6,000\n\nCan you beat 0?\nhttps://guessdash.com/bordivide?c=000000",
+    ]
+    expected = [
+        {"day": "100", "name": "Bordivide", "stars": None, "timestamp": 10, "tries": -1803, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "101", "name": "Bordivide", "stars": None, "timestamp": 10, "tries": -4520, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "99", "name": "Bordivide", "stars": None, "timestamp": 10, "tries": -1803, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "Bordivide", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        return _can_handle_guessdash(raw_text, "bordivide", 6)
+
+    def parse(self):
+        self.day, self.tries = _parse_guessdash(self.raw_text, self, 6)
         self.stars = None
 
 
@@ -1542,53 +1607,23 @@ class Extraplot(Giochino):
 
     examples = [
         "Extraplot · Nov 10, 2026\n⬜⬜🟩⬜🟩 1,699 / 5,000\n\nCan you beat 1,699?\nhttps://guessdash.com/extraplot?c=8u9eyk",
-        "Extraplot · Nov 11, 2026\n🟩🟩🟩🟨🟩 4,250 / 5,000\n\nCan you beat 4,250?\nhttps://guessdash.com/extraplot?c=abc123",
-        "Extraplot · Nov 9, 2026\n⬜⬜⬜🟨⬜ 850 / 5,000\n\nCan you beat 850?\nhttps://guessdash.com/extraplot?c=xyz789",
+        "Extraplot · Nov 11, 2026\n🟩🟩🟩🟨🟩 4.250 / 5.000\n\nCan you beat 4.250?\nhttps://guessdash.com/extraplot?c=abc123",
+        "Extraplot · Nov 9, 2026\n⬜⬜⬜🟨⬜ 1699 / 5000\n\nCan you beat 1699?\nhttps://guessdash.com/extraplot?c=xyz789",
         "Extraplot · Nov 10, 2026\n⬜⬜⬜⬜⬜ 0 / 5,000\n\nCan you beat 0?\nhttps://guessdash.com/extraplot?c=000000",
     ]
     expected = [
         {"day": "100", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": -1699, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "101", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": -4250, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "99", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": -850, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "99", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": -1699, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "100", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        text_lower = raw_text.lower()
-        return (
-            "extraplot" in text_lower
-            and ("guessdash.com/extraplot" in text_lower or "extraplot ·" in text_lower)
-            and bool(re.search(r"\d[\d,]*\s*/\s*5,?000", text_lower))
-        )
+        return _can_handle_guessdash(raw_text, "extraplot", 5)
 
     def parse(self):
-        text = self.raw_text
-        date_match = re.search(r"Extraplot\s*[·\-—]\s*([a-zA-Z]+)\s+(\d+),\s*(\d{4})", text, re.IGNORECASE)
-        if date_match:
-            month_str = date_match.group(1).lower()[:3]
-            day_num = int(date_match.group(2))
-            year_num = int(date_match.group(3))
-            months = {
-                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
-            }
-            month_num = months.get(month_str)
-            if month_num:
-                parsed_date = datetime.date(year_num, month_num, day_num)
-                self.day = get_day_from_date(self._date, self._day, self._name, parsed_date)
-            else:
-                self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
-        else:
-            self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
-
-        score_match = re.search(r"(\d[\d,]*)\s*/\s*5,?000", text)
-        if score_match:
-            score = int(score_match.group(1).replace(",", ""))
-            self.tries = "X" if score == 0 else -score
-        else:
-            self.tries = None
-
+        self.day, self.tries = _parse_guessdash(self.raw_text, self, 5)
         self.stars = None
 
 
