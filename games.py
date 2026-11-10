@@ -1532,6 +1532,67 @@ class EncloseHorse(Giochino):
 
 
 @dataclass
+class Extraplot(Giochino):
+    _name = "Extraplot"
+    _category = "Osservazione e percezione"
+    _date = datetime.date(2026, 11, 10)
+    _day = "100"
+    _emoji = "📈"
+    _url = "https://guessdash.com/extraplot"
+
+    examples = [
+        "Extraplot · Nov 10, 2026\n⬜⬜🟩⬜🟩 1,699 / 5,000\n\nCan you beat 1,699?\nhttps://guessdash.com/extraplot?c=8u9eyk",
+        "Extraplot · Nov 11, 2026\n🟩🟩🟩🟨🟩 4,250 / 5,000\n\nCan you beat 4,250?\nhttps://guessdash.com/extraplot?c=abc123",
+        "Extraplot · Nov 9, 2026\n⬜⬜⬜🟨⬜ 850 / 5,000\n\nCan you beat 850?\nhttps://guessdash.com/extraplot?c=xyz789",
+        "Extraplot · Nov 10, 2026\n⬜⬜⬜⬜⬜ 0 / 5,000\n\nCan you beat 0?\nhttps://guessdash.com/extraplot?c=000000",
+    ]
+    expected = [
+        {"day": "100", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": -1699, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "101", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": -4250, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "99", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": -850, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "Extraplot", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return (
+            "extraplot" in text_lower
+            and ("guessdash.com/extraplot" in text_lower or "extraplot ·" in text_lower)
+            and bool(re.search(r"\d[\d,]*\s*/\s*5,?000", text_lower))
+        )
+
+    def parse(self):
+        text = self.raw_text
+        date_match = re.search(r"Extraplot\s*[·\-—]\s*([a-zA-Z]+)\s+(\d+),\s*(\d{4})", text, re.IGNORECASE)
+        if date_match:
+            month_str = date_match.group(1).lower()[:3]
+            day_num = int(date_match.group(2))
+            year_num = int(date_match.group(3))
+            months = {
+                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            }
+            month_num = months.get(month_str)
+            if month_num:
+                parsed_date = datetime.date(year_num, month_num, day_num)
+                self.day = get_day_from_date(self._date, self._day, self._name, parsed_date)
+            else:
+                self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
+        else:
+            self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
+
+        score_match = re.search(r"(\d[\d,]*)\s*/\s*5,?000", text)
+        if score_match:
+            score = int(score_match.group(1).replace(",", ""))
+            self.tries = "X" if score == 0 else -score
+        else:
+            self.tries = None
+
+        self.stars = None
+
+
+@dataclass
 class Flags(Giochino):
     _name = "Flags"
     _category = "Bandiere e geografia"
