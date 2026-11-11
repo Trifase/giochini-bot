@@ -2923,16 +2923,18 @@ class LoopyRiver(Giochino):
     _date = datetime.date(2026, 11, 9)
     _day = "100"
     _emoji = "🌊"
-    _url = "https://inkwellgames.com"
+    _url = "https://inkwellgames.com/games/loopy-river"
     _added_date = datetime.date(2026, 11, 11)
 
     examples = [
         "Inkwell Games - Loopy River\nMonday, November 9\n🌀 0:43 🎯 a perfect game",
+        "Inkwell Games - Loopy River\nWednesday, November 11\n🌀 0:46 💡 1 hints/checks https://inkwellgames.com/games/loopy-river/2026-11-11",
         "Inkwell Games - Loopy River\nWednesday, November 11\n🌀 2:15",
         "Inkwell Games - Loopy River\nMonday, November 9\nFailed",
     ]
     expected = [
         {"day": f'{get_day_from_date(_date, _day, "LoopyRiver", datetime.date(datetime.date.today().year, 11, 9))}', "name": "LoopyRiver", "stars": None, "timestamp": 10, "tries": 43, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "102", "name": "LoopyRiver", "stars": None, "timestamp": 10, "tries": 56, "user_id": 456481297, "user_name": "Trifase"},
         {"day": f'{get_day_from_date(_date, _day, "LoopyRiver", datetime.date(datetime.date.today().year, 11, 11))}', "name": "LoopyRiver", "stars": None, "timestamp": 10, "tries": 135, "user_id": 456481297, "user_name": "Trifase"},
         {"day": f'{get_day_from_date(_date, _day, "LoopyRiver", datetime.date(datetime.date.today().year, 11, 9))}', "name": "LoopyRiver", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
@@ -2944,30 +2946,38 @@ class LoopyRiver(Giochino):
 
     def parse(self):
         text = self.raw_text
-        date_match = re.search(
-            r"\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})\b",
-            text,
-            re.IGNORECASE,
-        )
-        if date_match:
-            months = {
-                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
-            }
-            month_num = months.get(date_match.group(1).lower()[:3], datetime.date.today().month)
-            day_num = int(date_match.group(2))
-            year_num = datetime.date.today().year
-            parsed_date = datetime.date(year_num, month_num, day_num)
+        url_date_match = re.search(r"loopy-river/(\d{4}-\d{2}-\d{2})", text, re.IGNORECASE)
+        if url_date_match:
+            parsed_date = datetime.datetime.strptime(url_date_match.group(1), "%Y-%m-%d").date()
             self.day = get_day_from_date(self._date, self._day, self._name, parsed_date)
         else:
-            self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
+            date_match = re.search(
+                r"\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})\b",
+                text,
+                re.IGNORECASE,
+            )
+            if date_match:
+                months = {
+                    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+                }
+                month_num = months.get(date_match.group(1).lower()[:3], datetime.date.today().month)
+                day_num = int(date_match.group(2))
+                year_num = datetime.date.today().year
+                parsed_date = datetime.date(year_num, month_num, day_num)
+                self.day = get_day_from_date(self._date, self._day, self._name, parsed_date)
+            else:
+                self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
 
         time_match = re.search(r"\U0001f300\s*(?:(\d+):)?(\d+):(\d+)", text) or re.search(r"\b(?:(\d+):)?(\d+):(\d{2})\b", text)
         if time_match:
             hours = int(time_match.group(1)) if time_match.group(1) else 0
             minutes = int(time_match.group(2))
             seconds = int(time_match.group(3))
-            self.tries = hours * 3600 + minutes * 60 + seconds
+            base_seconds = hours * 3600 + minutes * 60 + seconds
+            hints_match = re.search(r"(?:\U0001f4a1\s*)?(\d+)\s*hints?(?:/checks)?", text, re.IGNORECASE)
+            hints = int(hints_match.group(1)) if hints_match else 0
+            self.tries = base_seconds + hints * 10
         else:
             self.tries = "X"
         self.stars = None
