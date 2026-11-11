@@ -5076,11 +5076,13 @@ class Trivmount(Giochino):
 
     examples = [
         "Trivmount #47 4/12\n🟧🟧🟧🟧🟥⬛⬛⬛⬛⬛⬛⬛\nhttps://trivmount.com",
+        "Trivmount #47 🏔️ SUMMIT\n🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧\nhttps://trivmount.com",
         "Trivmount #48 12/12\n🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧\nhttps://trivmount.com",
         "Trivmount #47 0/12\n🟥⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\nhttps://trivmount.com",
     ]
     expected = [
         {"day": "47", "name": "Trivmount", "stars": None, "timestamp": 10, "tries": -4, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "47", "name": "Trivmount", "stars": None, "timestamp": 10, "tries": -12, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "48", "name": "Trivmount", "stars": None, "timestamp": 10, "tries": -12, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "47", "name": "Trivmount", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
     ]
@@ -5103,7 +5105,11 @@ class Trivmount(Giochino):
         else:
             day_match = re.search(r"Trivmount\s+#(\d+)", text, re.IGNORECASE)
             self.day = day_match.group(1) if day_match else None
-            self.tries = None
+            if "SUMMIT" in text.upper():
+                orange_count = text.count("🟧")
+                self.tries = -(orange_count if orange_count > 0 else 12)
+            else:
+                self.tries = None
         self.stars = None
 
 
