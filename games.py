@@ -1293,6 +1293,61 @@ class Crossclimb(Giochino):
 
 
 @dataclass
+class DailyHeadlines(Giochino):
+    _name = "DailyHeadlines"
+    _category = "Storia"
+    _date = datetime.date(2026, 11, 11)
+    _day = "100"
+    _emoji = "📰"
+    _url = "https://www.daily-headlines.com"
+    _added_date = datetime.date(2026, 11, 11)
+
+    examples = [
+        "📰 www.daily-headlines.com 📰\nNovember 11\n913🥈 875🥈 931🏆 4💀 875🥈\nFinal score: 3598",
+        "📰 www.daily-headlines.com 📰\nNovember 12\n1000🏆 950🥇 900🥈 850🥉 500🥉\nFinal score: 4,200",
+        "📰 www.daily-headlines.com 📰\nNovember 11\n0💀 0💀 0💀 0💀 0💀\nFinal score: 0",
+    ]
+    expected = [
+        {"day": f'{get_day_from_date(_date, _day, "DailyHeadlines", datetime.date(datetime.date.today().year, 11, 11))}', "name": "DailyHeadlines", "stars": None, "timestamp": 10, "tries": -3598, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "DailyHeadlines", datetime.date(datetime.date.today().year, 11, 12))}', "name": "DailyHeadlines", "stars": None, "timestamp": 10, "tries": -4200, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "DailyHeadlines", datetime.date(datetime.date.today().year, 11, 11))}', "name": "DailyHeadlines", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "daily-headlines.com" in text_lower and "final score:" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        date_match = re.search(
+            r"\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})\b",
+            text,
+            re.IGNORECASE,
+        )
+        if date_match:
+            months = {
+                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            }
+            month_num = months.get(date_match.group(1).lower()[:3], datetime.date.today().month)
+            day_num = int(date_match.group(2))
+            year_num = datetime.date.today().year
+            parsed_date = datetime.date(year_num, month_num, day_num)
+            self.day = get_day_from_date(self._date, self._day, self._name, parsed_date)
+        else:
+            self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
+
+        score_match = re.search(r"Final\s+score:\s*([\d,.]+)", text, re.IGNORECASE)
+        if score_match:
+            score = int(score_match.group(1).replace(",", "").replace(".", ""))
+            self.tries = "X" if score == 0 else -score
+        else:
+            self.tries = None
+        self.stars = None
+
+
+@dataclass
 class Decipher(Giochino):
     _name = "Decipher"
     _category = "Giochi di parole"
