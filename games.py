@@ -3148,6 +3148,52 @@ class Murdle(Giochino):
 
 
 @dataclass
+class Neograms(Giochino):
+    _name = "Neograms"
+    _category = "Giochi di parole"
+    _date = datetime.date(2026, 11, 11)
+    _day = "1"
+    _emoji = "🔣"
+    _url = "https://neograms.app"
+    _added_date = datetime.date(2026, 11, 11)
+
+    examples = [
+        "Neograms - Decode a New Language Each Day\n\nI decoded today's unknown language Sîrani\n\n🥇 1st · ⏱️ 1:34 · (0 hints) · 🔥 9\n\nCan you beat this?\n\nhttps://neograms.app/puzzle.html?id=598704&src=neopuzzles500:28",
+        "Neograms - Decode a New Language Each Day\n\nI decoded today's unknown language Sîrani\n\n🥈 2nd · ⏱️ 1:34 · (2 hints) · 🔥 5\n\nCan you beat this?\n\nhttps://neograms.app/puzzle.html?id=598704",
+        "Neograms - Decode a New Language Each Day\n\nI decoded today's unknown language Kaelic\n\n🥉 3rd · ⏱️ 0:45 · (1 hint) · 🔥 3\n\nhttps://neograms.app",
+        "Neograms - Decode a New Language Each Day\n\nFailed today's puzzle\n\nhttps://neograms.app",
+    ]
+    expected = [
+        {"day": f'{get_day_from_date(_date, _day, "Neograms", datetime.date.today())}', "name": "Neograms", "stars": None, "timestamp": 10, "tries": 94, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "Neograms", datetime.date.today())}', "name": "Neograms", "stars": None, "timestamp": 10, "tries": 114, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "Neograms", datetime.date.today())}', "name": "Neograms", "stars": None, "timestamp": 10, "tries": 55, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "Neograms", datetime.date.today())}', "name": "Neograms", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "neograms" in text_lower and ("neograms.app" in text_lower or "decode a new language" in text_lower)
+
+    def parse(self):
+        text = self.raw_text
+        self.day = get_day_from_date(self._date, self._day, self._name, datetime.date.today())
+
+        time_match = re.search(r"\u23f1\ufe0f?\s*(?:(\d+):)?(\d+):(\d+)", text)
+        if time_match:
+            hours = int(time_match.group(1)) if time_match.group(1) else 0
+            minutes = int(time_match.group(2))
+            seconds = int(time_match.group(3))
+            base_seconds = hours * 3600 + minutes * 60 + seconds
+            hints_match = re.search(r"\((\d+)\s*hints?\)", text, re.IGNORECASE)
+            hints = int(hints_match.group(1)) if hints_match else 0
+            self.tries = base_seconds + hints * 10
+        else:
+            self.tries = "X"
+        self.stars = None
+
+
+@dataclass
 class Nerdle(Giochino):
     _name = "Nerdle"
     _category = "Logica e matematica"
