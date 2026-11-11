@@ -807,6 +807,12 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if result.get("day") is None:
             logging.warning(f"Parsed result with null day for game {giochino._name}: {update.message.text}")
             return
+        if result.get("tries") is None:
+            logging.warning(f"Parsed result with null tries for game {giochino._name}: {update.message.text}")
+            await update.message.reply_text(
+                f"⚠️ Non riesco a leggere il punteggio per {giochino._name}. Assicurati che il messaggio includa il punteggio o il tempo!"
+            )
+            return
 
         query = Punteggio.select().where(
             Punteggio.day == str_as_int(result["day"]),

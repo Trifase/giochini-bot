@@ -6,7 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from main import daily_reminder, new_games_reminder, manual_new_games_reminder
+from games import DominoFit
+from main import daily_reminder, new_games_reminder, manual_new_games_reminder, parse_punteggio
 from utils import GiocoBonus
 
 
@@ -178,3 +179,25 @@ async def test_manual_new_games_reminder_admin_only():
         await manual_new_games_reminder(update_admin, context)
     assert mock_bot.send_message.call_count == 1
     assert not update_admin.message.reply_text.called
+
+
+@pytest.mark.anyio
+async def test_parse_punteggio_handles_null_tries():
+    update = MagicMock()
+    update.effective_chat.id = 9999
+    update.effective_message.date = datetime.datetime.now(datetime.timezone.utc)
+    update.message.text = "DOMINO FIT #998 6x6\n🥇✅✅✅"
+    update.message.caption = None
+    update.message.from_user.full_name = "Stell"
+    update.message.from_user.id = 123
+    update.message.reply_text = AsyncMock()
+
+    context = MagicMock()
+    context.giochino = [DominoFit]
+
+    with patch("main.ID_TESTING", -1), patch("main.check_reenable", new=AsyncMock()):
+        await parse_punteggio(update, context)
+
+    update.message.reply_text.assert_awaited_once()
+    msg = update.message.reply_text.call_args.args[0]
+    assert "DominoFit" in msg

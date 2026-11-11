@@ -1541,7 +1541,7 @@ class DominoFit(Giochino):
         self.day = day_match.group(1) if day_match else None
 
         # Extract time using emoji pattern
-        time_pattern = re.search(r"⌚[]]?([0-9️⃣]+)", text)
+        time_pattern = re.search(r"\u231a\ufe0f?\s*([0-9\ufe0f\u20e3]+)", text)
         if time_pattern:
             time_str = time_pattern.group(1)
             str_points = time_from_emoji(time_str.strip())
