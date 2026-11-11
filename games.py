@@ -5008,6 +5008,49 @@ class TravleITA(Giochino):
 
 
 @dataclass
+class Trivmount(Giochino):
+    _name = "Trivmount"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 11, 11)
+    _day = "47"
+    _emoji = "🏔️"
+    _url = "https://trivmount.com"
+    _added_date = datetime.date(2026, 11, 11)
+
+    examples = [
+        "Trivmount #47 4/12\n🟧🟧🟧🟧🟥⬛⬛⬛⬛⬛⬛⬛\nhttps://trivmount.com",
+        "Trivmount #48 12/12\n🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧\nhttps://trivmount.com",
+        "Trivmount #47 0/12\n🟥⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\nhttps://trivmount.com",
+    ]
+    expected = [
+        {"day": "47", "name": "Trivmount", "stars": None, "timestamp": 10, "tries": -4, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "48", "name": "Trivmount", "stars": None, "timestamp": 10, "tries": -12, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "47", "name": "Trivmount", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "trivmount #" in text_lower and "trivmount.com" in text_lower
+
+    def parse(self):
+        text = self.raw_text
+        match = re.search(r"Trivmount\s+#(\d+)\s+(\d+|X)/\d+", text, re.IGNORECASE)
+        if match:
+            self.day = match.group(1)
+            val = match.group(2).upper()
+            if val == "X" or int(val) == 0:
+                self.tries = "X"
+            else:
+                self.tries = -int(val)
+        else:
+            day_match = re.search(r"Trivmount\s+#(\d+)", text, re.IGNORECASE)
+            self.day = day_match.group(1) if day_match else None
+            self.tries = None
+        self.stars = None
+
+
+@dataclass
 class Unzoomed(Giochino):
     _name = "Unzoomed"
     _category = "Bandiere e geografia"
