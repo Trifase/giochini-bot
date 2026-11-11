@@ -151,16 +151,21 @@ def time_to_seconds(time_str: str) -> int:
 
 def _can_handle_guessdash(raw_text: str, game_slug: str, max_thousands: int) -> bool:
     text_lower = raw_text.lower()
+    has_header = (
+        f"guessdash.com/{game_slug}" in text_lower
+        or f"{game_slug} ·" in text_lower
+        or bool(re.search(rf"^{re.escape(game_slug)}\s+[a-z]+\s+\d+,\s*\d{{4}}", text_lower, re.MULTILINE))
+    )
     return (
         game_slug in text_lower
-        and (f"guessdash.com/{game_slug}" in text_lower or f"{game_slug} ·" in text_lower)
+        and has_header
         and bool(re.search(rf"\d[\d,.]*\s*/\s*{max_thousands}[,.]?000", text_lower))
     )
 
 
 def _parse_guessdash(raw_text: str, game_cls, max_thousands: int) -> tuple[str | None, int | str | None]:
     date_match = re.search(
-        rf"{re.escape(game_cls._name)}\s*[·\-—]\s*([a-zA-Z]+)\s+(\d+),\s*(\d{{4}})",
+        rf"{re.escape(game_cls._name)}\s*(?:[·\-—]\s*)?([a-zA-Z]+)\s+(\d+),\s*(\d{{4}})",
         raw_text,
         re.IGNORECASE,
     )
@@ -3423,6 +3428,36 @@ class Patches(Giochino):
         matches_time = re.search(r"(\d+):(\d+)", text)
         self.day = matches_day.group(1) if matches_day else None
         self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
+
+
+@dataclass
+class Paintiquity(Giochino):
+    _name = "Paintiquity"
+    _category = "Storia"
+    _date = datetime.date(2026, 11, 11)
+    _day = "100"
+    _emoji = "🖼️"
+    _url = "https://guessdash.com/paintiquity"
+    _added_date = datetime.date(2026, 11, 11)
+
+    examples = [
+        "Paintiquity\nNov 11, 2026\nScore: 1999 / 5000\n🟩🟨⬜🟧⬜\nI beat 78% of players.\n\nCan you beat 1,999?\nhttps://guessdash.com/paintiquity?c=hg0h05",
+        "Paintiquity\nNov 12, 2026\nScore: 4,250 / 5,000\n🟩🟩🟩🟨🟩\nI beat 95% of players.\n\nCan you beat 4,250?\nhttps://guessdash.com/paintiquity?c=abc123",
+        "Paintiquity\nNov 11, 2026\nScore: 0 / 5000\n⬜⬜⬜⬜⬜\n\nCan you beat 0?\nhttps://guessdash.com/paintiquity?c=000000",
+    ]
+    expected = [
+        {"day": "100", "name": "Paintiquity", "stars": None, "timestamp": 10, "tries": -1999, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "101", "name": "Paintiquity", "stars": None, "timestamp": 10, "tries": -4250, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "100", "name": "Paintiquity", "stars": None, "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        return _can_handle_guessdash(raw_text, "paintiquity", 5)
+
+    def parse(self):
+        self.day, self.tries = _parse_guessdash(self.raw_text, self, 5)
+        self.stars = None
 
 
 @dataclass
