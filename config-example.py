@@ -104,12 +104,24 @@ BONUS_GAME_MULTIPLIERS = [
 ]
 BONUS_GAME_NO_REPEAT_DAYS = 7
 
+# ==========================================
+# GIOCHI NUOVI (PROMO INIZIALE)
+# ==========================================
+NEW_GAME_ENABLED = True
+NEW_GAME_DAYS = 3
+NEW_GAME_MULTIPLIER = 2
+NEW_GAME_EMOJI = "🆕"
+
 
 class GiocoBonus(peewee.Model):
-    date = peewee.DateField(unique=True)
+    date = peewee.DateField()
     game = peewee.TextField()
     multiplier = peewee.IntegerField()
+    bonus_type = peewee.TextField(default="jolly")
 
     class Meta:
         database = db
         table_name = "gioco_bonus"
+        indexes = (
+            (("date", "game", "bonus_type"), True),
+        )

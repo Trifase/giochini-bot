@@ -478,3 +478,76 @@ def test_score_participation_bonus():
     assert cl2.giocate[6].stelle == 2
     assert cl2.giocate[7].stelle == 1
 
+
+def test_ensure_gioco_bonus_schema_migration():
+    from utils import ensure_gioco_bonus_schema
+
+    db = GiocoBonus._meta.database
+    db.execute_sql("DROP TABLE IF EXISTS gioco_bonus")
+    db.execute_sql(
+        "CREATE TABLE gioco_bonus (id INTEGER PRIMARY KEY AUTOINCREMENT, date DATE NOT NULL UNIQUE, game TEXT NOT NULL, multiplier INTEGER NOT NULL)"
+    )
+    db.execute_sql("INSERT INTO gioco_bonus (date, game, multiplier) VALUES ('2026-11-10', 'Wordle', 3)")
+
+    ensure_gioco_bonus_schema()
+
+    rows = list(GiocoBonus.select().where(GiocoBonus.date == datetime.date(2026, 11, 10)))
+    assert len(rows) == 1
+    assert rows[0].game == "Wordle"
+    assert rows[0].multiplier == 3
+    assert rows[0].bonus_type == "jolly"
+
+    # Now multiple bonus rows on the same date must be allowed
+    GiocoBonus.create(date=datetime.date(2026, 11, 10), game="Bordivide", multiplier=2, bonus_type="new_game")
+    GiocoBonus.create(date=datetime.date(2026, 11, 10), game="Extraplot", multiplier=2, bonus_type="new_game")
+    assert GiocoBonus.select().where(GiocoBonus.date == datetime.date(2026, 11, 10)).count() == 3
+
+
+def test_new_game_window_and_multiplier():
+    from games import ALL_GAMES, get_day_from_date
+    from utils import is_game_new_on_date, sync_new_game_bonuses, get_game_multiplier
+
+    assert ALL_GAMES["Bordivide"]["added_date"] == datetime.date(2026, 11, 11)
+    assert ALL_GAMES["Extraplot"]["added_date"] == datetime.date(2026, 11, 11)
+
+    # 3-day window: Nov 11, 12, 13 -> True; Nov 10 and Nov 14 -> False
+    assert is_game_new_on_date("Bordivide", datetime.date(2026, 11, 10)) is False
+    assert is_game_new_on_date("Bordivide", datetime.date(2026, 11, 11)) is True
+    assert is_game_new_on_date("Bordivide", datetime.date(2026, 11, 12)) is True
+    assert is_game_new_on_date("Bordivide", datetime.date(2026, 11, 13)) is True
+    assert is_game_new_on_date("Bordivide", datetime.date(2026, 11, 14)) is False
+
+    target = datetime.date(2026, 11, 11)
+    synced = sync_new_game_bonuses(target)
+    synced_names = {e.game for e in synced}
+    assert "Bordivide" in synced_names
+    assert "Extraplot" in synced_names
+
+    # Coexist with Jolly on the same date
+    GiocoBonus.create(date=target, game="Wordle", multiplier=3, bonus_type="jolly")
+    assert get_game_multiplier("Bordivide", target) == (2, "new_game")
+    assert get_game_multiplier("Wordle", target) == (3, "jolly")
+
+    # Daily ranking applies 2x for Bordivide on Nov 11
+    b_day = get_day_from_date(ALL_GAMES["Bordivide"]["date"], ALL_GAMES["Bordivide"]["day"], "Bordivide", target)
+    Punteggio.create(
+        date=target, timestamp=100, chat_id=ID_GIOCHINI, user_id=1, user_name="Alice",
+        game="Bordivide", day=b_day, tries=-4000, lost=False,
+    )
+    Punteggio.create(
+        date=target, timestamp=101, chat_id=ID_GIOCHINI, user_id=2, user_name="Bob",
+        game="Bordivide", day=b_day, tries=-2000, lost=False,
+    )
+    ranking = daily_ranking("default", target)
+    scores = {user_name: stars for pos, uid, user_name, stars, bonus in ranking}
+    assert scores["Alice"] == 4  # 2 base * 2
+    assert scores["Bob"] == 2    # 1 base * 2
+
+
+def test_pick_or_get_bonus_game_excludes_new_games():
+    target = datetime.date(2026, 11, 11)
+    jolly = pick_or_get_bonus_game(target)
+    assert jolly is not None
+    assert jolly.bonus_type == "jolly"
+    assert jolly.game not in {"Bordivide", "Extraplot"}
+

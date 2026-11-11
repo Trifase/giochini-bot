@@ -212,6 +212,8 @@ class Giochino:
     _date: datetime.date = None
     _day: str = None
     _url: str = None
+    _added_date: datetime.date = None
+    _new_days: int = None
     # Telegram input
     update: str = None
     raw_text: str = None
@@ -504,6 +506,7 @@ class Bordivide(Giochino):
     _day = "100"
     _emoji = "🗺️"
     _url = "https://guessdash.com/bordivide"
+    _added_date = datetime.date(2026, 11, 11)
 
     examples = [
         "Bordivide · Nov 10, 2026\n🟩⬜⬜🟩⬜⬜ 1,803 / 6,000\n\nCan you beat 1,803?\nhttps://guessdash.com/bordivide?c=hd9kn6",
@@ -1604,6 +1607,7 @@ class Extraplot(Giochino):
     _day = "100"
     _emoji = "📈"
     _url = "https://guessdash.com/extraplot"
+    _added_date = datetime.date(2026, 11, 11)
 
     examples = [
         "Extraplot · Nov 10, 2026\n⬜⬜🟩⬜🟩 1,699 / 5,000\n\nCan you beat 1,699?\nhttps://guessdash.com/extraplot?c=8u9eyk",
@@ -5286,6 +5290,8 @@ def get_games() -> dict:
             "date": giochino._date,
             "day": giochino._day,
             "disabled": giochino.disabled,
+            "added_date": giochino._added_date,
+            "new_days": giochino._new_days,
         }
     # print(games)
     return games

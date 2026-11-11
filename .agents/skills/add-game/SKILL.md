@@ -26,6 +26,7 @@ Before writing code, extract:
   - `_day = "N"` (string)
 - **Emoji**: Distinguishing emoji (e.g. `🧇`, `📊`, `🎨`).
 - **URL**: Game website URL.
+- **Added Date**: `_added_date = datetime.date(YYYY, M, D)` (today's date when adding the game; activates `🆕` badge and 2x points for `NEW_GAME_DAYS`, default 3 days).
 - **Scoring Type**:
   1. *Fewer tries is better* (e.g. Wordle): `tries = int(guesses)`.
   2. *Higher score is better (integer)*: `tries = -int(score)`.
@@ -47,6 +48,7 @@ class NewGame(Giochino):
     _day = "..."
     _emoji = "..."
     _url = "https://..."
+    _added_date = datetime.date(YYYY, M, D)
 
     examples = [
         "...",

@@ -176,3 +176,39 @@ def test_api_algorithm_comparison():
         assert "rankings" in comp
         assert "players" in comp
 
+
+def test_api_new_game_multiplier():
+    client = TestClient(app)
+    target = datetime.date(2026, 11, 11)
+    from games import get_day_from_date, ALL_GAMES
+    b_day = get_day_from_date(ALL_GAMES["Bordivide"]["date"], ALL_GAMES["Bordivide"]["day"], "Bordivide", target)
+
+    GiocoBonus.create(date=target, game="Wordle", multiplier=3, bonus_type="jolly")
+    GiocoBonus.create(date=target, game="Bordivide", multiplier=2, bonus_type="new_game")
+
+    Punteggio.create(
+        date=target, timestamp=100, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario",
+        game="Bordivide", day=b_day, tries=-4000, lost=False,
+    )
+    Punteggio.create(
+        date=target, timestamp=101, chat_id=ID_GIOCHINI, user_id=2, user_name="Luigi",
+        game="Bordivide", day=b_day, tries=-2000, lost=False,
+    )
+
+    res_cls = client.get(f"/api/classifica/?day={target.strftime('%Y-%m-%d')}&game=Bordivide")
+    assert res_cls.status_code == 200
+    cls_data = res_cls.json()
+    assert len(cls_data) == 1
+    assert cls_data[0]["is_new"] is True
+    assert cls_data[0]["is_jolly"] is False
+    assert cls_data[0]["bonus_type"] == "new_game"
+    assert cls_data[0]["multiplier"] == 2
+    assert cls_data[0]["posizioni"][0]["stars"] == 4
+
+    res_jolly = client.get(f"/api/jolly/?day={target.strftime('%Y-%m-%d')}")
+    assert res_jolly.status_code == 200
+    j_data = res_jolly.json()
+    assert j_data["active"] is True
+    assert j_data["bonus"]["game"] == "Wordle"
+    assert any(ng["game"] == "Bordivide" and ng["multiplier"] == 2 for ng in j_data["new_games"])
+

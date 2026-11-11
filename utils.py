@@ -101,13 +101,57 @@ class PuntiBonus(peewee.Model):
 
 
 class GiocoBonus(peewee.Model):
-    date = peewee.DateField(unique=True)
+    date = peewee.DateField()
     game = peewee.TextField()
     multiplier = peewee.IntegerField()
+    bonus_type = peewee.TextField(default="jolly")
 
     class Meta:
         database = Punteggio._meta.database
         table_name = "gioco_bonus"
+        indexes = (
+            (("date", "game", "bonus_type"), True),
+        )
+
+
+def ensure_gioco_bonus_schema():
+    """Creates gioco_bonus if missing, or migrates legacy single-date-unique schema to multi-row bonus_type schema."""
+    db = GiocoBonus._meta.database
+    if not GiocoBonus.table_exists():
+        GiocoBonus.create_table(safe=True)
+        return
+
+    cols = {row[1] for row in db.execute_sql("PRAGMA table_info(gioco_bonus)").fetchall()}
+    has_bonus_type = "bonus_type" in cols
+
+    has_legacy_date_unique = False
+    for idx_row in db.execute_sql("PRAGMA index_list(gioco_bonus)").fetchall():
+        # idx_row = (seq, name, unique, origin, partial)
+        if idx_row[2]:
+            idx_name = idx_row[1]
+            idx_cols = [c[2] for c in db.execute_sql(f'PRAGMA index_info("{idx_name}")').fetchall()]
+            if idx_cols == ["date"]:
+                has_legacy_date_unique = True
+                break
+
+    if has_bonus_type and not has_legacy_date_unique:
+        return
+
+    with db.atomic():
+        db.execute_sql("DROP TABLE IF EXISTS gioco_bonus_legacy_tmp")
+        db.execute_sql("ALTER TABLE gioco_bonus RENAME TO gioco_bonus_legacy_tmp")
+        GiocoBonus.create_table(safe=True)
+        if has_bonus_type:
+            db.execute_sql(
+                "INSERT OR IGNORE INTO gioco_bonus (id, date, game, multiplier, bonus_type) "
+                "SELECT id, date, game, multiplier, COALESCE(bonus_type, 'jolly') FROM gioco_bonus_legacy_tmp"
+            )
+        else:
+            db.execute_sql(
+                "INSERT OR IGNORE INTO gioco_bonus (id, date, game, multiplier, bonus_type) "
+                "SELECT id, date, game, multiplier, 'jolly' FROM gioco_bonus_legacy_tmp"
+            )
+        db.execute_sql("DROP TABLE gioco_bonus_legacy_tmp")
 
 
 def get_active_games() -> list[str]:
@@ -130,6 +174,69 @@ def get_active_games() -> list[str]:
     return active
 
 
+def is_game_new_on_date(game_name: str, target_date: datetime.date = None) -> bool:
+    """Returns True if game_name is within its promotional new-game window on target_date."""
+    if not getattr(config, "NEW_GAME_ENABLED", True):
+        return False
+    if not target_date:
+        target_date = datetime.date.today()
+    game_info = GAMES.get(game_name)
+    if not game_info or game_info.get("disabled", False):
+        return False
+    added_date = game_info.get("added_date")
+    if not added_date:
+        return False
+    days = game_info.get("new_days") or getattr(config, "NEW_GAME_DAYS", 3)
+    return added_date <= target_date < (added_date + datetime.timedelta(days=days))
+
+
+def sync_new_game_bonuses(target_date: datetime.date = None) -> list[GiocoBonus]:
+    """Ensures GiocoBonus entries (bonus_type='new_game') exist for all active new games on target_date."""
+    if not getattr(config, "NEW_GAME_ENABLED", True):
+        return []
+    if not target_date:
+        target_date = datetime.date.today()
+    try:
+        ensure_gioco_bonus_schema()
+        active_set = set(get_active_games())
+        new_mult = getattr(config, "NEW_GAME_MULTIPLIER", 2)
+        entries = []
+        for g in GAMES.keys():
+            if g in active_set and is_game_new_on_date(g, target_date):
+                entry, _ = GiocoBonus.get_or_create(
+                    date=target_date,
+                    game=g,
+                    bonus_type="new_game",
+                    defaults={"multiplier": new_mult},
+                )
+                entries.append(entry)
+        return entries
+    except Exception as e:
+        logging.error(f"Error syncing new game bonuses: {e}")
+        return []
+
+
+def get_new_games_for_date(target_date: datetime.date = None, sync: bool = True) -> list[GiocoBonus]:
+    """Retrieves new-game bonus entries for target_date, syncing if target_date is today or future."""
+    if not getattr(config, "NEW_GAME_ENABLED", True):
+        return []
+    if not target_date:
+        target_date = datetime.date.today()
+    try:
+        ensure_gioco_bonus_schema()
+        if sync and target_date >= datetime.date.today():
+            sync_new_game_bonuses(target_date)
+        return list(
+            GiocoBonus.select().where(
+                GiocoBonus.date == target_date,
+                GiocoBonus.bonus_type == "new_game",
+            )
+        )
+    except Exception as e:
+        logging.error(f"Error fetching new games: {e}")
+        return []
+
+
 def choose_bonus_multiplier() -> int:
     """Randomly selects a multiplier based on BONUS_GAME_MULTIPLIERS weights."""
     configs = getattr(config, "BONUS_GAME_MULTIPLIERS", [(2, 50), (3, 35), (4, 15)])
@@ -143,36 +250,47 @@ def choose_bonus_multiplier() -> int:
 
 
 def get_bonus_game(target_date: datetime.date = None):
-    """Retrieves existing bonus game for the given date, if any."""
+    """Retrieves existing daily Jolly bonus game for the given date, if any."""
     if not getattr(config, "BONUS_GAME_ENABLED", True):
         return None
     if not target_date:
         target_date = datetime.date.today()
     try:
-        GiocoBonus.create_table(safe=True)
-        return GiocoBonus.get_or_none(GiocoBonus.date == target_date)
+        ensure_gioco_bonus_schema()
+        return (
+            GiocoBonus.select()
+            .where(GiocoBonus.date == target_date, GiocoBonus.bonus_type == "jolly")
+            .first()
+        )
     except Exception as e:
         logging.error(f"Error fetching bonus game: {e}")
         return None
 
 
 def pick_or_get_bonus_game(target_date: datetime.date = None):
-    """Gets or extracts the bonus game for target_date.
-    Draws from all active games, avoiding games picked in the last BONUS_GAME_NO_REPEAT_DAYS days."""
+    """Gets or extracts the daily Jolly bonus game for target_date.
+    Draws from all active games, avoiding games picked in the last BONUS_GAME_NO_REPEAT_DAYS days
+    and games currently active as new_game on target_date."""
     if not getattr(config, "BONUS_GAME_ENABLED", True):
         return None
     if not target_date:
         target_date = datetime.date.today()
 
     try:
-        GiocoBonus.create_table(safe=True)
-        existing = GiocoBonus.get_or_none(GiocoBonus.date == target_date)
+        ensure_gioco_bonus_schema()
+        existing = (
+            GiocoBonus.select()
+            .where(GiocoBonus.date == target_date, GiocoBonus.bonus_type == "jolly")
+            .first()
+        )
         if existing:
             return existing
 
         active = get_active_games()
         if not active:
             return None
+
+        new_games_today = {bg.game for bg in get_new_games_for_date(target_date)}
 
         no_repeat_days = getattr(config, "BONUS_GAME_NO_REPEAT_DAYS", 7)
         cutoff = target_date - datetime.timedelta(days=no_repeat_days)
@@ -181,10 +299,13 @@ def pick_or_get_bonus_game(target_date: datetime.date = None):
             for bg in GiocoBonus.select(GiocoBonus.game).where(
                 GiocoBonus.date >= cutoff,
                 GiocoBonus.date < target_date,
+                GiocoBonus.bonus_type == "jolly",
             )
         }
 
-        pool = [g for g in active if g not in recent_games]
+        pool = [g for g in active if g not in recent_games and g not in new_games_today]
+        if not pool:
+            pool = [g for g in active if g not in new_games_today]
         if not pool:
             pool = active
 
@@ -195,11 +316,47 @@ def pick_or_get_bonus_game(target_date: datetime.date = None):
             date=target_date,
             game=chosen_game,
             multiplier=multiplier,
+            bonus_type="jolly",
         )
         return bonus_entry
     except Exception as e:
         logging.error(f"Error picking bonus game: {e}")
         return None
+
+
+def get_all_bonuses_for_date(target_date: datetime.date = None, auto_pick_jolly: bool = False) -> dict[str, tuple[int, str]]:
+    """Returns a mapping {game_name: (multiplier, bonus_type)} for all active bonuses on target_date."""
+    if not target_date:
+        target_date = datetime.date.today()
+    today = datetime.date.today()
+    try:
+        ensure_gioco_bonus_schema()
+        if getattr(config, "BONUS_GAME_ENABLED", True) and auto_pick_jolly and target_date == today:
+            pick_or_get_bonus_game(target_date)
+        if getattr(config, "NEW_GAME_ENABLED", True) and target_date >= today:
+            sync_new_game_bonuses(target_date)
+
+        rows = list(GiocoBonus.select().where(GiocoBonus.date == target_date))
+        bonuses: dict[str, tuple[int, str]] = {}
+        for row in rows:
+            b_type = getattr(row, "bonus_type", "jolly") or "jolly"
+            if b_type == "jolly" and not getattr(config, "BONUS_GAME_ENABLED", True):
+                continue
+            if b_type == "new_game" and not getattr(config, "NEW_GAME_ENABLED", True):
+                continue
+            prev = bonuses.get(row.game)
+            if prev is None or row.multiplier > prev[0]:
+                bonuses[row.game] = (row.multiplier, b_type)
+        return bonuses
+    except Exception as e:
+        logging.error(f"Error fetching all bonuses for date {target_date}: {e}")
+        return {}
+
+
+def get_game_multiplier(game_name: str, target_date: datetime.date = None, auto_pick_jolly: bool = False) -> tuple[int, str | None]:
+    """Returns (multiplier, bonus_type) for game_name on target_date, or (1, None) if no bonus applies."""
+    bonuses = get_all_bonuses_for_date(target_date, auto_pick_jolly=auto_pick_jolly)
+    return bonuses.get(game_name, (1, None))
 
 
 @dataclass
@@ -553,15 +710,7 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
     
     player_scores = {}
 
-    bonus_entry = None
-    if getattr(config, "BONUS_GAME_ENABLED", True):
-        if from_day == today:
-            bonus_entry = pick_or_get_bonus_game(from_day)
-        else:
-            bonus_entry = get_bonus_game(from_day)
-
-    bonus_game_name = bonus_entry.game if bonus_entry else None
-    bonus_multiplier = bonus_entry.multiplier if bonus_entry else 1
+    bonuses_by_game = get_all_bonuses_for_date(from_day, auto_pick_jolly=(from_day == today))
 
     for game in GAMES.keys():
         if GAMES[game].get("disabled", False):
@@ -578,7 +727,7 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
         if not query:
             continue
 
-        current_multiplier = bonus_multiplier if (bonus_game_name and game == bonus_game_name) else 1
+        current_multiplier = bonuses_by_game.get(game, (1, None))[0]
 
         cl = Classifica()
         cl.game = game

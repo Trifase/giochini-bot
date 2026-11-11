@@ -12,6 +12,8 @@ from games import ALL_GAMES as GAMES, get_day_from_date
 from utils import (
     daily_ranking,
     get_bonus_game,
+    get_game_multiplier,
+    get_new_games_for_date,
     pick_or_get_bonus_game,
     process_tries,
     Classifica,
@@ -47,16 +49,14 @@ def get_game_leaderboard(target_date: date, game_name: str) -> dict:
     game_day = get_day_from_date(game_info["date"], game_info["day"], game_name, target_date)
     str_day = str(game_day)
 
-    # Bonus / Jolly game
-    bonus_entry = None
-    if getattr(config, "BONUS_GAME_ENABLED", True):
-        if target_date == date.today():
-            bonus_entry = get_bonus_game(target_date) or pick_or_get_bonus_game(target_date)
-        else:
-            bonus_entry = get_bonus_game(target_date)
-
-    is_jolly = bonus_entry is not None and game_name == bonus_entry.game
-    multiplier = bonus_entry.multiplier if is_jolly else 1
+    # Bonus / Jolly / New game multiplier
+    multiplier, bonus_type = get_game_multiplier(
+        game_name,
+        target_date,
+        auto_pick_jolly=(target_date == date.today()),
+    )
+    is_jolly = bonus_type == "jolly"
+    is_new = bonus_type == "new_game"
 
     try:
         Punteggio.create_table(safe=True)
@@ -119,6 +119,8 @@ def get_game_leaderboard(target_date: date, game_name: str) -> dict:
         "date": target_date.strftime("%Y-%m-%d"),
         "game_day": str_day,
         "is_jolly": is_jolly,
+        "is_new": is_new,
+        "bonus_type": bonus_type,
         "multiplier": multiplier,
         "total_players": len(posizioni),
         "posizioni": posizioni,
@@ -513,8 +515,20 @@ async def api_jolly(day: str | None = None):
         else:
             bonus = get_bonus_game(target_date)
 
+        new_entries = get_new_games_for_date(target_date, sync=(target_date >= today))
+        new_games = []
+        for ne in new_entries:
+            ng_info = GAMES.get(ne.game, {})
+            new_games.append({
+                "date": target_date.strftime("%Y-%m-%d"),
+                "game": ne.game,
+                "multiplier": ne.multiplier,
+                "emoji": ng_info.get("emoji", "🎮"),
+                "url": ng_info.get("url", ""),
+            })
+
         if not bonus:
-            return {"active": False, "bonus": None}
+            return {"active": False, "bonus": None, "new_games": new_games}
 
         g_info = GAMES.get(bonus.game, {})
         return {
@@ -525,7 +539,8 @@ async def api_jolly(day: str | None = None):
                 "multiplier": bonus.multiplier,
                 "emoji": g_info.get("emoji", "🎮"),
                 "url": g_info.get("url", ""),
-            }
+            },
+            "new_games": new_games,
         }
     except Exception as e:
         return {"active": False, "error": str(e)}
