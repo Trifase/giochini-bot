@@ -75,3 +75,10 @@ def test_game_examples(game_class, idx, example, expected):
             else:
                 assert instance.punteggio.get(key) == val
 
+
+def test_all_classes_can_handle_this_class_call():
+    """Verify every game class supports class-level can_handle_this(text) as used by GiochinoFilter."""
+    for game_class in ALL_CLASSES:
+        assert game_class.can_handle_this("ciao a tutti") is False
+
+

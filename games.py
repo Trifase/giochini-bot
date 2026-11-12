@@ -4515,7 +4515,8 @@ class Stars(Giochino):
         },
     ]
 
-    def can_handle_this(self, raw_text: str) -> bool:
+    @staticmethod
+    def can_handle_this(raw_text: str) -> bool:
         text_lower = raw_text.lower()
         return "inkwell games" in text_lower and (
             "inkwell games - stars" in text_lower or "games/stars" in text_lower
