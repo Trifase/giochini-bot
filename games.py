@@ -4480,6 +4480,96 @@ class Squareword(Giochino):
 
 
 @dataclass
+class Stars(Giochino):
+    _name = "Stars"
+    _category = "Logica e matematica"
+    _date = datetime.date(2026, 11, 11)
+    _day = "100"
+    _emoji = "🌟"
+    _url = "https://inkwellgames.com/games/stars"
+    _added_date = datetime.date(2026, 11, 12)
+
+    examples = [
+        "Inkwell Games - Stars\nWednesday, November 11\n⭐ 7:27 💡 2 hints/checks https://inkwellgames.com/games/stars/2026-11-11",
+        "Inkwell Games - Stars\nWednesday, November 11\n⭐ 1:15 🎯 a perfect game",
+        "Inkwell Games - Stars\nWednesday, November 11\n⭐ X https://inkwellgames.com/games/stars/2026-11-11",
+    ]
+    expected = [
+        {
+            "name": "Stars",
+            "day": get_day_from_date(_date, _day, _name, datetime.date(2026, 11, 11)),
+            "tries": 487,
+            "stars": None,
+        },
+        {
+            "name": "Stars",
+            "day": get_day_from_date(_date, _day, _name, datetime.date(datetime.date.today().year, 11, 11)),
+            "tries": 75,
+            "stars": None,
+        },
+        {
+            "name": "Stars",
+            "day": get_day_from_date(_date, _day, _name, datetime.date(2026, 11, 11)),
+            "tries": "X",
+            "stars": None,
+        },
+    ]
+
+    def can_handle_this(self, raw_text: str) -> bool:
+        text_lower = raw_text.lower()
+        return "inkwell games" in text_lower and (
+            "inkwell games - stars" in text_lower or "games/stars" in text_lower
+        )
+
+    def parse(self):
+        text = self.raw_text
+
+        url_date_match = re.search(r"stars/(\d{4}-\d{2}-\d{2})", text)
+        if url_date_match:
+            parsed_date = datetime.datetime.strptime(
+                url_date_match.group(1), "%Y-%m-%d"
+            ).date()
+        else:
+            months = {
+                "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            }
+            date_match = re.search(r"([A-Za-z]+)\s+(\d{1,2})\b", text)
+            if date_match and date_match.group(1).lower()[:3] in months:
+                parsed_date = datetime.date(
+                    datetime.date.today().year,
+                    months[date_match.group(1).lower()[:3]],
+                    int(date_match.group(2)),
+                )
+            else:
+                parsed_date = datetime.date.today()
+
+        self.day = get_day_from_date(self._date, self._day, self._name, parsed_date)
+
+        time_match = re.search(r"⭐\s*(?:(\d+):)?(\d+):(\d{2})", text)
+        if not time_match:
+            time_match = re.search(r"(?:(\d+):)?(\d+):(\d{2})", text)
+
+        if time_match:
+            hours = int(time_match.group(1) or 0)
+            minutes = int(time_match.group(2))
+            seconds = int(time_match.group(3))
+            total_seconds = hours * 3600 + minutes * 60 + seconds
+            hints_match = re.search(
+                r"(?:💡\s*)?(\d+)\s*hints?(?:/checks)?",
+                text,
+                re.IGNORECASE,
+            )
+            if hints_match:
+                total_seconds += int(hints_match.group(1)) * 20
+            self.tries = total_seconds
+        else:
+            self.tries = "X"
+
+        self.stars = None
+
+
+@dataclass
 class Stepdle(Giochino):
     _name = "Stepdle"
     _category = "Giochi di parole"

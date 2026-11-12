@@ -923,7 +923,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == "Reversle":
         tries = f"{round(tries / 100, 2)}s"
 
-    if game in ['Decipher', 'Neograms', 'LoopyRiver']:
+    if game in ['Decipher', 'Neograms', 'LoopyRiver', 'Stars']:
         tries = seconds_to_time(tries)
 
     if game == 'BracketCity':
