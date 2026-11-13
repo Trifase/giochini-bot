@@ -473,7 +473,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "📌 /<i>nomegioco</i> - Link rapido al gioco di oggi (es. <code>/connections</code>, dura 5s)",
         "",
         "<b>🏆 Classifiche & Medaglie</b>",
-        "📌 /dailyranking (o /ranking, /oggi) - Classifica generale di oggi",
+        "📌 /ranking (o /dailyranking, /oggi) - Classifica generale di oggi",
         "📌 /c (o /classifica) - Classifica di tutti i giochi di oggi",
         "📌 /c <i>[gioco]</i> - Classifica di un gioco (es. <code>/c wordle</code>)",
         "📌 /medaglie - Medagliere mensile",
@@ -2790,7 +2790,7 @@ async def post_init(app: Application) -> None:
     my_commands = [
         BotCommand('myday', 'Giochi che ti mancano oggi', api_kwargs={'is_ephemeral': True}),
         BotCommand('myscore', 'Il tuo punteggio e piazzamenti di oggi'),
-        BotCommand('dailyranking', 'Classifica generale di oggi'),
+        BotCommand('ranking', 'Classifica generale di oggi'),
         BotCommand('classifica', 'Classifiche di oggi per gioco (o /c gioco)'),
         BotCommand('bonus', 'Giochi bonus attivi oggi (Jolly e Nuovi)'),
         BotCommand('favs', 'Scegli i tuoi giochi preferiti'),
