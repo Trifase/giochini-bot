@@ -351,10 +351,12 @@ class Angle(Giochino):
     examples = [
         "#Angle #657 4/4\n⬇️⬇️⬇️🎉\nhttps://www.angle.wtf",
         "#Angle #571 X/4\n⬆️⬆️⬆️⬆️: 2° off\nhttps://www.angle.wtf",
+        "#Angle #1606 2/4 · made it in 1\n⬆️ 🟧🟧🟧🟧⬜\n🎉 🟩🟩🟩🟩🟩\nhttps://www.angle.wtf",
     ]
     expected = [
         {"day": "657", "name": "Angle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "571", "name": "Angle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1606", "name": "Angle", "timestamp": 10, "tries": "3", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -374,7 +376,18 @@ class Angle(Giochino):
 
         if score_match:
             points = score_match.group(1)
-            self.tries = points  # Will be either a number or "X"
+            if points == "X":
+                self.tries = "X"
+            else:
+                made_match = re.search(r"made (?:it )?in ([X\d]+)", text, re.IGNORECASE)
+                if made_match:
+                    made_val = made_match.group(1)
+                    if made_val.upper() == "X":
+                        self.tries = "X"
+                    else:
+                        self.tries = str(int(points) + int(made_val))
+                else:
+                    self.tries = points
         else:
             self.tries = None
 
