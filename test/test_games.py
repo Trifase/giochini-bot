@@ -50,7 +50,7 @@ def test_game_examples(game_class, idx, example, expected):
     target_year = None
     if game_class._name == "Timdle":
         target_year = 2025
-    elif game_class._name == "Timdle Music":
+    elif game_class._name == "TimdleMusic":
         target_year = 2026
 
     if target_year:

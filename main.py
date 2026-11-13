@@ -522,26 +522,29 @@ async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_T
     if not context.args:
         return await classificona(update, context)
 
+    query_raw = " ".join(context.args).strip().lower()
+    query_nospace = query_raw.replace(" ", "")
+    game = None
+    for g_name in GAMES.keys():
+        if g_name.lower() == query_raw or g_name.lower().replace(" ", "") == query_nospace:
+            game = g_name
+            break
+
+    if not game:
+        return
+
     # This will delete the original command after some time (iirc default 10 secs)
     await delete_original_command(update, context)
 
-    # print(context.args)
-    # print(context.args[0].lower())
-    # print([x.lower() for x in GAMES.keys()])
-    if context.args[0].lower() not in [x.lower() for x in GAMES.keys()]:
-        return await classificona(update, context)
+    day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
 
-    else:
-        game = correct_name(context.args[0])
-        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+    classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id, show_lost=True)
 
-        classifica_text = make_single_classifica(game, chat_id=update.effective_chat.id, limit=6, user_id=update.effective_user.id, show_lost=True)
+    if not classifica_text:
+        classifica_text = "Non c'è niente da vedere qui."
+    buttons = make_buttons(game, update.effective_message.message_id, day)
 
-        if not classifica_text:
-            classifica_text = "Non c'è niente da vedere qui."
-        buttons = make_buttons(game, update.effective_message.message_id, day)
-
-        await update.effective_message.reply_text(classifica_text, reply_markup=buttons, parse_mode="HTML", disable_web_page_preview=True)
+    await update.effective_message.reply_text(classifica_text, reply_markup=buttons, parse_mode="HTML", disable_web_page_preview=True)
 
 
 async def top_players(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

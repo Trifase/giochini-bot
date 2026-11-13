@@ -1025,7 +1025,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == 'BracketCity':
         tries = round(100 - tries, 1)
 
-    if game == 'Timdle' or game == 'Timdle Music':
+    if game == 'Timdle' or game == 'TimdleMusic':
         tries = 36 - tries
 
     if game == 'GuessThePhrase':
@@ -1048,7 +1048,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
             score = int(score)
         tries = f"{score}/10"
 
-    if game in ['Geozee', 'MinuteCryptic', 'DontWordle', 'MoreLess', 'Krillion', 'Borderline', 'Size It Up', 'HigherLower', 'Farflung', 'Perceptle', 'Extraplot', 'Bordivide', 'Paintiquity', 'DailyHeadlines', 'Trivmount']:
+    if game in ['Geozee', 'MinuteCryptic', 'DontWordle', 'MoreLess', 'Krillion', 'Borderline', 'SizeItUp', 'HigherLower', 'Farflung', 'Perceptle', 'Extraplot', 'Bordivide', 'Paintiquity', 'DailyHeadlines', 'Trivmount']:
         if str(tries) in ['9999999', 'X']:
             return "X"
         tries = -int(tries)

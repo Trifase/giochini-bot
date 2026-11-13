@@ -68,12 +68,12 @@ def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: 
         date = datetime.datetime.strptime(date, "%B %d, %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
-    if isinstance(date, str) and (game == "Timdle" or game == "Timdle Music"):
+    if isinstance(date, str) and (game == "Timdle" or game == "TimdleMusic"):
         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
         date = datetime.datetime.strptime(date, "%b %d %Y").date()
         locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 
-    if isinstance(date, str) and (game in ["HighFive", "Hundo", "HigherLower", "Size It Up"]):
+    if isinstance(date, str) and (game in ["HighFive", "Hundo", "HigherLower", "SizeItUp"]):
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
     if isinstance(date, str) and game == "Moviedle":
@@ -2066,7 +2066,7 @@ class Flickle(Giochino):
 
 @dataclass
 class FramedOneFrame(Giochino):
-    _name = "Framed One Frame"
+    _name = "FramedOneFrame"
     _category = "Cinema"
     _date = datetime.date(2024, 12, 11)
     _day = "9"
@@ -2078,8 +2078,8 @@ class FramedOneFrame(Giochino):
         "Framed - One Frame Challenge #9\n🎥 🟥 🟥 🟥 🟩 ⬛ ⬛\n\nhttps://framed.wtf/one-frame",
     ]
     expected = [
-        {"day": "9", "name": "Framed One Frame", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "9", "name": "Framed One Frame", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "9", "name": "FramedOneFrame", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "9", "name": "FramedOneFrame", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -4360,7 +4360,7 @@ class Snoop(Giochino):
 
 @dataclass
 class SizeItUp(Giochino):
-    _name = "Size It Up"
+    _name = "SizeItUp"
     _category = "Osservazione e percezione"
     _date = datetime.date(2026, 9, 1)
     _day = "100"
@@ -4375,11 +4375,11 @@ class SizeItUp(Giochino):
         "Magnitudle — Size It Up\n2026-11-04\n\nScore: 292/500\n\n🟥🟥🟥🟥🟥 100\n🟥⬜️⬜️⬜️⬜️ 24\n🟥🟥🟥🟥⬜️ 87\n🟥🟥🟥⬜️⬜️ 58\n🟥⬜️⬜️⬜️⬜️ 23\n\nhttps://magnitudle.com/size-it-up",
     ]
     expected = [
-        {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -141, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -252, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -272, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": f'{get_day_from_date(_date, _day, "Size It Up", datetime.date.today())}', "name": "Size It Up", "timestamp": 10, "tries": -204, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": f'{get_day_from_date(_date, _day, "Size It Up", "2026-11-04")}', "name": "Size It Up", "timestamp": 10, "tries": -292, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "SizeItUp", datetime.date.today())}', "name": "SizeItUp", "timestamp": 10, "tries": -141, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "SizeItUp", datetime.date.today())}', "name": "SizeItUp", "timestamp": 10, "tries": -252, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "SizeItUp", datetime.date.today())}', "name": "SizeItUp", "timestamp": 10, "tries": -272, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "SizeItUp", datetime.date.today())}', "name": "SizeItUp", "timestamp": 10, "tries": -204, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": f'{get_day_from_date(_date, _day, "SizeItUp", "2026-11-04")}', "name": "SizeItUp", "timestamp": 10, "tries": -292, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -4991,7 +4991,7 @@ class Timdle(Giochino):
 
 @dataclass
 class TimdleMusic(Giochino):
-    _name = "Timdle Music"
+    _name = "TimdleMusic"
     _category = "Musica"
     _date = datetime.date(2026, 5, 1)
     _day = "1"
@@ -5004,7 +5004,7 @@ class TimdleMusic(Giochino):
         '🎵 TIMDLE Music May 4\n😌 31/36\n1: 1p     5: 5p\n2: 2p     6: 4p\n3: 1p     7: 6p\n4: 4p     8: 8p\nPlay at https://timdle.com/music'
     ]
     expected = [
-        {"day": "4", "name": "Timdle Music", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "4", "name": "TimdleMusic", "timestamp": 10, "tries": 5, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -5020,7 +5020,7 @@ class TimdleMusic(Giochino):
             date_str = match_date.group(1)
             current_year = datetime.datetime.now().year
             current_day = f"{date_str} {current_year}"
-            self.day = get_day_from_date(self._date, self._day, "Timdle Music", current_day)
+            self.day = get_day_from_date(self._date, self._day, "TimdleMusic", current_day)
         else:
             self.day = None
 
