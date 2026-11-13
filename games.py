@@ -702,10 +702,12 @@ class Chronophoto(Giochino):
     examples = [
         "I got a score of 2952 on today's Chronophoto: 1/4/2024\nRound 1: 290\nRound 2: 777\nRound 3: 396\nRound 4: 640\nRound 5: 849 https://www.chronophoto.app/daily.html",
         "I got a score of 3480 on today's Chronophoto: 6/4/2024\nRound 1: 924\nRound 2: 0❌\nRound 3: 924\nRound 4: 924\nRound 5: 708 https://www.chronophoto.app/daily.html",
+        "I got a score of 4162 on today's Chronophoto: 13 nov 2026\nRound 1: 949\nRound 2: 801\nRound 3: 949\nRound 4: 613\nRound 5: 850\nhttps://www.chronophoto.app/?mode=daily",
     ]
     expected = [
         {"day": "126", "name": "Chronophoto", "timestamp": 10, "tries": 2048, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "131", "name": "Chronophoto", "timestamp": 10, "tries": 1520, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1082", "name": "Chronophoto", "timestamp": 10, "tries": 838, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -720,11 +722,54 @@ class Chronophoto(Giochino):
         score_match = re.search(r"I got a score of (\d+)", text)
         score = int(score_match.group(1)) if score_match else None
 
-        date_match = re.search(r"Chronophoto: (\d+/\d+/\d+)", text)
-        date_str = date_match.group(1) if date_match else None
+        months = {
+            "jan": 1, "gen": 1,
+            "feb": 2,
+            "mar": 3,
+            "apr": 4,
+            "may": 5, "mag": 5,
+            "jun": 6, "giu": 6,
+            "jul": 7, "lug": 7,
+            "aug": 8, "ago": 8,
+            "sep": 9, "set": 9,
+            "oct": 10, "ott": 10,
+            "nov": 11,
+            "dec": 12, "dic": 12,
+        }
 
-        if date_str:
-            self.day = get_day_from_date(self._date, self._day, "Chronophoto", date_str)
+        parsed_date = None
+        slash_match = re.search(r"Chronophoto:\s*(\d{1,2})/(\d{1,2})/(\d{4})", text)
+        if slash_match:
+            parsed_date = datetime.date(
+                int(slash_match.group(3)),
+                int(slash_match.group(2)),
+                int(slash_match.group(1)),
+            )
+        else:
+            dmy_match = re.search(
+                r"Chronophoto:\s*(\d{1,2})\s+([A-Za-z.]+)\s+(\d{4})",
+                text,
+            )
+            if dmy_match and dmy_match.group(2).lower()[:3] in months:
+                parsed_date = datetime.date(
+                    int(dmy_match.group(3)),
+                    months[dmy_match.group(2).lower()[:3]],
+                    int(dmy_match.group(1)),
+                )
+            else:
+                mdy_match = re.search(
+                    r"Chronophoto:\s*([A-Za-z.]+)\s+(\d{1,2}),?\s+(\d{4})",
+                    text,
+                )
+                if mdy_match and mdy_match.group(1).lower()[:3] in months:
+                    parsed_date = datetime.date(
+                        int(mdy_match.group(3)),
+                        months[mdy_match.group(1).lower()[:3]],
+                        int(mdy_match.group(2)),
+                    )
+
+        if parsed_date:
+            self.day = get_day_from_date(self._date, self._day, "Chronophoto", parsed_date)
         else:
             self.day = None
 
