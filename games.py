@@ -2231,6 +2231,81 @@ class Geozee(Giochino):
 
 
 @dataclass
+class Gerrymandle(Giochino):
+    _name = "Gerrymandle"
+    _category = "Logica e matematica"
+    _date = datetime.date(2026, 11, 13)
+    _day = "187"
+    _emoji = "🗳️"
+    _url = "https://gerrymandle.com"
+    _added_date = datetime.date(2026, 11, 13)
+
+    examples = [
+        "Gerrymandle #186\nWon the election in 4:06!\n💎🏆 Perfect game\n\nhttps://gerrymandle.com/day/186",
+        "Gerrymandle #185\nWon the election in 0:13!\n🔍 Used 6 hints\n\nhttps://gerrymandle.com/day/185",
+        "Gerrymandle #186\nLost the election in 0:50.\n🔍 Used 4 hints\n\nhttps://gerrymandle.com/day/186",
+    ]
+    expected = [
+        {
+            "name": "Gerrymandle",
+            "day": "186",
+            "tries": 246,
+            "stars": None,
+        },
+        {
+            "name": "Gerrymandle",
+            "day": "185",
+            "tries": 193,
+            "stars": None,
+        },
+        {
+            "name": "Gerrymandle",
+            "day": "186",
+            "tries": "X",
+            "stars": None,
+        },
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text: str) -> bool:
+        return "gerrymandle" in raw_text.lower()
+
+    def parse(self):
+        text = self.raw_text
+
+        day_match = re.search(r"Gerrymandle\s*#(\d+)", text, re.IGNORECASE)
+        if not day_match:
+            day_match = re.search(r"gerrymandle\.com/day/(\d+)", text, re.IGNORECASE)
+        self.day = day_match.group(1) if day_match else None
+
+        if "lost the election" in text.lower():
+            self.tries = "X"
+        else:
+            time_match = re.search(
+                r"Won the election in\s*(?:(\d+):)?(\d+):(\d{2})",
+                text,
+                re.IGNORECASE,
+            )
+            if time_match:
+                hours = int(time_match.group(1) or 0)
+                minutes = int(time_match.group(2))
+                seconds = int(time_match.group(3))
+                total_seconds = hours * 3600 + minutes * 60 + seconds
+                hints_match = re.search(
+                    r"Used\s+(\d+)\s+hints?",
+                    text,
+                    re.IGNORECASE,
+                )
+                if hints_match:
+                    total_seconds += int(hints_match.group(1)) * 30
+                self.tries = total_seconds
+            else:
+                self.tries = "X"
+
+        self.stars = None
+
+
+@dataclass
 class Gisnep(Giochino):
     _name = "Gisnep"
     _category = "Giochi di parole"
