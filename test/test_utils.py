@@ -551,3 +551,25 @@ def test_pick_or_get_bonus_game_excludes_new_games():
     assert jolly.bonus_type == "jolly"
     assert jolly.game not in {"Bordivide", "Extraplot"}
 
+
+def test_reenabled_game_3x_bonus_window():
+    from utils import (
+        grant_reenabled_game_bonus,
+        get_reenabled_games_for_date,
+        get_game_multiplier,
+    )
+
+    enabled_day = datetime.date(2026, 11, 13)
+    entries = grant_reenabled_game_bonus("Picsey", enabled_day)
+    assert len(entries) == 2
+
+    # Active today (day 0) and tomorrow (day 1) with 3x
+    assert get_game_multiplier("Picsey", datetime.date(2026, 11, 13)) == (3, "reenabled")
+    assert get_game_multiplier("Picsey", datetime.date(2026, 11, 14)) == (3, "reenabled")
+    # Expired on day 2
+    assert get_game_multiplier("Picsey", datetime.date(2026, 11, 15)) == (1, None)
+
+    rows = get_reenabled_games_for_date(datetime.date(2026, 11, 13), sync=False)
+    assert [r.game for r in rows] == ["Picsey"]
+
+

@@ -237,6 +237,96 @@ def get_new_games_for_date(target_date: datetime.date = None, sync: bool = True)
         return []
 
 
+def grant_reenabled_game_bonus(game_name: str, enabled_date: datetime.date = None) -> list[GiocoBonus]:
+    """Grants a 3x bonus (REENABLED_GAME_MULTIPLIER) for REENABLED_GAME_DAYS starting on enabled_date."""
+    if not getattr(config, "REENABLED_GAME_ENABLED", True):
+        return []
+    if not enabled_date:
+        enabled_date = datetime.date.today()
+    elif isinstance(enabled_date, datetime.datetime):
+        enabled_date = enabled_date.date()
+    try:
+        ensure_gioco_bonus_schema()
+        days = getattr(config, "REENABLED_GAME_DAYS", 2)
+        mult = getattr(config, "REENABLED_GAME_MULTIPLIER", 3)
+        entries = []
+        for offset in range(days):
+            d = enabled_date + datetime.timedelta(days=offset)
+            entry, _ = GiocoBonus.get_or_create(
+                date=d,
+                game=game_name,
+                bonus_type="reenabled",
+                defaults={"multiplier": mult},
+            )
+            entries.append(entry)
+        return entries
+    except Exception as e:
+        logging.error(f"Error granting reenabled bonus for {game_name}: {e}")
+        return []
+
+
+def sync_reenabled_game_bonuses(target_date: datetime.date = None) -> list[GiocoBonus]:
+    """Ensures GiocoBonus entries (bonus_type='reenabled') exist for games re-enabled within REENABLED_GAME_DAYS."""
+    if not getattr(config, "REENABLED_GAME_ENABLED", True):
+        return []
+    if not target_date:
+        target_date = datetime.date.today()
+    try:
+        ensure_gioco_bonus_schema()
+        days = getattr(config, "REENABLED_GAME_DAYS", 2)
+        mult = getattr(config, "REENABLED_GAME_MULTIPLIER", 3)
+        active_set = set(get_active_games())
+        statuses = GameStatus.select().where(
+            GameStatus.is_disabled == False,
+            GameStatus.last_enabled_date.is_null(False),
+        )
+        entries = []
+        for st in statuses:
+            if st.game_name not in active_set:
+                continue
+            ed = st.last_enabled_date
+            if isinstance(ed, datetime.datetime):
+                ed = ed.date()
+            elif isinstance(ed, str):
+                try:
+                    ed = datetime.datetime.strptime(ed[:10], "%Y-%m-%d").date()
+                except ValueError:
+                    continue
+            if ed <= target_date < (ed + datetime.timedelta(days=days)):
+                entry, _ = GiocoBonus.get_or_create(
+                    date=target_date,
+                    game=st.game_name,
+                    bonus_type="reenabled",
+                    defaults={"multiplier": mult},
+                )
+                entries.append(entry)
+        return entries
+    except Exception as e:
+        logging.error(f"Error syncing reenabled game bonuses: {e}")
+        return []
+
+
+def get_reenabled_games_for_date(target_date: datetime.date = None, sync: bool = True) -> list[GiocoBonus]:
+    """Retrieves re-enabled game bonus entries for target_date."""
+    if not getattr(config, "REENABLED_GAME_ENABLED", True):
+        return []
+    if not target_date:
+        target_date = datetime.date.today()
+    try:
+        ensure_gioco_bonus_schema()
+        if sync and target_date >= datetime.date.today():
+            sync_reenabled_game_bonuses(target_date)
+        return list(
+            GiocoBonus.select().where(
+                GiocoBonus.date == target_date,
+                GiocoBonus.bonus_type == "reenabled",
+            )
+        )
+    except Exception as e:
+        logging.error(f"Error fetching reenabled games: {e}")
+        return []
+
+
 def choose_bonus_multiplier() -> int:
     """Randomly selects a multiplier based on BONUS_GAME_MULTIPLIERS weights."""
     configs = getattr(config, "BONUS_GAME_MULTIPLIERS", [(2, 50), (3, 35), (4, 15)])
@@ -291,6 +381,8 @@ def pick_or_get_bonus_game(target_date: datetime.date = None):
             return None
 
         new_games_today = {bg.game for bg in get_new_games_for_date(target_date)}
+        reenabled_today = {bg.game for bg in get_reenabled_games_for_date(target_date)}
+        excluded_today = new_games_today | reenabled_today
 
         no_repeat_days = getattr(config, "BONUS_GAME_NO_REPEAT_DAYS", 7)
         cutoff = target_date - datetime.timedelta(days=no_repeat_days)
@@ -303,9 +395,9 @@ def pick_or_get_bonus_game(target_date: datetime.date = None):
             )
         }
 
-        pool = [g for g in active if g not in recent_games and g not in new_games_today]
+        pool = [g for g in active if g not in recent_games and g not in excluded_today]
         if not pool:
-            pool = [g for g in active if g not in new_games_today]
+            pool = [g for g in active if g not in excluded_today]
         if not pool:
             pool = active
 
@@ -335,6 +427,8 @@ def get_all_bonuses_for_date(target_date: datetime.date = None, auto_pick_jolly:
             pick_or_get_bonus_game(target_date)
         if getattr(config, "NEW_GAME_ENABLED", True) and target_date >= today:
             sync_new_game_bonuses(target_date)
+        if getattr(config, "REENABLED_GAME_ENABLED", True) and target_date >= today:
+            sync_reenabled_game_bonuses(target_date)
 
         rows = list(GiocoBonus.select().where(GiocoBonus.date == target_date))
         bonuses: dict[str, tuple[int, str]] = {}
@@ -343,6 +437,8 @@ def get_all_bonuses_for_date(target_date: datetime.date = None, auto_pick_jolly:
             if b_type == "jolly" and not getattr(config, "BONUS_GAME_ENABLED", True):
                 continue
             if b_type == "new_game" and not getattr(config, "NEW_GAME_ENABLED", True):
+                continue
+            if b_type == "reenabled" and not getattr(config, "REENABLED_GAME_ENABLED", True):
                 continue
             prev = bonuses.get(row.game)
             if prev is None or row.multiplier > prev[0]:

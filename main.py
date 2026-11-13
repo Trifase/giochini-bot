@@ -71,8 +71,11 @@ from utils import (
     get_bonus_game,
     get_game_multiplier,
     get_new_games_for_date,
+    get_reenabled_games_for_date,
+    grant_reenabled_game_bonus,
     pick_or_get_bonus_game,
     sync_new_game_bonuses,
+    sync_reenabled_game_bonuses,
     group_stats,
     longest_streak,
     make_buttons,
@@ -198,10 +201,15 @@ giochini_results_filter = GameFilter()
 
 
 def format_bonus_badge(multiplier: int, bonus_type: str | None, bold: bool = False) -> str:
-    """Formats a bonus badge such as ' [🎰 3x]' or ' [🆕 2x]'."""
+    """Formats a bonus badge such as ' [🎰 3x]', ' [🆕 2x]' or ' [✨ 3x]'."""
     if not bonus_type or multiplier <= 1:
         return ""
-    icon = getattr(config, "NEW_GAME_EMOJI", "🆕") if bonus_type == "new_game" else "🎰"
+    if bonus_type == "new_game":
+        icon = getattr(config, "NEW_GAME_EMOJI", "🆕")
+    elif bonus_type == "reenabled":
+        icon = getattr(config, "REENABLED_GAME_EMOJI", "✨")
+    else:
+        icon = "🎰"
     badge = f"[{icon} {multiplier}x]"
     return f" <b>{badge}</b>" if bold else f" {badge}"
 
@@ -2065,13 +2073,19 @@ async def check_reenable(game_name: str, update: Update, context: ContextTypes.D
             # Update memory
             if game_name in GAMES:
                 GAMES[game_name]["disabled"] = False
-                
+
+            grant_reenabled_game_bonus(game_name, datetime.date.today())
             logging.info(f"Auto-reenabling {game_name}!")
-            
+
             # Notify user
             emoji = GAMES[game_name].get("emoji", "")
             days_disabled = (datetime.datetime.now() - status.last_disabled_date).days if status.last_disabled_date else "?"
-            await update.message.reply_text(f"✨ Hai risvegliato {emoji} {game_name}!\nEra stato disabilitato {days_disabled} giorni fa per inattività.\nOra è di nuovo attivo per tutti! Buon divertimento! 🎮")
+            bonus_mult = getattr(config, "REENABLED_GAME_MULTIPLIER", 3)
+            await update.message.reply_text(
+                f"✨ Hai risvegliato {emoji} {game_name}!\n"
+                f"Era stato disabilitato {days_disabled} giorni fa per inattività.\n"
+                f"Ora è di nuovo attivo per tutti e vale bonus {bonus_mult}x oggi e domani! Buon divertimento! 🎮"
+            )
             await update.message.set_reaction(reaction="✨")
 
     except Exception as e:
@@ -2263,8 +2277,15 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         message = f"<b>Il tuo punteggio di oggi:</b> {total_stars}{STAR_SYMBOL}\n\n"
         new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
+        reenabled_emoji = getattr(config, "REENABLED_GAME_EMOJI", "✨")
         for game_info in user_games:
-            b_icon = new_emoji if game_info.get("bonus_type") == "new_game" else "🎰"
+            b_type = game_info.get("bonus_type")
+            if b_type == "new_game":
+                b_icon = new_emoji
+            elif b_type == "reenabled":
+                b_icon = reenabled_emoji
+            else:
+                b_icon = "🎰"
             mult_str = f" (x{game_info['multiplier']} {b_icon})" if game_info.get("multiplier", 1) > 1 else ""
             stars_display = f"+{game_info['stars']}{STAR_SYMBOL}{mult_str}" if game_info['stars'] > 0 else ""
             message += f"{game_info['medal_emoji']}{stars_display} {game_info['game']}\n"
@@ -2329,7 +2350,7 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Shows all games with an active bonus today (Jolly game + New games)."""
+    """Shows all games with an active bonus today (Jolly, New games, Re-enabled games)."""
     today = datetime.date.today()
     sections = []
 
@@ -2338,7 +2359,7 @@ async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if jolly and jolly.game in GAMES and not GAMES[jolly.game].get("disabled", False):
             j_link = _format_game_link(jolly.game, today)
             sections.append(
-                f"🎰 <b>Gioco Jolly di oggi ({jolly.multiplier}x punti {STAR_SYMBOL}):</b>\n"
+                f"🎰 <b>Gioco Jolly ({jolly.multiplier}x):</b>\n"
                 f"• {j_link}"
             )
 
@@ -2349,24 +2370,30 @@ async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ]
         if new_entries:
             new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
-            lines = [f"{new_emoji} <b>Giochi Nuovi attivi oggi:</b>"]
+            lines = [f"{new_emoji} <b>Giochi nuovi:</b>"]
             for entry in new_entries:
-                g_info = GAMES[entry.game]
                 g_link = _format_game_link(entry.game, today)
-                added_date = g_info.get("added_date")
-                total_days = g_info.get("new_days") or getattr(config, "NEW_GAME_DAYS", 3)
-                progress_str = ""
-                if added_date:
-                    day_idx = (today - added_date).days + 1
-                    progress_str = f" <i>(giorno {day_idx}/{total_days})</i>"
-                lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>{progress_str}")
+                lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>")
+            sections.append("\n".join(lines))
+
+    if getattr(config, "REENABLED_GAME_ENABLED", True):
+        reenabled_entries = [
+            e for e in get_reenabled_games_for_date(today)
+            if e.game in GAMES and not GAMES[e.game].get("disabled", False)
+        ]
+        if reenabled_entries:
+            reenabled_emoji = getattr(config, "REENABLED_GAME_EMOJI", "✨")
+            lines = [f"{reenabled_emoji} <b>Giochi riattivati:</b>"]
+            for entry in reenabled_entries:
+                g_link = _format_game_link(entry.game, today)
+                lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>")
             sections.append("\n".join(lines))
 
     if not sections:
         await update.message.reply_text("Nessun gioco bonus attivo oggi.")
         return
 
-    msg = f"✨ <b>Giochi Bonus di oggi ({today.strftime('%d/%m/%Y')})</b> ✨\n\n" + "\n\n".join(sections)
+    msg = "✨ <b>Giochi Bonus di oggi</b> ✨\n\n" + "\n\n".join(sections)
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
@@ -2576,6 +2603,14 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
     }
     new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
 
+    reenabled_entries = get_reenabled_games_for_date(today)
+    reenabled_games_map = {
+        bg.game: bg.multiplier
+        for bg in reenabled_entries
+        if bg.game in GAMES and not GAMES[bg.game].get("disabled", False)
+    }
+    reenabled_emoji = getattr(config, "REENABLED_GAME_EMOJI", "✨")
+
     categorie = set([GAMES[x]["category"] for x in GAMES.keys()])
     categorie = sorted(list(categorie)) # alphabetical order
     message = "Buongiorno, ecco a cosa si gioca oggi!\n\n"
@@ -2587,6 +2622,9 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
     if new_games_map:
         new_links = ", ".join(_format_game_link(g_name, today) for g_name in new_games_map.keys())
         header_highlights.append(f"{new_emoji} <b>Giochi nuovi ({getattr(config, 'NEW_GAME_MULTIPLIER', 2)}x):</b> {new_links}")
+    if reenabled_games_map:
+        reenabled_links = ", ".join(_format_game_link(g_name, today) for g_name in reenabled_games_map.keys())
+        header_highlights.append(f"{reenabled_emoji} <b>Giochi riattivati ({getattr(config, 'REENABLED_GAME_MULTIPLIER', 3)}x):</b> {reenabled_links}")
     if header_highlights:
         message += "\n".join(header_highlights) + "\n\n"
 
@@ -2599,6 +2637,8 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
                 day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, today)
                 if bonus_game_name and game == bonus_game_name:
                     badge = format_bonus_badge(bonus_multiplier, "jolly", bold=True)
+                elif game in reenabled_games_map:
+                    badge = format_bonus_badge(reenabled_games_map[game], "reenabled", bold=True)
                 elif game in new_games_map:
                     badge = format_bonus_badge(new_games_map[game], "new_game", bold=True)
                 else:
@@ -2784,6 +2824,7 @@ async def post_init(app: Application) -> None:
     
     sync_disabled_games()
     sync_new_game_bonuses(datetime.date.today())
+    sync_reenabled_game_bonuses(datetime.date.today())
 
     # Recupero i settings e li storo in memoria
     if "settings" not in app.bot_data:
