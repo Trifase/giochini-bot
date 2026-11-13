@@ -457,40 +457,53 @@ async def classifica_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # giochi = [f"<code>{x}</code>" for x in GAMES.keys()]
-    # giochi = " · ".join(giochi)
     message = [
         "Questo bot parsa automaticamente i punteggi dei giochi giornalieri, fa una classifica giornaliera e una classifica dei migliori player.",
         "",
         f"Alla fine di ogni giorno vengono assegnati dei punti {STAR_SYMBOL} in base ai risultati ottenuti in tutti i giochi, utilizzando l'algoritmo SWG4 Zip War Airganon.",
         "Alle tre persone con più punti vengono assegnate le medaglie d'oro, d'argento e di bronzo.",
         "",
-        # f"I giochi disponibili sono:\n {giochi}",
-        "",
         "📚 <b>Lista dei comandi</b> 📚",
         "",
-        "📌 /c o /classifica - Mostra la classifica di tutti i giochi",
-        "📌 /c <i>[gioco]</i> - Mostra la classifica di un gioco, ad esempio: <code>/c wordle</code>",
-        "📌 /nomegioco - Incolla il link per accedere alla partita odierna, dura solo 5 secondi, ad esempio: <code>/connections</code>",
+        "<b>🎮 Oggi</b>",
+        "📌 /myday - Giochi a cui non hai ancora giocato oggi",
+        "📌 /myscore - Tuo punteggio e piazzamenti di oggi",
+        "📌 /bonus - Giochi bonus attivi oggi (Jolly e Nuovi)",
+        "📌 /favs - Scegli i tuoi giochi preferiti",
+        "📌 /<i>nomegioco</i> - Link rapido al gioco di oggi (es. <code>/connections</code>, dura 5s)",
         "",
-        "📌 /myday - Mostra i giochi a cui non hai ancora giocato oggi",
-        "📌 /myonly - Versione effimera di /myday (visibile solo a te)",
-        "📌 /myscore - Mostra il tuo punteggio e le tue posizioni di oggi",
-        "📌 /jolly - Mostra il gioco Jolly di oggi (punti moltiplicati)",
-        "📌 /dailyranking - Mostra i punti del giorno corrente",
-        "📌 /medaglie - Mostra il medagliere mensile",
+        "<b>🏆 Classifiche & Medaglie</b>",
+        "📌 /dailyranking (o /ranking, /oggi) - Classifica generale di oggi",
+        "📌 /c (o /classifica) - Classifica di tutti i giochi di oggi",
+        "📌 /c <i>[gioco]</i> - Classifica di un gioco (es. <code>/c wordle</code>)",
+        "📌 /medaglie - Medagliere mensile",
+        "📌 /top - Classifica punti All-Time",
+        "📌 /topmedaglie - Medagliere All-Time",
+        "📌 /puntioggi - Punti bonus/malus assegnati oggi",
+        "📌 /simuladaily <i>[modello]</i> - Simula la classifica odierna",
         "",
-        "📌 /top - Mostra la classifica punteggi all time",
-        "📌 /top_medaglie - Mostra il medagliere all time",
-        "",
-        "📌 /mystats - Mostra le tue statistiche",
-        "📌 /weekstat - Mostra le statistiche degli ultimi 7 giorni",
-        "📌 /favs - Mostra e setta i giochi preferiti",
-        "📌 /topgames - Mostra i giochi più giocati",
-        "📌 /list - Mostra la lista di tutti i giochi supportati",
-        "",
+        "<b>📊 Statistiche & Giochi</b>",
+        "📌 /mystats <i>[gioco]</i> - Le tue statistiche (globali o per gioco)",
+        "📌 /weekstat - Statistiche degli ultimi 7 giorni",
+        "📌 /groupstats - Statistiche del gruppo",
+        "📌 /topgames <i>[giorni]</i> - Giochi più giocati (default 7gg)",
+        "📌 /list - Lista di tutti i giochi supportati",
         "📌 /help - Mostra questo messaggio",
     ]
+
+    if update.effective_user and update.effective_user.id == ADMIN_ID:
+        message.extend([
+            "",
+            "<b>🔧 Admin</b>",
+            "• /stelle - Assegna/resetta punti bonus o malus",
+            "• /setanchor - Imposta il #giorno di un gioco",
+            "• /ask <i>&lt;domanda&gt;</i> - Query AI sul database",
+            "• /giochiamo | /nuovigiochi | /riassuntone - Trigger manuali",
+            "• /listdisabled | /checkunused | /checkdisable - Stato giochi",
+            "• /backup | /refresh | /restart - Manutenzione",
+            "• /enable_debug | /disable_debug | /debug - Debug",
+        ])
+
     message_text = "\n".join(message)
     await update.effective_message.reply_text(message_text, parse_mode="HTML")
     # This will delete the original command after some time (iirc default 10 secs)
@@ -957,6 +970,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         print('wtf?')
 
 async def debug_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != ADMIN_ID or not update.message.reply_to_message:
+        return
     import pprint
     rawtext = pprint.pformat(update.message.reply_to_message.text, width=300).replace("<", "less").replace(">", "more")
     await update.message.reply_html(f'<code>{rawtext}</code>')
@@ -1782,11 +1797,11 @@ async def cmd_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reason = None
 
     if reply_msg and reply_msg.from_user:
-        # Modo Reply: /bonus +2 [motivo] o /bonus -1 [motivo]
+        # Modo Reply: /stelle +2 [motivo] o /stelle -1 [motivo]
         if not args:
             await update.message.reply_text(
-                "ℹ️ <b>Uso via reply:</b> <code>/bonus &lt;+punti/-punti&gt; [motivo]</code>\n"
-                "<i>Es:</i> <code>/bonus +2 Premio quiz</code>",
+                "ℹ️ <b>Uso via reply:</b> <code>/stelle &lt;+punti/-punti&gt; [motivo]</code>\n"
+                "<i>Es:</i> <code>/stelle +2 Premio quiz</code>",
                 parse_mode="HTML"
             )
             return
@@ -1803,14 +1818,14 @@ async def cmd_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             reason = " ".join(args[1:])
 
     else:
-        # Modo Argomenti: /bonus @utente +2 [motivo] o /bonus <user_id> +2 [motivo]
+        # Modo Argomenti: /stelle @utente +2 [motivo] o /stelle <user_id> +2 [motivo]
         if not args or len(args) < 2:
             await update.message.reply_text(
                 "ℹ️ <b>Uso del comando:</b>\n"
-                "• In risposta a un messaggio: <code>/bonus &lt;+punti/-punti&gt; [motivo]</code>\n"
-                "• Diretto: <code>/bonus &lt;@username o user_id&gt; &lt;+punti/-punti&gt; [motivo]</code>\n"
-                "• Reset: <code>/bonus reset [@username]</code>\n"
-                "<i>Es:</i> <code>/bonus @Mario +2 Premio quiz</code>",
+                "• In risposta a un messaggio: <code>/stelle &lt;+punti/-punti&gt; [motivo]</code>\n"
+                "• Diretto: <code>/stelle &lt;@username o user_id&gt; &lt;+punti/-punti&gt; [motivo]</code>\n"
+                "• Reset: <code>/stelle reset [@username]</code>\n"
+                "<i>Es:</i> <code>/stelle @Mario +2 Premio quiz</code>",
                 parse_mode="HTML"
             )
             return
@@ -2307,28 +2322,45 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
-async def cmd_jolly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Shows the current bonus game of the day."""
-    if not getattr(config, "BONUS_GAME_ENABLED", True):
-        await update.message.reply_text("La funzione Gioco Jolly non è attiva.")
-        return
-
+async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Shows all games with an active bonus today (Jolly game + New games)."""
     today = datetime.date.today()
-    bonus = get_bonus_game(today) or pick_or_get_bonus_game(today)
+    sections = []
 
-    if not bonus:
-        await update.message.reply_text("Nessun gioco Jolly disponibile per oggi.")
+    if getattr(config, "BONUS_GAME_ENABLED", True):
+        jolly = get_bonus_game(today) or pick_or_get_bonus_game(today)
+        if jolly and jolly.game in GAMES and not GAMES[jolly.game].get("disabled", False):
+            j_link = _format_game_link(jolly.game, today)
+            sections.append(
+                f"🎰 <b>Gioco Jolly di oggi ({jolly.multiplier}x punti {STAR_SYMBOL}):</b>\n"
+                f"• {j_link}"
+            )
+
+    if getattr(config, "NEW_GAME_ENABLED", True):
+        new_entries = [
+            e for e in get_new_games_for_date(today)
+            if e.game in GAMES and not GAMES[e.game].get("disabled", False)
+        ]
+        if new_entries:
+            new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
+            lines = [f"{new_emoji} <b>Giochi Nuovi attivi oggi:</b>"]
+            for entry in new_entries:
+                g_info = GAMES[entry.game]
+                g_link = _format_game_link(entry.game, today)
+                added_date = g_info.get("added_date")
+                total_days = g_info.get("new_days") or getattr(config, "NEW_GAME_DAYS", 3)
+                progress_str = ""
+                if added_date:
+                    day_idx = (today - added_date).days + 1
+                    progress_str = f" <i>(giorno {day_idx}/{total_days})</i>"
+                lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>{progress_str}")
+            sections.append("\n".join(lines))
+
+    if not sections:
+        await update.message.reply_text("Nessun gioco bonus attivo oggi.")
         return
 
-    emoji = GAMES.get(bonus.game, {}).get("emoji", "🎮")
-    url = GAMES.get(bonus.game, {}).get("url", "")
-    game_link = f'<a href="{url}">{emoji} {bonus.game}</a>' if url else f"<b>{emoji} {bonus.game}</b>"
-
-    msg = (
-        f"🎰 <b>Gioco Jolly di oggi ({today.strftime('%d/%m/%Y')})</b> 🎰\n\n"
-        f"Oggi il gioco bonus è {game_link} e vale <b>{bonus.multiplier}x punti</b> {STAR_SYMBOL}!\n"
-        f"Giocatelo per scalare la classifica! 🚀"
-    )
+    msg = f"✨ <b>Giochi Bonus di oggi ({today.strftime('%d/%m/%Y')})</b> ✨\n\n" + "\n\n".join(sections)
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
@@ -2756,24 +2788,19 @@ async def post_init(app: Application) -> None:
         app.bot_data["settings"] = settings
 
     my_commands = [
-        BotCommand('myday', 'Quali giochi devi ancora giocare oggi?', api_kwargs={'is_ephemeral': True}),
-        BotCommand('myonly', 'Quali giochi devi ancora giocare oggi? (solo per te)', api_kwargs={'is_ephemeral': True}),
-        ('myscore', 'Mostra il tuo punteggio di oggi'),
-        ('jolly', 'Gioco Jolly di oggi (punti moltiplicati)'),
-        ('mystats', 'Le tue statistiche'),
-        ('groupstats', 'Le statistiche del gruppo'),
-        ('weekstat', 'Statistiche degli ultimi 7 giorni'),
-        ('favs', 'Mostra e setta i giochi preferiti'),
-        ('dailyranking', 'Mostra i punteggi del giorno corrente'),
-        ('classifica', 'Mostra la classifica'),
-        ('bonusoggi', 'Mostra i bonus/malus del giorno corrente'),
-        ('medaglie', 'Mostra il medagliere mensile'),
-        ('top', 'Mostra la classifica all time'),
-        ('top_medaglie', 'Mostra il medagliere all time'),
-        ('topgames', 'Mostra i giochi più giocati'),
-        ('list', 'Mostra la lista dei giochi'),
-        ('help', 'Messaggio di help')
-        ]
+        BotCommand('myday', 'Giochi che ti mancano oggi', api_kwargs={'is_ephemeral': True}),
+        BotCommand('myscore', 'Il tuo punteggio e piazzamenti di oggi'),
+        BotCommand('dailyranking', 'Classifica generale di oggi'),
+        BotCommand('classifica', 'Classifiche di oggi per gioco (o /c gioco)'),
+        BotCommand('bonus', 'Giochi bonus attivi oggi (Jolly e Nuovi)'),
+        BotCommand('favs', 'Scegli i tuoi giochi preferiti'),
+        BotCommand('mystats', 'Le tue statistiche (o /mystats gioco)'),
+        BotCommand('medaglie', 'Medagliere del mese'),
+        BotCommand('top', 'Classifica punti All-Time'),
+        BotCommand('topmedaglie', 'Medagliere All-Time'),
+        BotCommand('weekstat', 'Statistiche degli ultimi 7 giorni'),
+        BotCommand('help', 'Tutti i comandi e guida al bot'),
+    ]
     await app.bot.set_my_commands(my_commands)
 
     await app.bot.send_message(chat_id=ID_BOTCENTRAL, text="Bot riavviato! 🔄")
@@ -2804,19 +2831,18 @@ def main():
     j.run_repeating(heartbeat, interval=60 * 15, first=10)
 
     app.add_handler(CommandHandler("classificona", classificona), 1)
-    app.add_handler(CommandHandler(["mytoday", "myday", "my", "today", "daily"], mytoday), 1)
-    app.add_handler(CommandHandler(["myonly"], myonly), 1)
+    app.add_handler(CommandHandler(["myday", "mytoday", "myonly", "my", "today", "daily"], mytoday), 1)
     app.add_handler(CommandHandler(["myscore", "score"], myscore), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "statistiche"], mystats), 1)
     app.add_handler(CommandHandler(["groupstats", "gstats", "statsgroup"], groupstats_command), 1)
     app.add_handler(CommandHandler(["weekstat", "weekstats", "wstat", "week"], week_stats_command), 1)
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
-    app.add_handler(CommandHandler("dailyranking", classifica_istantanea), 1)
+    app.add_handler(CommandHandler(["dailyranking", "ranking", "oggi"], classifica_istantanea), 1)
     app.add_handler(CommandHandler(["simuladaily", "simula"], simula_daily), 1)
-    app.add_handler(CommandHandler(["jolly", "bonusgame", "giocobonus"], cmd_jolly), 1)
-    app.add_handler(CommandHandler(["bonus", "stelle", "stelline", "malus"], cmd_bonus), 1)
-    app.add_handler(CommandHandler(["bonusoggi", "bonuslist"], cmd_bonus_oggi), 1)
+    app.add_handler(CommandHandler(["bonus", "giochibonus"], cmd_bonus_games), 1)
+    app.add_handler(CommandHandler(["stelle", "stelline", "malus", "punti"], cmd_bonus), 1)
+    app.add_handler(CommandHandler(["puntioggi", "bonusoggi", "bonuslist"], cmd_bonus_oggi), 1)
 
     # app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
 
@@ -2824,7 +2850,7 @@ def main():
 
     app.add_handler(CommandHandler(["c", "classifica"], post_single_classifica), 2)
     app.add_handler(CommandHandler("top", top_players), 1)
-    app.add_handler(CommandHandler("top_medaglie", top_medaglie), 1)
+    app.add_handler(CommandHandler(["topmedaglie", "top_medaglie"], top_medaglie), 1)
     app.add_handler(CommandHandler("medaglie", medaglie_mensile), 1)
     app.add_handler(CommandHandler(["favs", "fav"], setting_fav), 3)
 
@@ -2845,7 +2871,6 @@ def main():
     app.add_handler(CommandHandler("disable_debug", disable_debug), 212)
     app.add_handler(CommandHandler("debug", debug_text), 213)
     app.add_handler(CommandHandler("backup", manual_backup), 1)
-    app.add_handler(CommandHandler("webapp", launch_web_ui))
     app.add_handler(CommandHandler("giochiamo", manual_daily_reminder), 1)
     app.add_handler(CommandHandler(["nuovigiochi", "newgames"], manual_new_games_reminder), 1)
     app.add_handler(CommandHandler("riassuntone", manual_riassunto), 1)
