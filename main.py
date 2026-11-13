@@ -1614,7 +1614,13 @@ async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             suffix = f" [{new_games_map[game]}x]"
         message += f'{prefix}{GAMES[game]["emoji"]} {game}{suffix}: {GAMES[game]["url"]}\n'
 
-    await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    reply_to_id = update.effective_message.message_id if update.effective_message else None
+    await send_long_message(
+        bot_token=TOKEN,
+        chat_id=update.effective_chat.id,
+        message=message.strip(),
+        reply_to_message_id=reply_to_id,
+    )
     # This will delete the original command after some time (iirc default 10 secs)
     await delete_original_command(update, context)
 
