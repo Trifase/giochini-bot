@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 from collections import defaultdict
 import html
@@ -53,7 +54,7 @@ from config import (
 )
 import config
 from games import ALL_GAMES as GAMES
-from games import GameFilter
+from games import GameFilter, invalidate_anchor_cache
 from utils import (
     Classifica,
     Giocata,
@@ -807,19 +808,10 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
         tot_favs = len(active_favorites)
-        tot_games = 0
-        game_played_today = 0
-        favs_played_today = 0
-
-        for game in GAMES.keys():
-            if GAMES[game].get("disabled", False):
-                continue
-            tot_games += 1
-            day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-            if Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"]):
-                game_played_today += 1
-                if game in active_favorites:
-                    favs_played_today += 1
+        played_today, not_played_today = get_user_played_games_today(result["user_id"])
+        tot_games = len(played_today) + len(not_played_today)
+        game_played_today = len(played_today)
+        favs_played_today = len([g for g in played_today if g in active_favorites])
 
         if str_as_int(result["day"]) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
@@ -913,64 +905,59 @@ async def manual_riassunto(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return await riassunto_serale(context)
 
 
-async def mytoday_classic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # message = 'Ecco a cosa hai già giocato oggi:\n'
-    # played_today = set()
-    # not_played_today = set()
-    played_today = []
-    not_played_today = []
-    not_played_favs = []
-    not_played_regs = []
-    favorites = []
-    solo_preferiti = False
+def get_user_played_games_today(
+    user_id: int | str, target_date: datetime.date | None = None
+) -> tuple[list[str], list[str]]:
+    """Return (played_today, not_played_today) active games for a user using a single batched query."""
+    if target_date is None:
+        target_date = datetime.date.today()
 
-    if str(update.effective_user.id) in context.bot_data["settings"]:
-        favorites = context.bot_data["settings"][str(update.effective_user.id)]["favs"]
-        solo_preferiti = context.bot_data["settings"][str(update.effective_user.id)].get("favs_extra_button", False)
+    active_games = [g for g in GAMES.keys() if not GAMES[g].get("disabled", False)]
+    expected_days = {
+        g: int(get_day_from_date(GAMES[g]["date"], GAMES[g]["day"], g, target_date))
+        for g in active_games
+    }
 
+    played_set: set[str] = set()
+    if expected_days:
+        rows = Punteggio.select(Punteggio.game, Punteggio.day).where(
+            Punteggio.user_id == int(user_id),
+            Punteggio.game.in_(active_games),
+            Punteggio.day.in_(list(set(expected_days.values()))),
+        )
+        played_set = {row.game for row in rows if expected_days.get(row.game) == row.day}
+
+    played_today = [g for g in active_games if g in played_set]
+    not_played_today = [g for g in active_games if g not in played_set]
+    return played_today, not_played_today
+
+
+def build_myday_message(
+    user_id: int | str, settings: dict, show_all: bool = False
+) -> tuple[str, InlineKeyboardMarkup | None, int, int]:
+    """Build the /myday HTML message, optional inline keyboard, and favorite counts."""
+    user_settings = settings.get(str(user_id), {})
+    favorites = user_settings.get("favs", [])
+    solo_preferiti = False if show_all else user_settings.get("favs_extra_button", False)
+
+    played_today, not_played_today = get_user_played_games_today(user_id)
+    not_played_favs = [g for g in not_played_today if g in favorites]
+    not_played_regs = [g for g in not_played_today if g not in favorites]
     get_game_badge = build_game_badge_getter()
 
-    # Divido i giochi in giocati e non giocati
-    for game in GAMES.keys():
-        if GAMES[game].get("disabled", False):
-            continue
-        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == update.message.from_user.id)
-
-        if query:
-            played_today.append(game)
-        else:
-            not_played_today.append(game)
-
-    # divido i non giocati tra favs e regulars
-    for game in not_played_today:
-        if game in favorites:
-            not_played_favs.append(game)
-        else:
-            not_played_regs.append(game)
-
-    # non ha giocate
     if not played_today:
         message = "Non hai giocato a nulla oggi.\n\n"
-
-    # ha giocato a tutti i giochi
     elif not not_played_today:
         message = "Hai giocato a tutto!"
-
-    # ha giocato a qualcosa
+    elif not_played_favs:
+        message = "Ti manca da giocare:\n\n"
+    elif favorites:
+        message = "Hai giocato a tutti i preferiti!\n\n"
     else:
-        if not_played_favs:
-            message = "Ti manca da giocare:\n\n"
+        message = "Ti manca da giocare:\n\n"
 
-        elif not not_played_favs and favorites:
-            message = "Hai giocato a tutti i preferiti!\n\n"
-
-        else:
-            message = "Ti manca da giocare:\n\n"
-
-    if not_played_favs:
-        for game in not_played_favs:
-            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
+    for game in not_played_favs:
+        message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
 
     message += "\n"
 
@@ -980,91 +967,18 @@ async def mytoday_classic(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
     tot_favs = len(active_favorites)
-    favs_played_today = 0
-    if tot_favs > 0:
-        favs_played_today = len([g for g in played_today if g in active_favorites])
-        if favs_played_today < tot_favs:
-            message = message.strip()
-            message += f"\n\nProgresso preferiti:"
-            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+    favs_played_today = len([g for g in played_today if g in active_favorites]) if tot_favs > 0 else 0
+    if tot_favs > 0 and favs_played_today < tot_favs:
+        message = message.strip()
+        message += "\n\nProgresso preferiti:"
+        message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
 
+    keyboard = None
     if solo_preferiti:
-        buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myday_more_{update.effective_user.id}")]]
+        buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myonly_more_{user_id}")]]
         keyboard = InlineKeyboardMarkup(buttons)
-        mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True, reply_markup=keyboard)
-    else:
-        mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    command_msg = update.message
-    messages_to_delete = [mymsg, command_msg]
-    if tot_favs > 0 and favs_played_today == tot_favs:
-        emojimsg = await update.message.reply_text("🥳")
-        messages_to_delete.append(emojimsg)
-    context.job_queue.run_once(delete_post, 60, data=messages_to_delete, name=f"myday_delete_{str(update.effective_message.id)}")
 
-
-async def mytoday_full_classic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = str(update.effective_user.id)
-    target_uid = update.callback_query.data.split("_")[2]
-    if user_id != target_uid:
-        return
-
-    played_today = []
-    not_played_today = []
-    for game in GAMES.keys():
-        if GAMES[game].get("disabled", False):
-            continue
-        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
-        if query:
-            played_today.append(game)
-        else:
-            not_played_today.append(game)
-
-    if not played_today:
-        message = "Non hai giocato a nulla oggi.\n\n"
-
-    elif not_played_today:
-        message = "Ti manca da giocare:\n\n"
-
-    favs = []
-    regs = []
-    favorites = []
-    if str(user_id) in context.bot_data["settings"]:
-        favorites = context.bot_data["settings"][str(user_id)]["favs"]
-
-    for game in not_played_today:
-        if game in favorites:
-            favs.append(game)
-        else:
-            regs.append(game)
-    get_game_badge = build_game_badge_getter()
-
-    if favs:
-        for game in favs:
-            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
-    message += "\n"
-    if regs:
-        for game in regs:
-            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
-
-    elif not not_played_today:
-        message = "Hai giocato a tutto!"
-
-    active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
-    tot_favs = len(active_favorites)
-    favs_played_today = 0
-    if tot_favs > 0:
-        favs_played_today = len([g for g in played_today if g in active_favorites])
-        if favs_played_today < tot_favs:
-            message = message.strip()
-            message += f"\n\nProgresso preferiti:"
-            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
-
-    # edit the message
-    await update.effective_message.edit_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    if tot_favs > 0 and favs_played_today == tot_favs:
-        emojimsg = await update.effective_message.reply_text("🥳")
-        context.job_queue.run_once(delete_post, 60, data=[emojimsg], name=f"myday_emoji_delete_{str(update.effective_message.id)}")
+    return message, keyboard, tot_favs, favs_played_today
 
 
 def extract_ephemeral_id(message) -> int | None:
@@ -1078,122 +992,14 @@ def extract_ephemeral_id(message) -> int | None:
     return getattr(message, "message_id", None)
 
 
-async def delete_ephemeral_post(context: ContextTypes.DEFAULT_TYPE) -> None:
-    items = context.job.data
-    if not isinstance(items, list):
-        items = [items]
-    for item in items:
-        if isinstance(item, dict):
-            chat_id = item.get("chat_id")
-            receiver_user_id = item.get("receiver_user_id")
-            ephemeral_message_id = item.get("ephemeral_message_id")
-            msg_obj = item.get("message")
-
-            if chat_id and receiver_user_id and ephemeral_message_id:
-                try:
-                    await context.bot._post(
-                        "deleteEphemeralMessage",
-                        data={
-                            "chat_id": chat_id,
-                            "receiver_user_id": receiver_user_id,
-                            "ephemeral_message_id": ephemeral_message_id,
-                        }
-                    )
-                except Exception as e:
-                    logger.debug(f"deleteEphemeralMessage failed: {e}")
-
-            if msg_obj and hasattr(msg_obj, "delete"):
-                try:
-                    await msg_obj.delete()
-                except Exception:
-                    pass
-        elif hasattr(item, "delete"):
-            try:
-                await item.delete()
-            except Exception:
-                pass
-
-
 async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.effective_user:
         return
 
-    played_today = []
-    not_played_today = []
-    not_played_favs = []
-    not_played_regs = []
-    favorites = []
-    solo_preferiti = False
     user_id = update.effective_user.id
-
-    if str(user_id) in context.bot_data.get("settings", {}):
-        favorites = context.bot_data["settings"][str(user_id)].get("favs", [])
-        solo_preferiti = context.bot_data["settings"][str(user_id)].get("favs_extra_button", False)
-
-    get_game_badge = build_game_badge_getter()
-
-    # Divido i giochi in giocati e non giocati
-    for game in GAMES.keys():
-        if GAMES[game].get("disabled", False):
-            continue
-        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
-
-        if query:
-            played_today.append(game)
-        else:
-            not_played_today.append(game)
-
-    # divido i non giocati tra favs e regulars
-    for game in not_played_today:
-        if game in favorites:
-            not_played_favs.append(game)
-        else:
-            not_played_regs.append(game)
-
-    # non ha giocate
-    if not played_today:
-        message = "Non hai giocato a nulla oggi.\n\n"
-
-    # ha giocato a tutti i giochi
-    elif not not_played_today:
-        message = "Hai giocato a tutto!"
-
-    # ha giocato a qualcosa
-    else:
-        if not_played_favs:
-            message = "Ti manca da giocare:\n\n"
-
-        elif not not_played_favs and favorites:
-            message = "Hai giocato a tutti i preferiti!\n\n"
-
-        else:
-            message = "Ti manca da giocare:\n\n"
-
-    if not_played_favs:
-        for game in not_played_favs:
-            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
-
-    message += "\n"
-
-    if not_played_regs and not solo_preferiti:
-        for game in not_played_regs:
-            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
-
-    active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
-    tot_favs = len(active_favorites)
-    favs_played_today = 0
-    if tot_favs > 0:
-        favs_played_today = len([g for g in played_today if g in active_favorites])
-        if favs_played_today < tot_favs:
-            message = message.strip()
-            message += f"\n\nProgresso preferiti:"
-            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
-
-    keyboard = None
-    if solo_preferiti:
-        buttons = [[InlineKeyboardButton("Tutti i giochi", callback_data=f"myonly_more_{user_id}")]]
-        keyboard = InlineKeyboardMarkup(buttons)
+    settings = context.bot_data.get("settings", {})
+    message, keyboard, tot_favs, favs_played_today = build_myday_message(user_id, settings, show_all=False)
+    solo_preferiti = keyboard is not None
 
     ephemeral_params = {"receiver_user_id": user_id}
     reply_params = None
@@ -1266,56 +1072,8 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if len(parts) > 3 and parts[3].isdigit():
         cb_eph_id = int(parts[3])
 
-    played_today = []
-    not_played_today = []
-    for game in GAMES.keys():
-        if GAMES[game].get("disabled", False):
-            continue
-        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-        query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == user_id)
-        if query:
-            played_today.append(game)
-        else:
-            not_played_today.append(game)
-
-    if not played_today:
-        message = "Non hai giocato a nulla oggi.\n\n"
-    elif not_played_today:
-        message = "Ti manca da giocare:\n\n"
-
-    favs = []
-    regs = []
-    favorites = []
-    if str(user_id) in context.bot_data.get("settings", {}):
-        favorites = context.bot_data["settings"][str(user_id)].get("favs", [])
-
-    for game in not_played_today:
-        if game in favorites:
-            favs.append(game)
-        else:
-            regs.append(game)
-    get_game_badge = build_game_badge_getter()
-
-    if favs:
-        for game in favs:
-            message += f'<a href="{GAMES[game]["url"]}">⭐ {GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
-    message += "\n"
-    if regs:
-        for game in regs:
-            message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game}</a>{get_game_badge(game)}\n'
-
-    elif not not_played_today:
-        message = "Hai giocato a tutto!"
-
-    active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
-    tot_favs = len(active_favorites)
-    favs_played_today = 0
-    if tot_favs > 0:
-        favs_played_today = len([g for g in played_today if g in active_favorites])
-        if favs_played_today < tot_favs:
-            message = message.strip()
-            message += f"\n\nProgresso preferiti:"
-            message += f'\n⭐ {print_progressbar(favs_played_today, complete=tot_favs, prefix="", suffix="")} {favs_played_today}/{tot_favs}'
+    settings = context.bot_data.get("settings", {})
+    message, _, tot_favs, favs_played_today = build_myday_message(user_id, settings, show_all=True)
 
     chat_id = update.effective_chat.id
     receiver_user_id = update.effective_user.id
@@ -1439,18 +1197,12 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 async def mytoday(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Wrapper that triggers the ephemeral message (myonly).
-    To revert to classic message behavior, change to:
-        return await mytoday_classic(update, context)
-    """
+    """Trigger the ephemeral /myday message."""
     return await myonly(update, context)
 
 
 async def mytoday_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Wrapper that triggers the ephemeral callback query handler (myonly_full).
-    To revert to classic behavior, change to:
-        return await mytoday_full_classic(update, context)
-    """
+    """Trigger the ephemeral /myday 'Tutti i giochi' callback handler."""
     return await myonly_full(update, context)
 
 
@@ -1576,6 +1328,7 @@ async def cmd_setanchor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         deleted = GameAnchor.delete().where(GameAnchor.game_name == target_game).execute()
         if deleted:
+            invalidate_anchor_cache()
             await update.message.reply_html(f"✅ Ancoraggio personalizzato rimosso per <b>{target_game}</b>. Torna ai default.")
         else:
             await update.message.reply_html(f"Nessun ancoraggio personalizzato trovato per <b>{target_game}</b>.")
@@ -1625,6 +1378,7 @@ async def cmd_setanchor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         anchor_day=str(parsed_day),
         updated_at=datetime.datetime.now()
     ).execute()
+    invalidate_anchor_cache()
 
     await update.message.reply_html(
         f"✅ Ancoraggio aggiornato per <b>{target_game}</b>:\n"
@@ -1966,28 +1720,28 @@ async def refresh_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if update.effective_user.id == ADMIN_ID:
         import subprocess
         try:
+            def _run_git(cmd: list[str]) -> str:
+                return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+
             # Get current HEAD hash before pulling
-            old_head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
-            
+            old_head = await asyncio.to_thread(_run_git, ["git", "rev-parse", "HEAD"])
+
             # Execute git pull
-            subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
-            
+            await asyncio.to_thread(_run_git, ["git", "pull"])
+
             # Get HEAD hash after pulling
-            new_head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
-            
+            new_head = await asyncio.to_thread(_run_git, ["git", "rev-parse", "HEAD"])
+
             if old_head == new_head:
                 pull_output = "Già aggiornato."
             else:
                 # Get list of commit subject lines between the old and new HEAD
-                log_result = subprocess.run(
-                    ["git", "log", f"{old_head}..{new_head}", "--format=%s"],
-                    capture_output=True,
-                    text=True,
-                    check=True
+                log_stdout = await asyncio.to_thread(
+                    _run_git, ["git", "log", f"{old_head}..{new_head}", "--format=%s"]
                 )
-                commits = log_result.stdout.strip().split("\n")
+                commits = log_stdout.split("\n")
                 pull_output = "\n".join(f"- {commit}" for commit in commits if commit)
-                
+
             await update.message.reply_text(f"Git pull completato:\n{pull_output}")
         except Exception as e:
             await update.message.reply_text(f"Errore durante git pull: {e}\nRiavvio comunque...")
@@ -2053,75 +1807,70 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     bonuses_by_game = get_all_bonuses_for_date(today, auto_pick_jolly=True)
 
-    # Iterate through all active games
-    for game in GAMES.keys():
-        if GAMES[game].get("disabled", False):
-            continue
-        
-        # Get the current day number for this game
-        day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, today)
-        
-        # Query for user's score in this game today
-        query = (
-            Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
+    active_games = [g for g in GAMES.keys() if not GAMES[g].get("disabled", False)]
+    expected_days = {
+        g: int(get_day_from_date(GAMES[g]["date"], GAMES[g]["day"], g, today))
+        for g in active_games
+    }
+
+    scores_by_game: dict[str, list] = {}
+    if expected_days:
+        all_scores_query = (
+            Punteggio.select(Punteggio.game, Punteggio.day, Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
             .where(
-                Punteggio.day == day,
-                Punteggio.game == game,
                 Punteggio.chat_id == update.effective_chat.id,
-                Punteggio.user_id == user_id
+                Punteggio.game.in_(active_games),
+                Punteggio.day.in_(list(set(expected_days.values()))),
             )
+            .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
         )
-        
-        # If user played this game, calculate their position and stars
-        if query:
-            # Get all scores for this game to calculate position
-            all_scores_query = (
-                Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
-                .where(
-                    Punteggio.day == day,
-                    Punteggio.game == game,
-                    Punteggio.chat_id == update.effective_chat.id
-                )
-                .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
+        for row in all_scores_query:
+            if expected_days.get(row.game) == row.day:
+                scores_by_game.setdefault(row.game, []).append(row)
+
+    # Iterate through all active games
+    for game in active_games:
+        game_scores = scores_by_game.get(game, [])
+        if not any(g.user_id == user_id for g in game_scores):
+            continue
+
+        day = expected_days[game]
+        cl = Classifica()
+        cl.game = game
+        cl.day = str(day)
+        cl.date = today
+        cl.emoji = GAMES[game]["emoji"]
+        cl.giocate = [
+            Giocata(
+                user_id=g.user_id,
+                user_name=g.user_name,
+                tries=g.tries,
+                game=game,
+                extra=g.extra if g.extra else 0
             )
-            
-            # Create a Classifica object to calculate positions and stars
-            cl = Classifica()
-            cl.game = game
-            cl.day = str(day)
-            cl.date = today
-            cl.emoji = GAMES[game]["emoji"]
-            cl.giocate = [
-                Giocata(
-                    user_id=g.user_id,
-                    user_name=g.user_name,
-                    tries=g.tries,
-                    game=game,
-                    extra=g.extra if g.extra else 0
-                )
-                for g in all_scores_query
-            ]
-            mult, b_type = bonuses_by_game.get(game, (1, None))
-            cl.order_and_position()
-            cl.assign_stars("default", multiplier=mult)
-            
-            # Find the user's game in the classifica
-            for giocata in cl.giocate:
-                if giocata.user_id == user_id:
-                    # Only include non-lost games since lost games produce 0 points
-                    if not giocata.lost:
-                        user_games.append({
-                            "game": game,
-                            "emoji": GAMES[game]["emoji"],
-                            "position": giocata.posizione,
-                            "stars": giocata.stelle,
-                            "multiplier": mult,
-                            "bonus_type": b_type,
-                            "medal_emoji": giocata.emoji,
-                            "tries": giocata.processed_tries,
-                        })
-                        total_stars += giocata.stelle
-                    break
+            for g in game_scores
+        ]
+        mult, b_type = bonuses_by_game.get(game, (1, None))
+        cl.order_and_position()
+        cl.assign_stars("default", multiplier=mult)
+
+        # Find the user's game in the classifica
+        for giocata in cl.giocate:
+            if giocata.user_id == user_id:
+                # Only include non-lost games since lost games produce 0 points
+                if not giocata.lost:
+                    user_games.append({
+                        "game": game,
+                        "emoji": GAMES[game]["emoji"],
+                        "position": giocata.posizione,
+                        "stars": giocata.stelle,
+                        "multiplier": mult,
+                        "bonus_type": b_type,
+                        "medal_emoji": giocata.emoji,
+                        "tries": giocata.processed_tries,
+                    })
+                    total_stars += giocata.stelle
+                break
     
     # Build the message
     if not user_games:
@@ -2563,7 +2312,8 @@ async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:
         for file in files_to_backup:
             zip_ref.write(file)
 
-    await context.bot.send_document(chat_id=BACKUP_DEST, document=open(archive_name, "rb"))
+    with open(archive_name, "rb") as f:
+        await context.bot.send_document(chat_id=BACKUP_DEST, document=f)
     logging.info("[AUTO] Backup DB eseguito.")
 
 

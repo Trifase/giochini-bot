@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from config import Punteggio, Medaglia
 from utils import PuntiBonus, GiocoBonus, GameStatus
-from main import myonly, myonly_full, myscore, delete_ephemeral_post, delete_post, extract_ephemeral_id, mytoday, mytoday_classic, mytoday_full, mytoday_full_classic
+from main import myonly, myonly_full, myscore, extract_ephemeral_id, mytoday, mytoday_full
 
 
 @pytest.fixture(autouse=True)
@@ -111,42 +111,6 @@ async def test_myscore_sends_ephemeral_reply_without_reply_deletion():
         "ephemeral_message_parameters": {"receiver_user_id": 12345}
     }
     assert not job_queue.run_once.called
-
-
-@pytest.mark.anyio
-async def test_delete_ephemeral_post():
-    bot = MagicMock()
-    bot._post = AsyncMock()
-
-    msg_to_delete = MagicMock()
-    msg_to_delete.delete = AsyncMock()
-
-    job = MagicMock()
-    job.data = [
-        {
-            "chat_id": 999,
-            "receiver_user_id": 12345,
-            "ephemeral_message_id": 777,
-            "message": msg_to_delete,
-        },
-        msg_to_delete,
-    ]
-
-    context = MagicMock()
-    context.bot = bot
-    context.job = job
-
-    await delete_ephemeral_post(context)
-
-    bot._post.assert_awaited_with(
-        "deleteEphemeralMessage",
-        data={
-            "chat_id": 999,
-            "receiver_user_id": 12345,
-            "ephemeral_message_id": 777,
-        }
-    )
-    assert msg_to_delete.delete.called
 
 
 @pytest.mark.anyio
@@ -281,11 +245,4 @@ async def test_mytoday_delegates_to_myonly():
             "receiver_user_id": 12345
         }
     }
-
-
-def test_mytoday_classic_preserved():
-    assert callable(mytoday_classic)
-    assert callable(mytoday_full_classic)
-    assert callable(mytoday)
-    assert callable(mytoday_full)
 

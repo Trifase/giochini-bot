@@ -48,15 +48,40 @@ def time_from_emoji(input_string: str) -> str:
     return input_string
 
 
-def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
+_anchor_cache: dict[int, dict[str, tuple[datetime.date, str]]] = {}
+
+
+def invalidate_anchor_cache() -> None:
+    """Clear the cached GameAnchor lookup table."""
+    _anchor_cache.clear()
+
+
+def _get_anchor_for_game(game: str) -> tuple[datetime.date, str] | None:
     try:
         from utils import GameAnchor
-        anchor = GameAnchor.get_or_none(GameAnchor.game_name == game)
-        if anchor:
-            game_date = anchor.anchor_date
-            game_day = str(anchor.anchor_day)
+        db = GameAnchor._meta.database
+        if db is None:
+            return None
+        # Skip caching for in-memory SQLite test DBs that may mutate GameAnchor directly.
+        if getattr(db, "database", None) == ":memory:":
+            anchor = GameAnchor.get_or_none(GameAnchor.game_name == game)
+            return (anchor.anchor_date, str(anchor.anchor_day)) if anchor else None
+
+        db_key = id(db)
+        if db_key not in _anchor_cache:
+            _anchor_cache[db_key] = {
+                a.game_name: (a.anchor_date, str(a.anchor_day))
+                for a in GameAnchor.select()
+            }
+        return _anchor_cache[db_key].get(game)
     except Exception:
-        pass
+        return None
+
+
+def get_day_from_date(game_date: datetime.date, game_day: str, game: str, date: datetime.date | str = None) -> str:
+    anchor = _get_anchor_for_game(game)
+    if anchor:
+        game_date, game_day = anchor
 
     if isinstance(date, str) and game == "Globle":
         locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
