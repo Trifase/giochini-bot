@@ -5762,6 +5762,50 @@ class Zip(Giochino):
 
 
 #######
+@dataclass
+class Overridle(Giochino):
+    _name = "Overridle"
+    _category = "Logica e matematica"
+    _date = datetime.date(2026, 11, 14)
+    _day = "1"
+    _emoji = "💣"
+    _url = "https://overridle.trifase.online"
+    _added_date = datetime.date(2026, 11, 14)
+
+    examples = [
+        "OVERRIDLE #20261114 — 💥 | 🖤🖤🖤\n🟥 ⬛ ⬛ ⬛ ⬛\nhttps://overridle.trifase.online",
+        "OVERRIDLE #20261114 — 17.3s | ❤️❤️🖤\n🟩 🟩 🟩 🟩 🟩\nhttps://overridle.trifase.online",
+    ]
+    expected = [
+        {"day": "1", "name": "Overridle", "timestamp": 10, "tries": "X", "stars": None, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "Overridle", "timestamp": 10, "tries": 1730, "stars": 2, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        text_lower = raw_text.lower()
+        return "overridle" in text_lower and ("overridle.trifase.online" in text_lower or "overridle #" in text_lower)
+
+    def parse(self):
+        text = self.raw_text
+        date_match = re.search(r"OVERRIDLE\s+#(\d{4})(\d{2})(\d{2})", text, re.IGNORECASE)
+        if date_match:
+            y, m, d = int(date_match.group(1)), int(date_match.group(2)), int(date_match.group(3))
+            parsed_date = datetime.date(y, m, d)
+            self.day = get_day_from_date(self._date, self._day, "Overridle", parsed_date)
+        else:
+            self.day = get_day_from_date(self._date, self._day, "Overridle", datetime.date.today())
+
+        time_match = re.search(r"—\s*(\d+(?:\.\d+)?)s", text)
+        hearts = text.count("❤")
+        if "💥" in text or not time_match or hearts == 0:
+            self.tries = "X"
+            self.stars = None
+        else:
+            self.tries = round(float(time_match.group(1)) * 100)
+            self.stars = hearts
+
+
 def get_giochini():
     klasses = [
         cls_obj

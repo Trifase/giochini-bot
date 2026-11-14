@@ -1163,6 +1163,12 @@ def process_tries(game: str, tries: int | str) -> int | str:
 
 
     # For Reversle, the point is a float with 2 decimals. I store multiplying by 10 as ints, so i just need to divide by 100 an round it to 2 decimals.
+    if game == "Overridle":
+        if str(tries) in ['9999999', 'X']:
+            return "X"
+        val = int(tries) / 100.0
+        return f"{val:.1f}s" if round(val, 2) == round(val, 1) else f"{val:.2f}s"
+
     if game == "Reversle":
         tries = f"{round(tries / 100, 2)}s"
 
