@@ -113,16 +113,18 @@ async def test_new_games_reminder_with_new_and_jolly():
         patch("main.get_bonus_game", return_value=fake_bonus),
         patch("main.pick_or_get_bonus_game", return_value=fake_bonus),
         patch("main.get_new_games_for_date", return_value=fake_new),
+        patch("main.get_reenabled_games_for_date", return_value=[]),
     ):
         await new_games_reminder(context)
 
     assert mock_bot.send_message.call_count == 1
     message_text = mock_bot.send_message.call_args.kwargs["text"]
-    assert "🆕 <b>Giochi Nuovi di oggi!</b>" in message_text
+    assert "✨ <b>Giochi Bonus di oggi</b> ✨" in message_text
+    assert "🆕 <b>Giochi nuovi:</b>" in message_text
     assert "Bordivide" in message_text
     assert "Extraplot" in message_text
     assert "<b>[2x]</b>" in message_text
-    assert "🎰 <b>Gioco Jolly di oggi (3x):</b>" in message_text
+    assert "🎰 <b>Gioco Jolly (3x):</b>" in message_text
     assert "Wordle" in message_text
 
 
@@ -133,10 +135,39 @@ async def test_new_games_reminder_without_new_games():
     context = MagicMock()
     context.bot = mock_bot
 
-    with patch("main.get_new_games_for_date", return_value=[]):
+    with (
+        patch("main.get_new_games_for_date", return_value=[]),
+        patch("main.get_reenabled_games_for_date", return_value=[]),
+    ):
         await new_games_reminder(context)
 
     assert not mock_bot.send_message.called
+
+
+@pytest.mark.anyio
+async def test_new_games_reminder_with_reenabled_only():
+    mock_bot = MagicMock()
+    mock_bot.send_message = AsyncMock()
+    context = MagicMock()
+    context.bot = mock_bot
+
+    today = datetime.date.today()
+    fake_reenabled = [GiocoBonus(date=today, game="Picsey", multiplier=3, bonus_type="reenabled")]
+
+    with (
+        patch("main.get_bonus_game", return_value=None),
+        patch("main.pick_or_get_bonus_game", return_value=None),
+        patch("main.get_new_games_for_date", return_value=[]),
+        patch("main.get_reenabled_games_for_date", return_value=fake_reenabled),
+    ):
+        sent = await new_games_reminder(context)
+
+    assert sent is True
+    assert mock_bot.send_message.call_count == 1
+    message_text = mock_bot.send_message.call_args.kwargs["text"]
+    assert "✨ <b>Giochi riattivati:</b>" in message_text
+    assert "Picsey" in message_text
+    assert "<b>[3x]</b>" in message_text
 
 
 @pytest.mark.anyio

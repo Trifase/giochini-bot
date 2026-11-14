@@ -118,88 +118,6 @@ locale.setlocale(locale.LC_TIME, "it_IT.UTF-8")
 giochini_results_filter = GameFilter()
 
 
-# def make_single_classifica(game: str, chat_id: int, day: int = None, limit: int = 6, user_id=None, to_string=True, show_lost=False) -> str:
-#     day = day or get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-#     # print(f"Making classifica for {game} #{day}")
-#     emoji = GAMES[game]["emoji"]
-#     url = GAMES[game]["url"]
-
-#     user_id_found = False
-#     if show_lost:
-#         query = (
-#             Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
-#             .where(
-#                 Punteggio.day == day,
-#                 Punteggio.game == game,
-#                 Punteggio.chat_id == chat_id
-#             )
-#             .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
-#             .limit(limit)
-#         )
-#     else:
-#         query = (
-#         Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
-#         .where(
-#             Punteggio.day == day,
-#             Punteggio.game == game,
-#             Punteggio.chat_id == chat_id,
-#             # https://github.com/coleifer/peewee/issues/612#issuecomment-468029502
-#             Punteggio.lost == False,
-#         )
-#         .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
-#         .limit(limit)
-#         )
-#     # print(query.sql())
-#     if not query:
-#         return None
-
-#     classifica = Classifica()
-#     classifica.game = game
-#     classifica.day = day
-#     classifica.date = datetime.date.today()
-#     classifica.emoji = emoji
-#     classifica.header = f'<a href="{url}"><b>{emoji} {game} #{day}</b></a>'
-
-#     for posto, punteggio in enumerate(query, start=1):
-#         # print(posto, punteggio)
-#         punteggio.tries = process_tries(game, punteggio.tries)
-
-#         if user_id and not user_id_found and punteggio.user_id == user_id:
-#             user_id_found = True
-
-#         posto = Posto(posizione=posto, user_id=punteggio.user_id, user_name=punteggio.user_name, tries=punteggio.tries)
-#         classifica.pos.append(posto)
-
-#     if len(classifica.pos) < 3:
-#         classifica.valid = False
-
-#     # At this point, if the user is not found in the first LIMIT positions, we search deeper in the db
-#     if user_id and not user_id_found:
-#         deep_query = (
-#             Punteggio.select(Punteggio.user_name, Punteggio.tries, Punteggio.user_id)
-#             .where(
-#                 Punteggio.day == day,
-#                 Punteggio.game == game,
-#                 Punteggio.chat_id == chat_id,
-#                 Punteggio.lost == False,
-#             )
-#             .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
-#         )
-
-#         for posto, punteggio in enumerate(deep_query, start=1):
-#             punteggio.tries = process_tries(game, punteggio.tries)
-
-#             if user_id and punteggio.user_id == user_id:
-#                 user_id_found = True
-#                 classifica.last = f"...\n{posto}. {punteggio.user_name} ({punteggio.tries})\n"
-
-#     if to_string:
-#         return classifica.to_string()
-
-#     return classifica
-
-
-
 def format_bonus_badge(multiplier: int, bonus_type: str | None, bold: bool = False) -> str:
     """Formats a bonus badge such as ' [🎰 3x]', ' [🆕 2x]' or ' [✨ 3x]'."""
     if not bonus_type or multiplier <= 1:
@@ -883,33 +801,31 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         today_game = int(get_day_from_date(GAMES[result["name"]]["date"], GAMES[result["name"]]["day"], result["name"], datetime.date.today()))
 
+        favorites = []
+        settings = context.bot_data.get("settings", {})
+        user_id_str = str(result["user_id"])
+        if user_id_str in settings:
+            favorites = settings[user_id_str].get("favs", [])
+
+        active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
+        tot_favs = len(active_favorites)
+        tot_games = 0
+        game_played_today = 0
+        favs_played_today = 0
+
+        for game in GAMES.keys():
+            if GAMES[game].get("disabled", False):
+                continue
+            tot_games += 1
+            day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
+            if Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"]):
+                game_played_today += 1
+                if game in active_favorites:
+                    favs_played_today += 1
+
         if str_as_int(result["day"]) in [today_game, today_game - 1]:
             message = f'Classifica di {result["name"]} aggiornata.\n'
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"], show_lost=True)
-            tot_games = len([x for x in GAMES.keys() if not GAMES[x].get("disabled", False)])
-            game_played_today = 0
-            
-            favorites = []
-            settings = context.bot_data.get("settings", {})
-            user_id_str = str(result["user_id"])
-            if user_id_str in settings:
-                favorites = settings[user_id_str].get("favs", [])
-            
-            active_favorites = [g for g in favorites if g in GAMES and not GAMES[g].get("disabled", False)]
-            tot_favs = len(active_favorites)
-            favs_played_today = 0
-
-            # for each game, see if there is a result for the last day of the game, and if there is, count it
-            for game in GAMES.keys():
-                if GAMES[game].get("disabled", False):
-                    continue
-                day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-                query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"])
-
-                if query:
-                    game_played_today += 1
-                    if game in active_favorites:
-                        favs_played_today += 1
 
             if classifica:
                 classifica = f"{message}\n{classifica}"
@@ -960,17 +876,6 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         logging.info(f"Aggiungo punteggio di {result['user_name']} per {result['name']} #{result['day']} ({result['tries']})")
 
-        tot_games = len([x for x in GAMES.keys() if not GAMES[x].get("disabled", False)])
-        game_played_today = 0
-        # for each game, see if there is a result for the last day of the game, and if there is, count it
-        for game in GAMES.keys():
-            if GAMES[game].get("disabled", False):
-                continue
-            day = get_day_from_date(GAMES[game]["date"], GAMES[game]["day"], game, datetime.date.today())
-            query = Punteggio.select().where(Punteggio.day == int(day), Punteggio.game == game, Punteggio.user_id == result["user_id"])
-            if query:
-                game_played_today += 1
-        # print(f"Totale giochi giocati oggi: {game_played_today} su {tot_games}")
         if game_played_today == tot_games:
             # if the user has played all the games today, send a message
             await update.message.reply_text("Hai giocato a tutti i giochi oggi! Bravo! Esci un po' porca troia!")
@@ -1784,7 +1689,7 @@ async def cmd_setanchor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
-async def cmd_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def cmd_stelle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Admin-only command
     if update.effective_user.id != ADMIN_ID:
         return
@@ -2352,11 +2257,29 @@ async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
-async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Shows all games with an active bonus today (Jolly, New games, Re-enabled games)."""
-    today = datetime.date.today()
-    sections = []
+def build_bonus_summary_text(target_date: datetime.date = None, require_promo: bool = False) -> str | None:
+    """Builds the unified bonus summary HTML message for /bonus and the midday reminder.
+    When require_promo=True, returns None unless at least one new or re-enabled game is active."""
+    today = target_date or datetime.date.today()
 
+    new_entries = []
+    if getattr(config, "NEW_GAME_ENABLED", True):
+        new_entries = [
+            e for e in get_new_games_for_date(today)
+            if e.game in GAMES and not GAMES[e.game].get("disabled", False)
+        ]
+
+    reenabled_entries = []
+    if getattr(config, "REENABLED_GAME_ENABLED", True):
+        reenabled_entries = [
+            e for e in get_reenabled_games_for_date(today)
+            if e.game in GAMES and not GAMES[e.game].get("disabled", False)
+        ]
+
+    if require_promo and not new_entries and not reenabled_entries:
+        return None
+
+    sections = []
     if getattr(config, "BONUS_GAME_ENABLED", True):
         jolly = get_bonus_game(today) or pick_or_get_bonus_game(today)
         if jolly and jolly.game in GAMES and not GAMES[jolly.game].get("disabled", False):
@@ -2366,37 +2289,35 @@ async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 f"• {j_link}"
             )
 
-    if getattr(config, "NEW_GAME_ENABLED", True):
-        new_entries = [
-            e for e in get_new_games_for_date(today)
-            if e.game in GAMES and not GAMES[e.game].get("disabled", False)
-        ]
-        if new_entries:
-            new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
-            lines = [f"{new_emoji} <b>Giochi nuovi:</b>"]
-            for entry in new_entries:
-                g_link = _format_game_link(entry.game, today)
-                lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>")
-            sections.append("\n".join(lines))
+    if new_entries:
+        new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
+        lines = [f"{new_emoji} <b>Giochi nuovi:</b>"]
+        for entry in new_entries:
+            g_link = _format_game_link(entry.game, today)
+            lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>")
+        sections.append("\n".join(lines))
 
-    if getattr(config, "REENABLED_GAME_ENABLED", True):
-        reenabled_entries = [
-            e for e in get_reenabled_games_for_date(today)
-            if e.game in GAMES and not GAMES[e.game].get("disabled", False)
-        ]
-        if reenabled_entries:
-            reenabled_emoji = getattr(config, "REENABLED_GAME_EMOJI", "✨")
-            lines = [f"{reenabled_emoji} <b>Giochi riattivati:</b>"]
-            for entry in reenabled_entries:
-                g_link = _format_game_link(entry.game, today)
-                lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>")
-            sections.append("\n".join(lines))
+    if reenabled_entries:
+        reenabled_emoji = getattr(config, "REENABLED_GAME_EMOJI", "✨")
+        lines = [f"{reenabled_emoji} <b>Giochi riattivati:</b>"]
+        for entry in reenabled_entries:
+            g_link = _format_game_link(entry.game, today)
+            lines.append(f"• {g_link} <b>[{entry.multiplier}x]</b>")
+        sections.append("\n".join(lines))
 
     if not sections:
+        return None
+
+    return "✨ <b>Giochi Bonus di oggi</b> ✨\n\n" + "\n\n".join(sections)
+
+
+async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Shows all games with an active bonus today (Jolly, New games, Re-enabled games)."""
+    msg = build_bonus_summary_text(datetime.date.today(), require_promo=False)
+    if not msg:
         await update.message.reply_text("Nessun gioco bonus attivo oggi.")
         return
 
-    msg = "✨ <b>Giochi Bonus di oggi</b> ✨\n\n" + "\n\n".join(sections)
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
@@ -2426,6 +2347,7 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     yesterday_bonus = get_bonus_game(yesterday)
     yesterday_new = get_new_games_for_date(yesterday, sync=False)
+    yesterday_reenabled = get_reenabled_games_for_date(yesterday, sync=False)
     bonus_lines = []
     if yesterday_bonus:
         yg_emoji = GAMES.get(yesterday_bonus.game, {}).get("emoji", "🎮")
@@ -2437,6 +2359,13 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
             for e in yesterday_new
         )
         bonus_lines.append(f"{new_emoji} <i>Giochi Nuovi: {new_labels}</i>")
+    if yesterday_reenabled:
+        reenabled_emoji = getattr(config, "REENABLED_GAME_EMOJI", "✨")
+        reenabled_labels = ", ".join(
+            f"{GAMES.get(e.game, {}).get('emoji', '🎮')} {e.game} ({e.multiplier}x)"
+            for e in yesterday_reenabled
+        )
+        bonus_lines.append(f"{reenabled_emoji} <i>Giochi Riattivati: {reenabled_labels}</i>")
     bonus_note = ("\n".join(bonus_lines) + "\n\n") if bonus_lines else ""
 
     message = f"<b>Ecco come è andata oggi {yesterday.strftime('%Y-%m-%d')}</b>:\n{bonus_note}"
@@ -2659,37 +2588,10 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
 
 
 async def new_games_reminder(context: ContextTypes.DEFAULT_TYPE) -> bool:
-    """Sends a midday reminder when new promotional games are active, also including today's Jolly game."""
-    if not getattr(config, "NEW_GAME_ENABLED", True):
+    """Sends a midday reminder using the unified /bonus message when new or re-enabled games are active."""
+    message = build_bonus_summary_text(datetime.date.today(), require_promo=True)
+    if not message:
         return False
-
-    today = datetime.date.today()
-    new_entries = [
-        e for e in get_new_games_for_date(today)
-        if e.game in GAMES and not GAMES[e.game].get("disabled", False)
-    ]
-    if not new_entries:
-        return False
-
-    new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
-    message = f"{new_emoji} <b>Giochi Nuovi di oggi!</b>\n\n"
-    message += "Questi giochi sono stati aggiunti da poco e valgono <b>punteggio doppio</b>:\n"
-
-    for entry in new_entries:
-        g_info = GAMES[entry.game]
-        g_link = _format_game_link(entry.game, today)
-        added_date = g_info.get("added_date")
-        total_days = g_info.get("new_days") or getattr(config, "NEW_GAME_DAYS", 3)
-        progress_str = ""
-        if added_date:
-            day_idx = (today - added_date).days + 1
-            progress_str = f" <i>(giorno {day_idx}/{total_days})</i>"
-        message += f"• {new_emoji} {g_link} <b>[{entry.multiplier}x]</b>{progress_str}\n"
-
-    bonus_today = (get_bonus_game(today) or pick_or_get_bonus_game(today)) if getattr(config, "BONUS_GAME_ENABLED", True) else None
-    if bonus_today and bonus_today.game in GAMES:
-        b_link = _format_game_link(bonus_today.game, today)
-        message += f"\n🎰 <b>Gioco Jolly di oggi ({bonus_today.multiplier}x):</b> {b_link}\n"
 
     await context.bot.send_message(
         chat_id=ID_GIOCHINI,
@@ -2733,44 +2635,6 @@ async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
     messages: list = context.job.data
     for message in messages:
         await message.delete()
-
-
-async def launch_web_ui(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # display our web-app!
-    # kb = [
-    #     [InlineKeyboardButton(
-    #         "Show me my Web-App!",
-    #        web_app=WebAppInfo("https://trifase.github.io/emily-mini-app/"), # obviously, set yours here.
-    #        callback_data='webapp_launch'
-    #     )]
-    # ]
-    # await update.message.reply_text("Let's do this...", reply_markup=InlineKeyboardMarkup(kb))
-
-    kb = [
-        [
-            KeyboardButton(
-                "Show me my Web-App!",
-                web_app=WebAppInfo("https://trifase.github.io/emily-mini-app/index.html?type=sale&sort=price_descending&page=43"),  # obviously, set yours here.
-                #    callback_data='webapp_launch'
-            )
-        ]
-    ]
-    await update.message.reply_text("Let's do this...", reply_markup=ReplyKeyboardMarkup(kb))
-
-
-async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = json.loads(update.to_json())
-
-    import html
-    import pprint
-
-    rawtext = pprint.pformat(data)
-    # print(rawtext)
-    rawtext = html.escape(rawtext)
-    # print('callback data:', update.callback_query.data)
-    # wat = await context.bot.answer_callback_query(update.callback_query.id)
-    # print(wat)
-    await update.message.reply_html(f'<pre><code class="language-python">{rawtext}</code></pre>', reply_markup=ReplyKeyboardRemove())
 
 
 async def enable_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2891,7 +2755,7 @@ def main():
     app.add_handler(CommandHandler(["dailyranking", "ranking", "oggi"], classifica_istantanea), 1)
     app.add_handler(CommandHandler(["simuladaily", "simula"], simula_daily), 1)
     app.add_handler(CommandHandler(["bonus", "giochibonus"], cmd_bonus_games), 1)
-    app.add_handler(CommandHandler(["stelle", "stelline", "malus", "punti"], cmd_bonus), 1)
+    app.add_handler(CommandHandler(["stelle", "stelline", "malus", "punti"], cmd_stelle), 1)
     app.add_handler(CommandHandler(["puntioggi", "bonusoggi", "bonuslist"], cmd_bonus_oggi), 1)
 
     # app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
