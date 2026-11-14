@@ -76,12 +76,8 @@ async def test_myonly_sends_ephemeral_reply_and_schedules_deletion():
             "receiver_user_id": 12345
         }
     }
-    # Verify 60s deletion was scheduled only for the original command (not the ephemeral reply)
-    assert job_queue.run_once.called
-    call_args = job_queue.run_once.call_args
-    assert call_args[0][0] == delete_post
-    assert call_args[0][1] == 60
-    assert call_args.kwargs["data"] == [message]
+    # No deletion should be scheduled for ephemeral replies or their command
+    assert not job_queue.run_once.called
 
 
 @pytest.mark.anyio
@@ -114,12 +110,7 @@ async def test_myscore_sends_ephemeral_reply_without_reply_deletion():
     assert kwargs["api_kwargs"] == {
         "ephemeral_message_parameters": {"receiver_user_id": 12345}
     }
-    # Only the original /myscore command is scheduled for deletion (30s), not the ephemeral reply
-    assert job_queue.run_once.called
-    call_args = job_queue.run_once.call_args
-    assert call_args[0][0] == delete_post
-    assert call_args[0][1] == 30
-    assert call_args.kwargs["data"] == [message]
+    assert not job_queue.run_once.called
 
 
 @pytest.mark.anyio

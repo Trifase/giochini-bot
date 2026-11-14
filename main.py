@@ -1247,8 +1247,6 @@ async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         except Exception:
             pass
 
-    await delete_original_command(update, context, 60)
-
 
 async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.callback_query or not update.effective_user:
@@ -2153,7 +2151,6 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         reply_parameters=reply_params,
         api_kwargs={"ephemeral_message_parameters": ephemeral_params},
     )
-    await delete_original_command(update, context, 30)
 
 
 async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2677,7 +2674,7 @@ async def post_init(app: Application) -> None:
 
     my_commands = [
         BotCommand('myday', 'Giochi che ti mancano oggi', api_kwargs={'is_ephemeral': True}),
-        BotCommand('myscore', 'Il tuo punteggio e piazzamenti di oggi'),
+        BotCommand('myscore', 'Il tuo punteggio e piazzamenti di oggi', api_kwargs={'is_ephemeral': True}),
         BotCommand('ranking', 'Classifica generale di oggi'),
         BotCommand('classifica', 'Classifiche di oggi per gioco (o /c gioco)'),
         BotCommand('bonus', 'Giochi bonus attivi oggi (Jolly e Nuovi)'),
