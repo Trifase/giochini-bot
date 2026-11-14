@@ -3,7 +3,7 @@ import peewee
 import pytest
 from fastapi.testclient import TestClient
 
-from config import Punteggio, Punti, Medaglia, PuntiBonus, ID_GIOCHINI
+from config import Punteggio, Punti, Medaglia, PuntiBonus, Utente, ID_GIOCHINI
 from utils import GiocoBonus
 from main_fastapi import app
 
@@ -11,7 +11,7 @@ from main_fastapi import app
 @pytest.fixture(autouse=True)
 def setup_fastapi_test_db():
     test_db = peewee.SqliteDatabase("file:testfastapidb?mode=memory&cache=shared", uri=True)
-    models = [Punteggio, Punti, Medaglia, PuntiBonus, GiocoBonus]
+    models = [Punteggio, Punti, Medaglia, PuntiBonus, GiocoBonus, Utente]
     test_db.bind(models, bind_refs=False, bind_backrefs=False)
     test_db.connect()
     test_db.create_tables(models)
@@ -211,4 +211,49 @@ def test_api_new_game_multiplier():
     assert j_data["active"] is True
     assert j_data["bonus"]["game"] == "Wordle"
     assert any(ng["game"] == "Bordivide" and ng["multiplier"] == 2 for ng in j_data["new_games"])
+
+
+def test_api_username_change_decoupling():
+    from games import ALL_GAMES, get_day_from_date
+
+    client = TestClient(app)
+    today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
+    w_day_1 = get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", yesterday)
+    w_day_2 = get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today)
+
+    Punteggio.create(
+        date=yesterday, timestamp=100, chat_id=ID_GIOCHINI, user_id=10, user_name="OldMario",
+        game="Wordle", day=w_day_1, tries=3, streak=1, lost=False,
+    )
+    Punteggio.create(
+        date=today, timestamp=200, chat_id=ID_GIOCHINI, user_id=10, user_name="NewMario",
+        game="Wordle", day=w_day_2, tries=2, streak=2, lost=False,
+    )
+    Punti.create(date=yesterday, user_id=10, user_name="OldMario", punti=5)
+    Punti.create(date=today, user_id=10, user_name="NewMario", punti=4)
+    Medaglia.create(date=yesterday, timestamp=101, chat_id=ID_GIOCHINI, user_id=10, user_name="OldMario", gold=1)
+    Utente.replace(user_id=10, user_name="NewMario", username="newmario").execute()
+
+    players_res = client.get("/api/players/").json()
+    assert len(players_res["players"]) == 1
+    assert players_res["players"][0] == {"user_id": 10, "name": "NewMario", "plays": 2}
+
+    stats_by_uid = client.get("/api/stats/?user_id=10").json()
+    assert stats_by_uid["player"] == "NewMario"
+    assert stats_by_uid["user_id"] == 10
+    assert stats_by_uid["total_plays"] == 2
+    assert stats_by_uid["total_points"] == 9
+    assert stats_by_uid["medals"]["gold"] == 1
+
+    stats_by_name = client.get("/api/stats/?player=NewMario").json()
+    assert stats_by_name["total_plays"] == 2
+
+    monthly = client.get(f"/api/monthlyranking/?month={today.strftime('%Y-%m')}").json()
+    assert monthly["rankings"][0]["name"] == "NewMario"
+    assert monthly["rankings"][0]["points"] == 9
+
+    medals = client.get("/api/medals/?all_time=true").json()
+    assert medals["medals"][0]["user_name"] == "NewMario"
+    assert medals["medals"][0]["gold"] == 1
 

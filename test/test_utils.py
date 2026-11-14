@@ -573,3 +573,79 @@ def test_reenabled_game_3x_bonus_window():
     assert [r.game for r in rows] == ["Picsey"]
 
 
+def test_username_change_decoupling_in_utils():
+    from config import Utente, ID_GIOCHINI
+    from utils import Classifica, Giocata, sync_user, get_display_names, group_stats
+
+    db = Punteggio._meta.database
+    Utente.create_table(safe=True)
+    today = datetime.date.today()
+
+    Punteggio.create(
+        date=today, timestamp=1000, chat_id=ID_GIOCHINI,
+        user_id=42, user_name="OldName", game="Wordle", day="999", tries=3, streak=5, lost=False,
+    )
+    Medaglia.create(
+        date=today, timestamp=1001, chat_id=ID_GIOCHINI,
+        user_id=42, user_name="OldName", gold=2, silver=0, bronze=0, last=0,
+    )
+    sync_user(42, "NewName", "newhandle")
+
+    assert get_display_names([42]) == {42: "NewName"}
+
+    cl = Classifica(game="Wordle", day="999", date=today, emoji="🟩")
+    cl.giocate = [Giocata(user_id=42, user_name="OldName", tries=3, game="Wordle", extra=0)]
+    cl.order_and_position()
+    cl.assign_stars("default")
+    rendered = cl.to_string()
+    assert "NewName" in rendered
+    assert "OldName" not in rendered
+
+    medals_msg = medaglie_count(target_date=today, monthly=True)
+    assert "NewName" in medals_msg
+    assert "OldName" not in medals_msg
+
+    stats_msg = group_stats(ID_GIOCHINI)
+    assert "NewName" in stats_msg
+    assert "OldName" not in stats_msg
+
+
+def test_ensure_utenti_backfill_and_pk_migration():
+    from config import Utente, Punti
+    from utils import ensure_punteggi_pk_migration, ensure_utenti_schema_and_backfill
+
+    legacy_db = peewee.SqliteDatabase(":memory:")
+    models = [Punteggio, Medaglia, Punti, Utente]
+    legacy_db.bind(models, bind_refs=False, bind_backrefs=False)
+    legacy_db.connect()
+    try:
+        legacy_db.execute_sql(
+            "CREATE TABLE punteggi ("
+            "date DATE NOT NULL, timestamp INTEGER NOT NULL, chat_id INTEGER NOT NULL, "
+            "user_id INTEGER NOT NULL, user_name TEXT NOT NULL, game TEXT NOT NULL, "
+            "day TEXT NOT NULL, tries INTEGER NOT NULL, extra TEXT, streak INTEGER, lost INTEGER, "
+            "PRIMARY KEY (timestamp, user_name, game, day))"
+        )
+        legacy_db.execute_sql(
+            "INSERT INTO punteggi VALUES "
+            "('2026-11-10', 100, 1, 7, 'OldNick', 'Wordle', '100', 4, NULL, 1, 0),"
+            "('2026-11-11', 200, 1, 7, 'NewNick', 'Wordle', '101', 3, NULL, 2, 0)"
+        )
+
+        ensure_punteggi_pk_migration()
+        pk_cols = [
+            row[1]
+            for row in sorted(legacy_db.execute_sql("PRAGMA table_info(punteggi)").fetchall(), key=lambda r: r[5])
+            if row[5] > 0
+        ]
+        assert pk_cols == ["timestamp", "user_id", "game", "day"]
+        assert Punteggio.select().count() == 2
+
+        ensure_utenti_schema_and_backfill()
+        u = Utente.get_or_none(Utente.user_id == 7)
+        assert u is not None
+        assert u.user_name == "NewNick"
+    finally:
+        legacy_db.close()
+
+

@@ -12,14 +12,17 @@ from games import ALL_GAMES as GAMES, get_day_from_date
 from utils import (
     daily_ranking,
     get_bonus_game,
+    get_display_names,
     get_game_multiplier,
     get_new_games_for_date,
     pick_or_get_bonus_game,
     process_tries,
+    resolve_display_name,
     Classifica,
     Giocata,
     GiocoBonus,
     PuntiBonus,
+    Utente,
 )
 
 
@@ -94,6 +97,7 @@ def get_game_leaderboard(target_date: date, game_name: str) -> dict:
         ]
         cl.order_and_position()
         cl.assign_stars("default", multiplier=multiplier)
+        display_names = get_display_names(g.user_id for g in cl.giocate)
 
         for g in cl.giocate:
             formatted = process_tries(game_name, g.tries)
@@ -101,7 +105,7 @@ def get_game_leaderboard(target_date: date, game_name: str) -> dict:
             if is_lost:
                 formatted = "N/A"
             posizioni.append({
-                "user_name": g.user_name,
+                "user_name": display_names.get(g.user_id, g.user_name),
                 "user_id": g.user_id,
                 "pos": g.posizione,
                 "stars": g.stelle,
@@ -401,18 +405,19 @@ async def monthlyranking(month: str | None = None):
 
     try:
         Punti.create_table(safe=True)
-        query = (
+        rows = list(
             Punti.select(Punti.user_id, Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
             .where(Punti.date >= start_date, Punti.date <= end_date)
             .group_by(Punti.user_id)
             .order_by(peewee.fn.SUM(Punti.punti).desc())
         )
+        display_names = get_display_names(q.user_id for q in rows)
         rankings = []
-        for i, q in enumerate(query):
+        for i, q in enumerate(rows):
             rankings.append({
                 "pos": i + 1,
                 "user_id": q.user_id,
-                "name": q.user_name,
+                "name": display_names.get(q.user_id, q.user_name),
                 "points": int(q.totale or 0),
             })
         return {
@@ -430,17 +435,18 @@ async def alltimeranking():
     """Returns all-time points ranking from Punti table."""
     try:
         Punti.create_table(safe=True)
-        query = (
+        rows = list(
             Punti.select(Punti.user_id, Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
             .group_by(Punti.user_id)
             .order_by(peewee.fn.SUM(Punti.punti).desc())
         )
+        display_names = get_display_names(q.user_id for q in rows)
         rankings = []
-        for i, q in enumerate(query):
+        for i, q in enumerate(rows):
             rankings.append({
                 "pos": i + 1,
                 "user_id": q.user_id,
-                "name": q.user_name,
+                "name": display_names.get(q.user_id, q.user_name),
                 "points": int(q.totale or 0),
             })
         return {"rankings": rankings}
@@ -477,16 +483,17 @@ async def get_medals(month: str | None = None, all_time: bool = False):
             period_label = start_date.strftime("%B %Y")
             query = query.where(Medaglia.date >= start_date, Medaglia.date <= end_date)
 
-        query = query.group_by(Medaglia.user_id)
+        rows = list(query.group_by(Medaglia.user_id))
+        display_names = get_display_names(row.user_id for row in rows)
         results = []
-        for row in query:
+        for row in rows:
             g = int(row.gold or 0)
             s = int(row.silver or 0)
             b = int(row.bronze or 0)
             l = int(row.last or 0)
             score = g * 3 + s * 2 + b * 1
             results.append({
-                "user_name": row.user_name,
+                "user_name": display_names.get(row.user_id, row.user_name),
                 "user_id": row.user_id,
                 "gold": g,
                 "silver": s,
@@ -552,30 +559,71 @@ async def list_players():
     """Lists distinct active players with play counts."""
     try:
         Punteggio.create_table(safe=True)
-        query = (
-            Punteggio.select(Punteggio.user_name, peewee.fn.COUNT(Punteggio.game).alias("count"))
-            .group_by(Punteggio.user_name)
+        rows = list(
+            Punteggio.select(Punteggio.user_id, Punteggio.user_name, peewee.fn.COUNT(Punteggio.game).alias("count"))
+            .group_by(Punteggio.user_id)
             .order_by(peewee.fn.COUNT(Punteggio.game).desc())
         )
-        players = [{"name": r.user_name, "plays": r.count} for r in query if r.user_name]
+        display_names = get_display_names(r.user_id for r in rows)
+        players = [
+            {"user_id": r.user_id, "name": display_names.get(r.user_id, r.user_name), "plays": r.count}
+            for r in rows
+            if display_names.get(r.user_id, r.user_name)
+        ]
         return {"players": players}
     except Exception as e:
         return {"players": [], "error": str(e)}
 
 
+def _resolve_player_user_id(user_id: int | None, player: str | None) -> tuple[int | None, str]:
+    """Resolve user_id and current display name from user_id or legacy player name."""
+    if user_id is not None:
+        return user_id, resolve_display_name(user_id, player or str(user_id))
+    if not player or player == "all":
+        return None, player or ""
+    if Utente.table_exists():
+        u = Utente.get_or_none(Utente.user_name == player)
+        if u:
+            return u.user_id, u.user_name
+    p = Punteggio.select(Punteggio.user_id, Punteggio.user_name).where(Punteggio.user_name == player).order_by(Punteggio.timestamp.desc()).first()
+    if p:
+        return p.user_id, resolve_display_name(p.user_id, p.user_name)
+    return None, player
+
+
 @app.get("/stats/")
 @app.get("/api/stats/")
-async def stats(player: str | None = 'all'):
+async def stats(user_id: int | None = None, player: str | None = 'all'):
     """Detailed personal stats for a player."""
-    if not player or player == 'all':
+    if user_id is None and (not player or player == 'all'):
         return {"error": "player not specified"}
 
     try:
         Punteggio.create_table(safe=True)
-        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_name == player).scalar() or 0
+        resolved_uid, display_name = _resolve_player_user_id(user_id, player)
+        if resolved_uid is None:
+            return {
+                "player": display_name,
+                "user_id": None,
+                "total_plays": 0,
+                "total_time_minutes": 0,
+                "total_loses": 0,
+                "win_rate": 0,
+                "long_streak_game": "N/A",
+                "long_streak_days": 0,
+                "most_played_game": "N/A",
+                "most_played_count": 0,
+                "least_played_game": "N/A",
+                "least_played_count": 0,
+                "total_points": 0,
+                "medals": {"gold": 0, "silver": 0, "bronze": 0, "last": 0},
+            }
+
+        total_plays = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(Punteggio.user_id == resolved_uid).scalar() or 0
         if not total_plays:
             return {
-                "player": player,
+                "player": display_name,
+                "user_id": resolved_uid,
                 "total_plays": 0,
                 "total_time_minutes": 0,
                 "total_loses": 0,
@@ -592,7 +640,7 @@ async def stats(player: str | None = 'all'):
 
         long_streak_query = (
             Punteggio.select(peewee.fn.MAX(Punteggio.streak).alias("streak"), Punteggio.game)
-            .where(Punteggio.user_name == player)
+            .where(Punteggio.user_id == resolved_uid)
             .group_by(Punteggio.game)
             .order_by(peewee.fn.MAX(Punteggio.streak).desc())
             .limit(1)
@@ -602,7 +650,7 @@ async def stats(player: str | None = 'all'):
 
         most_played_query = (
             Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-            .where(Punteggio.user_name == player)
+            .where(Punteggio.user_id == resolved_uid)
             .group_by(Punteggio.game)
             .order_by(peewee.fn.COUNT(Punteggio.game).desc())
             .limit(1)
@@ -612,7 +660,7 @@ async def stats(player: str | None = 'all'):
 
         least_played_query = (
             Punteggio.select(Punteggio.game, peewee.fn.COUNT(Punteggio.game).alias("c"))
-            .where(Punteggio.user_name == player)
+            .where(Punteggio.user_id == resolved_uid)
             .group_by(Punteggio.game)
             .order_by(peewee.fn.COUNT(Punteggio.game).asc())
             .limit(1)
@@ -622,7 +670,7 @@ async def stats(player: str | None = 'all'):
 
         total_time_minutes = total_plays * 2
         total_loses = Punteggio.select(peewee.fn.COUNT(Punteggio.game).alias("c")).where(
-            Punteggio.user_name == player,
+            Punteggio.user_id == resolved_uid,
             Punteggio.lost == True,
         ).scalar() or 0
 
@@ -631,7 +679,7 @@ async def stats(player: str | None = 'all'):
         # Points
         try:
             Punti.create_table(safe=True)
-            total_points = Punti.select(peewee.fn.SUM(Punti.punti)).where(Punti.user_name == player).scalar() or 0
+            total_points = Punti.select(peewee.fn.SUM(Punti.punti)).where(Punti.user_id == resolved_uid).scalar() or 0
         except Exception:
             total_points = 0
 
@@ -643,7 +691,7 @@ async def stats(player: str | None = 'all'):
                 peewee.fn.SUM(Medaglia.silver).alias("s"),
                 peewee.fn.SUM(Medaglia.bronze).alias("b"),
                 peewee.fn.SUM(Medaglia.last).alias("l"),
-            ).where(Medaglia.user_name == player).first()
+            ).where(Medaglia.user_id == resolved_uid).first()
             medals = {
                 "gold": int(med_row.g or 0) if med_row else 0,
                 "silver": int(med_row.s or 0) if med_row else 0,
@@ -654,7 +702,8 @@ async def stats(player: str | None = 'all'):
             medals = {"gold": 0, "silver": 0, "bronze": 0, "last": 0}
 
         return {
-            "player": player,
+            "player": display_name,
+            "user_id": resolved_uid,
             "total_plays": total_plays,
             "total_time_minutes": total_time_minutes,
             "total_loses": total_loses,
@@ -674,7 +723,7 @@ async def stats(player: str | None = 'all'):
 
 @app.get("/game-stats/")
 @app.get("/api/game-stats/")
-async def get_game_stats(player: Optional[str] = None, game: Optional[str] = None):
+async def get_game_stats(user_id: Optional[int] = None, player: Optional[str] = None, game: Optional[str] = None):
     """Retrieve activity count per day for the last 365 days."""
     try:
         one_year_ago = datetime.now() - timedelta(days=365)
@@ -688,8 +737,12 @@ async def get_game_stats(player: Optional[str] = None, game: Optional[str] = Non
             .where(Punteggio.date >= one_year_ago)
         )
 
-        if player:
-            query = query.where(Punteggio.user_name == player)
+        if user_id is not None or player:
+            resolved_uid, _ = _resolve_player_user_id(user_id, player)
+            if resolved_uid is not None:
+                query = query.where(Punteggio.user_id == resolved_uid)
+            elif player:
+                query = query.where(Punteggio.user_name == player)
         if game:
             query = query.where(Punteggio.game == game)
 

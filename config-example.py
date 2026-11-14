@@ -1,3 +1,4 @@
+import datetime
 import peewee
 
 TOKEN = 0
@@ -43,7 +44,7 @@ class Punteggio(peewee.Model):
     class Meta:
         database = db
         table_name = "punteggi"
-        primary_key = peewee.CompositeKey("timestamp", "user_name", "game", "day")
+        primary_key = peewee.CompositeKey("timestamp", "user_id", "game", "day")
 
 
 class Punti(peewee.Model):
@@ -89,6 +90,17 @@ class Medaglia(peewee.Model):
         database = db
         table_name = "medaglie"
         primary_key = peewee.CompositeKey("timestamp", "user_id")
+
+
+class Utente(peewee.Model):
+    user_id = peewee.IntegerField(primary_key=True)
+    user_name = peewee.TextField()
+    username = peewee.TextField(null=True)
+    updated_at = peewee.DateTimeField(default=datetime.datetime.now)
+
+    class Meta:
+        database = db
+        table_name = "utenti"
 
 
 # ==========================================

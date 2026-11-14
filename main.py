@@ -35,6 +35,7 @@ from telegram.ext import (
     ContextTypes,
     Defaults,
     MessageHandler,
+    TypeHandler,
     filters,
 )
 
@@ -66,6 +67,10 @@ from utils import (
     correct_name,
     daily_ranking,
     ensure_gioco_bonus_schema,
+    ensure_punteggi_pk_migration,
+    ensure_utenti_schema_and_backfill,
+    Utente,
+    get_display_names,
     get_day_from_date,
     get_date_from_day,
     get_all_bonuses_for_date,
@@ -88,6 +93,7 @@ from utils import (
     new_classifica,
     process_tries,
     seconds_to_time,
+    sync_user,
     update_streak,
 )
 
@@ -704,6 +710,11 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     giochino = context.giochino[0]
     giochino = giochino(update)
     result = giochino.punteggio
+    sync_user(
+        result.get("user_id"),
+        result.get("user_name"),
+        update.effective_user.username if update.effective_user else None,
+    )
 
     # This is a way to skip a known, unsupported game.
     if giochino.message == "ignora":
@@ -1462,20 +1473,35 @@ async def cmd_stelle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         # Ricerca utente
         if user_param.isdigit():
             target_user_id = int(user_param)
-            p_found = Punteggio.select(Punteggio.user_name).where(Punteggio.user_id == target_user_id).order_by(Punteggio.timestamp.desc()).first()
-            target_user_name = p_found.user_name if p_found else f"User {target_user_id}"
+            u_found = Utente.get_or_none(Utente.user_id == target_user_id) if Utente.table_exists() else None
+            if u_found:
+                target_user_name = u_found.user_name
+            else:
+                p_found = Punteggio.select(Punteggio.user_name).where(Punteggio.user_id == target_user_id).order_by(Punteggio.timestamp.desc()).first()
+                target_user_name = p_found.user_name if p_found else f"User {target_user_id}"
         else:
             uname = user_param.lstrip("@")
-            p_found = Punteggio.select(Punteggio.user_id, Punteggio.user_name).where(Punteggio.user_name.contains(uname)).order_by(Punteggio.timestamp.desc()).first()
-            if not p_found:
-                p_found = Punti.select(Punti.user_id, Punti.user_name).where(Punti.user_name.contains(uname)).order_by(Punti.date.desc()).first()
-
-            if p_found:
-                target_user_id = p_found.user_id
-                target_user_name = p_found.user_name
+            u_found = (
+                Utente.select()
+                .where(Utente.user_name.contains(uname) | (Utente.username == uname))
+                .first()
+                if Utente.table_exists()
+                else None
+            )
+            if u_found:
+                target_user_id = u_found.user_id
+                target_user_name = u_found.user_name
             else:
-                await update.message.reply_text(f"❌ Utente '{user_param}' non trovato nel database. Prova a rispondere (reply) direttamente a un suo messaggio.")
-                return
+                p_found = Punteggio.select(Punteggio.user_id, Punteggio.user_name).where(Punteggio.user_name.contains(uname)).order_by(Punteggio.timestamp.desc()).first()
+                if not p_found:
+                    p_found = Punti.select(Punti.user_id, Punti.user_name).where(Punti.user_name.contains(uname)).order_by(Punti.date.desc()).first()
+
+                if p_found:
+                    target_user_id = p_found.user_id
+                    target_user_name = p_found.user_name
+                else:
+                    await update.message.reply_text(f"❌ Utente '{user_param}' non trovato nel database. Prova a rispondere (reply) direttamente a un suo messaggio.")
+                    return
 
     today = datetime.date.today()
     PuntiBonus.create_table(safe=True)
@@ -2112,16 +2138,18 @@ async def riassunto_serale(context: ContextTypes.DEFAULT_TYPE) -> None:
     this_month = yesterday.replace(day=1)
     message = f"<b>Classifica di questo mese ({this_month.strftime('%B')})</b>:\n\n"
 
-    query = (
-        Punti.select(Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
+    query = list(
+        Punti.select(Punti.user_id, Punti.user_name, peewee.fn.SUM(Punti.punti).alias("totale"))
         .where(Punti.date >= this_month)
         .order_by(peewee.fn.SUM(Punti.punti).desc())
-        .group_by(Punti.user_name)
+        .group_by(Punti.user_id)
         .limit(10)
     )
+    display_names = get_display_names(q.user_id for q in query)
 
     for q in query:
-        message += f"[{q.totale}] {q.user_name}\n"
+        name = display_names.get(q.user_id, q.user_name)
+        message += f"[{q.totale}] {name}\n"
 
     next_month = this_month.replace(day=28) + datetime.timedelta(days=4)
     last_day_of_month = next_month - datetime.timedelta(days=next_month.day)
@@ -2407,6 +2435,8 @@ async def post_init(app: Application) -> None:
     Medaglia.create_table()
     GameStatus.create_table()
     GameAnchor.create_table()
+    ensure_punteggi_pk_migration()
+    ensure_utenti_schema_and_backfill()
     ensure_gioco_bonus_schema()
     # Setting.create_table()
     
@@ -2443,6 +2473,15 @@ async def post_init(app: Application) -> None:
     logger.info("Pronti!")
 
 
+async def sync_telegram_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user:
+        sync_user(
+            update.effective_user.id,
+            update.effective_user.full_name,
+            update.effective_user.username,
+        )
+
+
 def main():
     defaults = Defaults(
         link_preview_options=LinkPreviewOptions(is_disabled=True),
@@ -2454,6 +2493,7 @@ def main():
     builder.post_init(post_init)
 
     app = builder.build()
+    app.add_handler(TypeHandler(Update, sync_telegram_user), -1)
 
     j = app.job_queue
     # j.run_repeating(daily_reminder, interval=datetime.timedelta(days=1), first=datetime.time(hour=8, minute=00, tzinfo=pytz.timezone("Europe/Rome")), data=None)

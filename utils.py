@@ -11,7 +11,19 @@ from dataclassy import dataclass
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 import config
-from config import ID_GIOCHINI, MEDALS, TOKEN, STAR_SYMBOL, ELSE_MEDAL, Medaglia, Punteggio
+from config import ID_GIOCHINI, MEDALS, TOKEN, STAR_SYMBOL, ELSE_MEDAL, Medaglia, Punteggio, Punti
+try:
+    from config import Utente
+except ImportError:
+    class Utente(peewee.Model):
+        user_id = peewee.IntegerField(primary_key=True)
+        user_name = peewee.TextField()
+        username = peewee.TextField(null=True)
+        updated_at = peewee.DateTimeField(default=datetime.datetime.now)
+
+        class Meta:
+            database = config.db
+            table_name = "utenti"
 try:
     from config import POOP_MEDAL
 except ImportError:
@@ -152,6 +164,131 @@ def ensure_gioco_bonus_schema():
                 "SELECT id, date, game, multiplier, 'jolly' FROM gioco_bonus_legacy_tmp"
             )
         db.execute_sql("DROP TABLE gioco_bonus_legacy_tmp")
+
+
+_user_sync_cache: dict[int, dict[int, tuple[str, str | None]]] = {}
+
+
+def ensure_utenti_schema_and_backfill() -> None:
+    """Create utenti table if missing and backfill latest known user_name per user_id."""
+    Utente.create_table(safe=True)
+    db = Utente._meta.database
+    if db is None:
+        return
+
+    now = datetime.datetime.now()
+    if Punteggio.table_exists():
+        db.execute_sql(
+            "INSERT OR IGNORE INTO utenti (user_id, user_name, username, updated_at) "
+            "SELECT user_id, user_name, NULL, ? FROM ("
+            "  SELECT user_id, user_name, MAX(timestamp) AS max_ts "
+            "  FROM punteggi WHERE user_id IS NOT NULL AND user_name IS NOT NULL "
+            "  GROUP BY user_id"
+            ")",
+            (now,),
+        )
+    if Medaglia.table_exists():
+        db.execute_sql(
+            "INSERT OR IGNORE INTO utenti (user_id, user_name, username, updated_at) "
+            "SELECT user_id, user_name, NULL, ? FROM ("
+            "  SELECT user_id, user_name, MAX(timestamp) AS max_ts "
+            "  FROM medaglie WHERE user_id IS NOT NULL AND user_name IS NOT NULL "
+            "  GROUP BY user_id"
+            ")",
+            (now,),
+        )
+    if Punti.table_exists():
+        db.execute_sql(
+            "INSERT OR IGNORE INTO utenti (user_id, user_name, username, updated_at) "
+            "SELECT user_id, user_name, NULL, ? FROM ("
+            "  SELECT user_id, user_name, MAX(date) AS max_d "
+            "  FROM punti WHERE user_id IS NOT NULL AND user_name IS NOT NULL "
+            "  GROUP BY user_id"
+            ")",
+            (now,),
+        )
+
+
+def ensure_punteggi_pk_migration() -> None:
+    """Migrate punteggi PK from (timestamp, user_name, game, day) to (timestamp, user_id, game, day)."""
+    if not Punteggio.table_exists():
+        Punteggio.create_table(safe=True)
+        return
+
+    db = Punteggio._meta.database
+    pk_cols = [
+        row[1]
+        for row in sorted(db.execute_sql("PRAGMA table_info(punteggi)").fetchall(), key=lambda r: r[5])
+        if row[5] > 0
+    ]
+    if pk_cols == ["timestamp", "user_id", "game", "day"]:
+        return
+
+    with db.atomic():
+        db.execute_sql("DROP TABLE IF EXISTS punteggi_legacy_tmp")
+        db.execute_sql("ALTER TABLE punteggi RENAME TO punteggi_legacy_tmp")
+        Punteggio.create_table(safe=True)
+        db.execute_sql(
+            "INSERT OR IGNORE INTO punteggi "
+            "(date, timestamp, chat_id, user_id, user_name, game, day, tries, extra, streak, lost) "
+            "SELECT date, timestamp, chat_id, user_id, user_name, game, day, tries, extra, streak, lost "
+            "FROM punteggi_legacy_tmp"
+        )
+        db.execute_sql("DROP TABLE punteggi_legacy_tmp")
+
+
+def sync_user(user_id: int | None, user_name: str | None, username: str | None = None) -> None:
+    """Upsert current display name and Telegram username for user_id."""
+    if not user_id or not user_name:
+        return
+    try:
+        db = Utente._meta.database
+        if db is None:
+            return
+        uid = int(user_id)
+        is_memory = getattr(db, "database", None) == ":memory:"
+        db_key = id(db)
+        if not is_memory:
+            cached = _user_sync_cache.get(db_key, {}).get(uid)
+            if cached == (user_name, username):
+                return
+
+        Utente.create_table(safe=True)
+        Utente.replace(
+            user_id=uid,
+            user_name=user_name,
+            username=username,
+            updated_at=datetime.datetime.now(),
+        ).execute()
+
+        if not is_memory:
+            _user_sync_cache.setdefault(db_key, {})[uid] = (user_name, username)
+    except Exception:
+        pass
+
+
+def get_display_names(user_ids) -> dict[int, str]:
+    """Return {user_id: current_user_name} from Utente for a collection of user_ids."""
+    ids = {int(uid) for uid in user_ids if uid is not None}
+    if not ids:
+        return {}
+    try:
+        if not Utente.table_exists():
+            return {}
+        return {
+            u.user_id: u.user_name
+            for u in Utente.select(Utente.user_id, Utente.user_name).where(Utente.user_id.in_(list(ids)))
+            if u.user_name
+        }
+    except Exception:
+        return {}
+
+
+def resolve_display_name(user_id: int | None, fallback: str = "") -> str:
+    """Return current user_name for user_id from Utente, or fallback."""
+    if user_id is None:
+        return fallback
+    return get_display_names([user_id]).get(int(user_id), fallback)
 
 
 def get_active_games() -> list[str]:
@@ -670,6 +807,12 @@ class Classifica:
         if not self.aggregate:
             classifica += self.header + "\n"
 
+        if self.giocate:
+            display_names = get_display_names(g.user_id for g in self.giocate)
+            for g in self.giocate:
+                if hasattr(g, "user_id") and g.user_id in display_names:
+                    g.user_name = display_names[g.user_id]
+
         if self.aggregate:
             for posiz in self.giocate:
                 classifica += posiz.to_string(self.aggregate) + "\n"
@@ -873,7 +1016,11 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
     for uid in player_scores:
         player_scores[uid].setdefault("bonus", 0)
 
-    aggregated_list = [(uid, data['user_name'], data['stars'], data['bonus']) for uid, data in player_scores.items()]
+    display_names = get_display_names(player_scores.keys())
+    aggregated_list = [
+        (uid, display_names.get(uid, data['user_name']), data['stars'], data['bonus'])
+        for uid, data in player_scores.items()
+    ]
     sorted_players = sorted(aggregated_list, key=lambda player: player[2], reverse=True)
     final_ranking = []
     last_score = -1
@@ -1381,30 +1528,26 @@ def group_stats(chat_id: int) -> str:
     least_played_games = "\n".join([f"• {x.game} ({x.c} giocate)" for x in least_played_query])
 
     # Three most active players
-    most_active_players_query = (
-        Punteggio.select(Punteggio.user_name, peewee.fn.COUNT(Punteggio.user_name).alias("c"))
+    most_active_players_query = list(
+        Punteggio.select(Punteggio.user_id, Punteggio.user_name, peewee.fn.COUNT(Punteggio.user_id).alias("c"))
         .where(Punteggio.chat_id == chat_id)
-        .group_by(Punteggio.user_name)
-        .order_by(peewee.fn.COUNT(Punteggio.user_name).desc())
+        .group_by(Punteggio.user_id)
+        .order_by(peewee.fn.COUNT(Punteggio.user_id).desc())
         .limit(3)
     )
-    most_active_players = "\n".join([f"• {x.user_name} ({x.c} giocate)" for x in most_active_players_query])
 
     # Longest streak
     longest_streak = (
-        Punteggio.select(Punteggio.streak, Punteggio.game, Punteggio.user_name, Punteggio.day)
+        Punteggio.select(Punteggio.streak, Punteggio.game, Punteggio.user_id, Punteggio.user_name, Punteggio.day)
         .where(Punteggio.chat_id == chat_id)
         .order_by(Punteggio.streak.desc())
         .limit(1)
     )
-    longest_streak_str = "Nessuno"
-    if longest_streak.exists() and longest_streak[0].streak:
-        ls = longest_streak[0]
-        longest_streak_str = f"<b>{ls.user_name}</b>: {ls.streak} consecutive a {ls.game} (Giorno #{ls.day})"
 
     # Top medal winner
     top_medal_winner = (
         Medaglia.select(
+            Medaglia.user_id,
             Medaglia.user_name,
             peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.gold, 0)).alias("g"),
             peewee.fn.SUM(peewee.fn.COALESCE(Medaglia.silver, 0)).alias("s"),
@@ -1419,13 +1562,31 @@ def group_stats(chat_id: int) -> str:
         )
         .first()
     )
-    
+
+    stat_uids = [x.user_id for x in most_active_players_query]
+    ls = longest_streak[0] if (longest_streak.exists() and longest_streak[0].streak) else None
+    if ls:
+        stat_uids.append(ls.user_id)
+    if top_medal_winner:
+        stat_uids.append(top_medal_winner.user_id)
+    display_names = get_display_names(stat_uids)
+
+    most_active_players = "\n".join(
+        [f"• {display_names.get(x.user_id, x.user_name)} ({x.c} giocate)" for x in most_active_players_query]
+    )
+
+    longest_streak_str = "Nessuno"
+    if ls:
+        ls_name = display_names.get(ls.user_id, ls.user_name)
+        longest_streak_str = f"<b>{ls_name}</b>: {ls.streak} consecutive a {ls.game} (Giorno #{ls.day})"
+
     medal_str = "Nessuna medaglia registrata"
     if top_medal_winner:
         total_medals = int(top_medal_winner.g or 0) + int(top_medal_winner.s or 0) + int(top_medal_winner.b or 0)
         if total_medals > 0:
+            tm_name = display_names.get(top_medal_winner.user_id, top_medal_winner.user_name)
             medal_str = (
-                f"<b>{top_medal_winner.user_name}</b> con {total_medals} medaglie "
+                f"<b>{tm_name}</b> con {total_medals} medaglie "
                 f"({int(top_medal_winner.g or 0)}🥇, {int(top_medal_winner.s or 0)}🥈, {int(top_medal_winner.b or 0)}🥉)"
             )
 
@@ -1731,17 +1892,20 @@ def medaglie_count(monthly=True, target_date=None) -> str:
         .limit(10)
     )
 
-    if not query:
+    rows = list(query)
+    if not rows:
         message += "Non ci sono ancora medaglie questo mese."
         return message
 
-    for q in query:
+    display_names = get_display_names(q.user_id for q in rows)
+    for q in rows:
         gold = int(q.gold or 0)
         silver = int(q.silver or 0)
         bronze = int(q.bronze or 0)
         last = int(q.last or 0)
         medals_icons = f"{gold*MEDALS[1][:-1]}{silver*MEDALS[2][:-1]}{bronze*MEDALS[3][:-1]}{last*POOP_MEDAL.strip()}"
-        message += f"{q.user_name} ({gold}/{silver}/{bronze}/{last}):\n{medals_icons}\n"
+        name = display_names.get(q.user_id, q.user_name)
+        message += f"{name} ({gold}/{silver}/{bronze}/{last}):\n{medals_icons}\n"
     return message
 
 

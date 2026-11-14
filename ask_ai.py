@@ -40,11 +40,16 @@ Tabella 'medaglie':
 - silver (INTEGER, medaglie d'argento)
 - bronze (INTEGER, medaglie di bronzo)
 
+Tabella 'utenti':
+- user_id (INTEGER, PRIMARY KEY, ID univoco Telegram)
+- user_name (TEXT, nome visualizzato corrente del giocatore)
+- username (TEXT, handle Telegram opzionale)
+
 Regole per la query:
 1. Restituisci SOLO ed esclusivamente la query SQL pura, senza blocchi markdown (no ```sql), senza spiegazioni.
 2. Per calcolare il 1° posto di una giornata, usa:
    ROW_NUMBER() OVER (PARTITION BY game, day ORDER BY tries ASC, timestamp ASC) AS pos
-3. Nelle CTE (clausole WITH) o sottoquery, ricordati SEMPRE di includere sia 'user_name' che 'user_id' e tutte le colonne usate poi nelle clausole esterne o nei GROUP BY.
+3. Raggruppa SEMPRE per 'user_id' (non per 'user_name') e fai LEFT JOIN utenti u ON ...user_id = u.user_id usando COALESCE(u.user_name, ...user_name) per mostrare il nome corrente del giocatore.
 4. Usa solo sintassi SQLite standard.
 """
 

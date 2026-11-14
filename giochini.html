@@ -859,7 +859,7 @@
                             class="w-full sm:w-64 bg-white text-slate-800 font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-300 shadow-sm focus:outline-none focus:border-indigo-500 cursor-pointer dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
                         >
                             <option value="">-- Seleziona Giocatore --</option>
-                            <option v-for="p in allPlayers" :key="p.name" :value="p.name">
+                            <option v-for="p in allPlayers" :key="p.user_id || p.name" :value="p.user_id ? String(p.user_id) : p.name">
                                 {{ p.name }} ({{ p.plays }} partite)
                             </option>
                         </select>
@@ -868,7 +868,7 @@
 
                 <div v-if="loadingPlayer" class="glass-panel rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400">
                     <div class="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                    <p class="text-sm font-semibold">Caricamento statistiche di {{ selectedPlayer }}...</p>
+                    <p class="text-sm font-semibold">Caricamento statistiche di {{ (playerData && playerData.player) || selectedPlayer }}...</p>
                 </div>
 
                 <div v-else-if="!selectedPlayer || !playerData || playerData.error" class="glass-panel rounded-2xl p-12 text-center text-slate-500">
@@ -881,10 +881,10 @@
                     <div class="glass-panel bg-gradient-to-r from-slate-100 via-indigo-50/70 to-purple-50/70 dark:from-slate-900 dark:via-indigo-950/60 dark:to-purple-950/60 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl">
                         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
                             <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white shadow-xl shadow-indigo-500/30">
-                                {{ selectedPlayer.charAt(0).toUpperCase() }}
+                                {{ (playerData.player || selectedPlayer).charAt(0).toUpperCase() }}
                             </div>
                             <div class="space-y-1">
-                                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ selectedPlayer }}</h2>
+                                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ playerData.player || selectedPlayer }}</h2>
                                 <p class="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">Membro attivo della community Giochini</p>
                                 <div class="flex items-center justify-center sm:justify-start gap-2 pt-2 flex-wrap">
                                     <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700">
@@ -1586,9 +1586,16 @@
                     if (!this.selectedPlayer) return;
                     this.loadingPlayer = true;
                     try {
-                        const res = await fetch(`/api/stats/?player=${encodeURIComponent(this.selectedPlayer)}`);
+                        const isUid = /^\d+$/.test(String(this.selectedPlayer));
+                        const param = isUid
+                            ? `user_id=${encodeURIComponent(this.selectedPlayer)}`
+                            : `player=${encodeURIComponent(this.selectedPlayer)}`;
+                        const res = await fetch(`/api/stats/?${param}`);
                         if (res.ok) {
                             this.playerData = await res.json();
+                            if (this.playerData && this.playerData.user_id) {
+                                this.selectedPlayer = String(this.playerData.user_id);
+                            }
                         }
                     } catch (e) {
                         console.error('Error fetching player stats:', e);
