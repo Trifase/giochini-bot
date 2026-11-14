@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from config import Punteggio, Medaglia
 from utils import PuntiBonus, GiocoBonus, GameStatus
-from main import myonly, myonly_full, delete_ephemeral_post, extract_ephemeral_id, mytoday, mytoday_classic, mytoday_full, mytoday_full_classic
+from main import myonly, myonly_full, myscore, delete_ephemeral_post, delete_post, extract_ephemeral_id, mytoday, mytoday_classic, mytoday_full, mytoday_full_classic
 
 
 @pytest.fixture(autouse=True)
@@ -76,11 +76,50 @@ async def test_myonly_sends_ephemeral_reply_and_schedules_deletion():
             "receiver_user_id": 12345
         }
     }
-    # Verify 60s deletion was scheduled
+    # Verify 60s deletion was scheduled only for the original command (not the ephemeral reply)
     assert job_queue.run_once.called
     call_args = job_queue.run_once.call_args
-    assert call_args[0][0] == delete_ephemeral_post
+    assert call_args[0][0] == delete_post
     assert call_args[0][1] == 60
+    assert call_args.kwargs["data"] == [message]
+
+
+@pytest.mark.anyio
+async def test_myscore_sends_ephemeral_reply_without_reply_deletion():
+    user = MagicMock()
+    user.id = 12345
+
+    chat = MagicMock()
+    chat.id = 999
+
+    message = MagicMock()
+    message.message_id = 42
+    message.from_user = user
+    message.reply_text = AsyncMock()
+
+    update = MagicMock()
+    update.message = message
+    update.effective_user = user
+    update.effective_chat = chat
+    update.effective_message = message
+
+    job_queue = MagicMock()
+    context = MagicMock()
+    context.job_queue = job_queue
+
+    await myscore(update, context)
+
+    assert message.reply_text.called
+    kwargs = message.reply_text.call_args.kwargs
+    assert kwargs["api_kwargs"] == {
+        "ephemeral_message_parameters": {"receiver_user_id": 12345}
+    }
+    # Only the original /myscore command is scheduled for deletion (30s), not the ephemeral reply
+    assert job_queue.run_once.called
+    call_args = job_queue.run_once.call_args
+    assert call_args[0][0] == delete_post
+    assert call_args[0][1] == 30
+    assert call_args.kwargs["data"] == [message]
 
 
 @pytest.mark.anyio

@@ -431,9 +431,8 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         ])
 
     message_text = "\n".join(message)
-    await update.effective_message.reply_text(message_text, parse_mode="HTML")
-    # This will delete the original command after some time (iirc default 10 secs)
-    await delete_original_command(update, context)
+    mymsg = await update.effective_message.reply_text(message_text, parse_mode="HTML")
+    schedule_delete(context, [mymsg, update.effective_message], after_seconds=60, name_prefix="help_delete", msg_id=update.effective_message.message_id)
 
 
 async def post_single_classifica(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -694,8 +693,7 @@ async def link_single_game(update: Update, context: ContextTypes.DEFAULT_TYPE, c
     day = get_day_from_date(GAME["date"], GAME["day"], game, datetime.date.today())
     message = f'<a href="{GAME["url"]}">{GAME["emoji"]} {game} #{day}</a>'
     mymsg = await update.message.reply_html(message)
-    command_msg = update.message
-    context.job_queue.run_once(delete_post, 5, data=[mymsg, command_msg], name=f"myday_delete_{str(update.effective_message.id)}")
+    schedule_delete(context, [mymsg, update.message], after_seconds=5, name_prefix="link_delete", msg_id=update.effective_message.message_id)
     return
 
 
@@ -796,7 +794,7 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             message = f'Classifica di {result["name"]} aggiornata.\n'
             classifica = make_single_classifica(result["name"], update.effective_chat.id, day=result["day"], show_lost=True)
             mymsg = await update.message.reply_html(classifica)
-            context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
+            schedule_delete(context, [mymsg], after_seconds=60, name_prefix="minimize", msg_id=update.effective_message.id)
             return
 
         today_game = int(get_day_from_date(GAMES[result["name"]]["date"], GAMES[result["name"]]["day"], result["name"], datetime.date.today()))
@@ -861,11 +859,11 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         context.bot_data[completed_key] = True
                         await update.message.reply_html(f"🎉 Complimenti {result['user_name']}! Hai completato tutti i tuoi {tot_favs} giochi preferiti di oggi! 🥳")
 
-                context.job_queue.run_once(minimize_post, 60, data=mymsg, name=f"minimize_{str(update.effective_message.id)}")
+                schedule_delete(context, [mymsg], after_seconds=60, name_prefix="minimize", msg_id=update.effective_message.id)
 
             else:
                 mymsg = await update.message.reply_html("Ah, non l'ha ancora fatto nessuno, fico.")
-                context.job_queue.run_once(delete_post, 60, data=[mymsg], name=f"delete_post_{str(update.effective_message.id)}")
+                schedule_delete(context, [mymsg], after_seconds=60, name_prefix="delete_post", msg_id=update.effective_message.id)
 
         else:
             days_ago = int(today_game) - str_as_int(result["day"])
@@ -1239,39 +1237,17 @@ async def myonly(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         except Exception as e:
             logger.debug(f"editEphemeralMessageReplyMarkup failed: {e}")
 
-    command_msg = update.message
-    messages_to_delete = [{
-        "chat_id": update.effective_chat.id,
-        "receiver_user_id": user_id,
-        "ephemeral_message_id": msg_eph_id,
-        "message": mymsg,
-    }]
-
-    if command_msg:
-        messages_to_delete.append(command_msg)
-
     if tot_favs > 0 and favs_played_today == tot_favs:
         try:
-            emojimsg = await update.message.reply_text(
+            await update.message.reply_text(
                 "🥳",
                 reply_parameters=reply_params,
                 api_kwargs={"ephemeral_message_parameters": ephemeral_params},
             )
-            messages_to_delete.append({
-                "chat_id": update.effective_chat.id,
-                "receiver_user_id": user_id,
-                "ephemeral_message_id": extract_ephemeral_id(emojimsg),
-                "message": emojimsg,
-            })
         except Exception:
             pass
 
-    context.job_queue.run_once(
-        delete_ephemeral_post,
-        60,
-        data=messages_to_delete,
-        name=f"myonly_delete_{str(update.effective_message.id)}"
-    )
+    await delete_original_command(update, context, 60)
 
 
 async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1400,17 +1376,6 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 "ephemeral_message_id": new_eph_id,
                 "message": new_msg,
             }
-            context.job_queue.run_once(
-                delete_ephemeral_post,
-                60,
-                data=[{
-                    "chat_id": chat_id,
-                    "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": new_eph_id,
-                    "message": new_msg,
-                }],
-                name=f"myonly_more_delete_{str(update.effective_message.id)}"
-            )
             if eph_id and eph_id != 0:
                 try:
                     await context.bot._post(
@@ -1454,18 +1419,6 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 }
             )
             edited = True
-            fresh_eph_id = extract_ephemeral_id(fresh_msg)
-            context.job_queue.run_once(
-                delete_ephemeral_post,
-                60,
-                data=[{
-                    "chat_id": chat_id,
-                    "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": fresh_eph_id,
-                    "message": fresh_msg,
-                }],
-                name=f"myonly_fresh_delete_{str(update.effective_message.id)}"
-            )
         except Exception as e:
             logger.warning(f"fallback fresh send_message failed: {e}")
 
@@ -1478,21 +1431,10 @@ async def myonly_full(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if tot_favs > 0 and favs_played_today == tot_favs:
         try:
             ephemeral_params = {"receiver_user_id": receiver_user_id}
-            emojimsg = await context.bot.send_message(
+            await context.bot.send_message(
                 chat_id=chat_id,
                 text="🥳",
                 api_kwargs={"ephemeral_message_parameters": ephemeral_params}
-            )
-            context.job_queue.run_once(
-                delete_ephemeral_post,
-                60,
-                data=[{
-                    "chat_id": chat_id,
-                    "receiver_user_id": receiver_user_id,
-                    "ephemeral_message_id": extract_ephemeral_id(emojimsg),
-                    "message": emojimsg,
-                }],
-                name=f"myonly_emoji_delete_{str(update.effective_message.id)}"
             )
         except Exception:
             pass
@@ -1531,14 +1473,17 @@ async def list_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         message += f'{prefix}{GAMES[game]["emoji"]} {game}{suffix}: {GAMES[game]["url"]}\n'
 
     reply_to_id = update.effective_message.message_id if update.effective_message else None
-    await send_long_message(
+    resp = await send_long_message(
         bot_token=TOKEN,
         chat_id=update.effective_chat.id,
         message=message.strip(),
         reply_to_message_id=reply_to_id,
     )
-    # This will delete the original command after some time (iirc default 10 secs)
-    await delete_original_command(update, context)
+    reply_msg_id = resp.get("result", {}).get("message_id") if isinstance(resp, dict) else None
+    to_delete = [update.effective_message]
+    if reply_msg_id:
+        to_delete.append((update.effective_chat.id, reply_msg_id))
+    schedule_delete(context, to_delete, after_seconds=60, name_prefix="list_delete", msg_id=reply_to_id)
 
 
 async def show_disabled_games(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1578,8 +1523,8 @@ async def show_disabled_games(update: Update, context: ContextTypes.DEFAULT_TYPE
         message = "Giochi disabilitati:\n\n" + message
     
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    # Delete the original command after 30 seconds
-    await delete_original_command(update, context, 30)
+    # Delete the original command after 10 seconds
+    await delete_original_command(update, context, 10)
 
 
 async def cmd_setanchor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2087,7 +2032,8 @@ async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         except Exception as e:
             message = f"Ho qualche problema, scusa ({e})"
 
-    await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+    schedule_delete(context, [mymsg, update.message], after_seconds=60, name_prefix="mystats_delete", msg_id=update.message.message_id)
 
 
 async def groupstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2198,10 +2144,16 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             stars_display = f"+{game_info['stars']}{STAR_SYMBOL}{mult_str}" if game_info['stars'] > 0 else ""
             message += f"{game_info['medal_emoji']}{stars_display} {game_info['game']}\n"
     
-    mymsg = await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
-    command_msg = update.message
-    # Delete both the command and response after 30 seconds
-    context.job_queue.run_once(delete_post, 30, data=[mymsg, command_msg], name=f"myscore_delete_{str(update.effective_message.id)}")
+    reply_params = ReplyParameters(message_id=update.message.message_id)
+    ephemeral_params = {"receiver_user_id": int(user_id)}
+    await update.message.reply_text(
+        message,
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+        reply_parameters=reply_params,
+        api_kwargs={"ephemeral_message_parameters": ephemeral_params},
+    )
+    await delete_original_command(update, context, 30)
 
 
 async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2318,7 +2270,8 @@ async def cmd_bonus_games(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.message.reply_text("Nessun gioco bonus attivo oggi.")
         return
 
-    await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
+    mymsg = await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
+    schedule_delete(context, [mymsg, update.message], after_seconds=60, name_prefix="bonus_delete", msg_id=update.message.message_id)
 
 
 async def medaglie_mensile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2509,8 +2462,8 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
-    # This will delete the original command after some time (iirc default 10 secs)
-    await delete_original_command(update, context, 60)
+    # This will delete the original command after 30 secs
+    await delete_original_command(update, context, 30)
 
 
 def _format_game_link(game_name: str, target_date: datetime.date) -> str:
@@ -2617,24 +2570,45 @@ async def make_backup(context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.info("[AUTO] Backup DB eseguito.")
 
 
-async def minimize_post(context: ContextTypes.DEFAULT_TYPE) -> None:
-    message = context.job.data
-    delete_message = True
-    if delete_message:
-        await message.delete()
-    else:
-        await message.edit_text("Punteggio salvato.")
+def schedule_delete(
+    context: ContextTypes.DEFAULT_TYPE,
+    messages: list,
+    after_seconds: int = 10,
+    name_prefix: str = "delete",
+    msg_id: int | str | None = None,
+) -> None:
+    valid = [m for m in messages if m is not None]
+    if not valid or not getattr(context, "job_queue", None):
+        return
+    job_name = f"{name_prefix}_{msg_id}" if msg_id is not None else name_prefix
+    context.job_queue.run_once(delete_post, after_seconds, data=valid, name=job_name)
 
 
 async def delete_original_command(update: Update, context: ContextTypes.DEFAULT_TYPE, after_seconds: int = 10) -> None:
-    command_msg = update.message
-    context.job_queue.run_once(delete_post, after_seconds, data=[command_msg], name=f"myday_delete_{str(update.effective_message.id)}")
+    command_msg = getattr(update, "message", None) or getattr(update, "effective_message", None)
+    if command_msg:
+        schedule_delete(
+            context,
+            [command_msg],
+            after_seconds=after_seconds,
+            name_prefix="cmd_delete",
+            msg_id=command_msg.message_id,
+        )
 
 
 async def delete_post(context: ContextTypes.DEFAULT_TYPE) -> None:
-    messages: list = context.job.data
-    for message in messages:
-        await message.delete()
+    items = context.job.data or []
+    for item in items:
+        if item is None:
+            continue
+        try:
+            if isinstance(item, tuple) and len(item) == 2:
+                chat_id, message_id = item
+                await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+            else:
+                await item.delete()
+        except Exception as e:
+            logger.debug(f"Could not delete message {item}: {e}")
 
 
 async def enable_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
