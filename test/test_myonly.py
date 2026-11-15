@@ -246,3 +246,60 @@ async def test_mytoday_delegates_to_myonly():
         }
     }
 
+
+@pytest.mark.anyio
+async def test_myonly_and_myscore_detect_played_games_today():
+    import datetime
+    from games import ALL_GAMES, get_day_from_date
+
+    today = datetime.date.today()
+    w_day = get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today)
+
+    Punteggio.create(
+        date=today,
+        timestamp=12345,
+        chat_id=999,
+        user_id=12345,
+        user_name="Tester",
+        game="Wordle",
+        day=str(w_day),
+        tries=3,
+        lost=False,
+    )
+
+    user = MagicMock()
+    user.id = 12345
+    chat = MagicMock()
+    chat.id = 999
+    chat.type = "supergroup"
+
+    bot_msg = MagicMock()
+    bot_msg.message_id = 100
+    bot_msg.api_kwargs = {"ephemeral_message_id": 777}
+
+    message = MagicMock()
+    message.message_id = 42
+    message.from_user = user
+    message.reply_text = AsyncMock(return_value=bot_msg)
+    message.reply_html = AsyncMock(return_value=bot_msg)
+
+    update = MagicMock()
+    update.message = message
+    update.effective_user = user
+    update.effective_chat = chat
+    update.effective_message = message
+
+    context = MagicMock()
+    context.bot_data = {"settings": {"12345": {"favs": ["Wordle"], "favs_extra_button": False}}}
+    context.job_queue = MagicMock()
+
+    await myonly(update, context)
+    myday_text = message.reply_text.call_args_list[0].args[0]
+    assert "Non hai giocato a nulla oggi" not in myday_text
+    assert "Hai giocato a tutti i preferiti" in myday_text
+
+    await myscore(update, context)
+    myscore_text = message.reply_text.call_args_list[-1].args[0]
+    assert "Non hai ancora giocato oggi" not in myscore_text
+    assert "Wordle" in myscore_text
+

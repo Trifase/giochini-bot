@@ -925,7 +925,7 @@ def get_user_played_games_today(
 
     active_games = [g for g in GAMES.keys() if not GAMES[g].get("disabled", False)]
     expected_days = {
-        g: int(get_day_from_date(GAMES[g]["date"], GAMES[g]["day"], g, target_date))
+        g: str(int(get_day_from_date(GAMES[g]["date"], GAMES[g]["day"], g, target_date)))
         for g in active_games
     }
 
@@ -936,7 +936,7 @@ def get_user_played_games_today(
             Punteggio.game.in_(active_games),
             Punteggio.day.in_(list(set(expected_days.values()))),
         )
-        played_set = {row.game for row in rows if expected_days.get(row.game) == row.day}
+        played_set = {row.game for row in rows if expected_days.get(row.game) == str(row.day)}
 
     played_today = [g for g in active_games if g in played_set]
     not_played_today = [g for g in active_games if g not in played_set]
@@ -1835,7 +1835,7 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     active_games = [g for g in GAMES.keys() if not GAMES[g].get("disabled", False)]
     expected_days = {
-        g: int(get_day_from_date(GAMES[g]["date"], GAMES[g]["day"], g, today))
+        g: str(int(get_day_from_date(GAMES[g]["date"], GAMES[g]["day"], g, today)))
         for g in active_games
     }
 
@@ -1851,7 +1851,7 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             .order_by(Punteggio.tries, Punteggio.extra.cast('INTEGER').desc(), Punteggio.timestamp)
         )
         for row in all_scores_query:
-            if expected_days.get(row.game) == row.day:
+            if expected_days.get(row.game) == str(row.day):
                 scores_by_game.setdefault(row.game, []).append(row)
 
     # Iterate through all active games
