@@ -5769,16 +5769,18 @@ class Overridle(Giochino):
     _date = datetime.date(2026, 11, 14)
     _day = "1"
     _emoji = "💣"
-    _url = "https://overridle.trifase.online"
+    _url = "https://overridle.com"
     _added_date = datetime.date(2026, 11, 14)
 
     examples = [
         "OVERRIDLE #20261114 — 💥 | 🖤🖤🖤\n🟥 ⬛ ⬛ ⬛ ⬛\nhttps://overridle.trifase.online",
-        "OVERRIDLE #20261114 — 17.3s | ❤️❤️🖤\n🟩 🟩 🟩 🟩 🟩\nhttps://overridle.trifase.online",
+        "OVERRIDLE #20261114 — 17.3s | ❤️❤️🖤\n🟩 🟩 🟩 🟩 🟩\nhttps://overridle.com",
+        "OVERRIDLE #20261115 — 22.4s | ❤️❤️🖤\n🟩 🟩 🟩 🟩 🟩\nhttps://overridle.com",
     ]
     expected = [
         {"day": "1", "name": "Overridle", "timestamp": 10, "tries": "X", "stars": None, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1", "name": "Overridle", "timestamp": 10, "tries": 1730, "stars": 2, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "2", "name": "Overridle", "timestamp": 10, "tries": 2240, "stars": 2, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
