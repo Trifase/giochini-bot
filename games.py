@@ -5783,8 +5783,7 @@ class Overridle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text):
-        text_lower = raw_text.lower()
-        return "overridle" in text_lower and ("overridle.trifase.online" in text_lower or "overridle #" in text_lower)
+        return bool(re.search(r"OVERRIDLE\s+#\d{8}\s+—\s+(?:💥|\d+(?:\.\d+)?s)", raw_text, re.IGNORECASE))
 
     def parse(self):
         text = self.raw_text

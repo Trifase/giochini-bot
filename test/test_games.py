@@ -82,3 +82,11 @@ def test_all_classes_can_handle_this_class_call():
         assert game_class.can_handle_this("ciao a tutti") is False
 
 
+def test_overridle_ignores_plain_url_message():
+    from games import Overridle
+
+    assert Overridle.can_handle_this(
+        "Se qualcuno ha cinque minuti liberi mi testa la nuova grafica: https://overridle.trifase.online/preview.html?test=1"
+    ) is False
+
+
