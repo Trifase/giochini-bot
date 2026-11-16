@@ -1376,7 +1376,7 @@
                     return res;
                 },
                 heatRange() {
-                    const stats = (this.gameStats && this.gameStats.total_stats) || [];
+                    const stats = (this.heatmapData && this.heatmapData.total_stats) || [];
                     const counts = stats.map(s => s.game_count).filter(c => c > 0).sort((a, b) => a - b);
                     if (!counts.length) return { q1: 0, q2: 0, q3: 0 };
                     const q = (p) => counts[Math.min(counts.length - 1, Math.floor((counts.length - 1) * p))];
