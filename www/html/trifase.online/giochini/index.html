@@ -99,17 +99,17 @@
 
         /* Light mode heatmap */
         .heat-0 { background-color: rgba(203, 213, 225, 0.5); }
-        .heat-1 { background-color: #7dd3fc; }
+        .heat-1 { background-color: #bae6fd; }
         .heat-2 { background-color: #38bdf8; }
         .heat-3 { background-color: #0284c7; }
-        .heat-4 { background-color: #0369a1; }
+        .heat-4 { background-color: #0c4a6e; }
 
         /* Dark mode heatmap */
-        .dark .heat-0 { background-color: rgba(148, 163, 184, 0.15); }
-        .dark .heat-1 { background-color: rgba(56, 189, 248, 0.4); }
-        .dark .heat-2 { background-color: rgba(56, 189, 248, 0.7); }
-        .dark .heat-3 { background-color: rgba(14, 165, 233, 0.9); }
-        .dark .heat-4 { background-color: #38bdf8; }
+        .dark .heat-0 { background-color: rgba(148, 163, 184, 0.12); }
+        .dark .heat-1 { background-color: #0c4a6e; }
+        .dark .heat-2 { background-color: #0369a1; }
+        .dark .heat-3 { background-color: #0ea5e9; }
+        .dark .heat-4 { background-color: #7dd3fc; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white transition-colors duration-200" id="body-root">
@@ -1377,12 +1377,10 @@
                 },
                 heatRange() {
                     const stats = (this.gameStats && this.gameStats.total_stats) || [];
-                    const counts = stats.map(s => s.game_count).filter(c => c > 0);
-                    if (!counts.length) return { min: 0, max: 0 };
-                    return {
-                        min: Math.min(...counts),
-                        max: Math.max(...counts),
-                    };
+                    const counts = stats.map(s => s.game_count).filter(c => c > 0).sort((a, b) => a - b);
+                    if (!counts.length) return { q1: 0, q2: 0, q3: 0 };
+                    const q = (p) => counts[Math.min(counts.length - 1, Math.floor((counts.length - 1) * p))];
+                    return { q1: q(0.25), q2: q(0.5), q3: q(0.75) };
                 }
             },
             methods: {
@@ -1454,12 +1452,10 @@
                 },
                 getHeatColor(count) {
                     if (!count || count <= 0) return 'heat-0';
-                    const { min, max } = this.heatRange;
-                    if (max <= min) return 'heat-4';
-                    const ratio = (count - min) / (max - min);
-                    if (ratio <= 0.25) return 'heat-1';
-                    if (ratio <= 0.5) return 'heat-2';
-                    if (ratio <= 0.75) return 'heat-3';
+                    const { q1, q2, q3 } = this.heatRange;
+                    if (count <= q1) return 'heat-1';
+                    if (count <= q2) return 'heat-2';
+                    if (count <= q3) return 'heat-3';
                     return 'heat-4';
                 },
                 filterByGame(gameName) {
