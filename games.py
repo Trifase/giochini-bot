@@ -4538,22 +4538,37 @@ class Spotle(Giochino):
     examples = [
         "Spotle #710🎧\n\n⬜⬜⬜🟩\n\nspotle.io",
         "Spotle #710🎧\n\n⬜⬜⬜⬜⬜⬜⬜⬜⬜❌\n\nspotle.io",
+        "Spotle.io #1662\n\n📅👥📈🚻💽🌎\n⬜🟩⬜🟩⬜🟩\n🟨🟩🟨🟩⬜⬜\n🟨🟩🟨🟩⬜🟩\n⬜🟩⬜🟩⬜🟨\n⬜🟩⬜🟩🟩🟩\n⬜🟩⬜🟩⬜🟩\n🟩🟩🟩🟩🟩🟩",
     ]
     expected = [
         {"day": "710", "name": "Spotle", "timestamp": 10, "tries": "4", "user_id": 456481297, "user_name": "Trifase"},
         {"day": "710", "name": "Spotle", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1662", "name": "Spotle", "timestamp": 10, "tries": "7", "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Spotle #", "spotle.io"]
-        _can_handle_this = all(w in raw_text for w in wordlist)
-        return _can_handle_this
+        if "Spotle #" in raw_text and "spotle.io" in raw_text.lower():
+            return True
+        return bool(re.search(r"Spotle\.io\s+#\d+", raw_text, re.IGNORECASE))
 
     def parse(self):
         text = self.raw_text
-        day_match = re.search(r"Spotle #(\d+)", text)
+        day_match = re.search(r"Spotle(?:\.io)?\s+#(\d+)", text, re.IGNORECASE)
         self.day = day_match.group(1) if day_match else None
+
+        # New multi-line 6-column grid format (Spotle.io #1662)
+        if "spotle.io #" in text.lower() or "📅" in text:
+            grid_lines = [
+                line.strip()
+                for line in text.splitlines()
+                if any(c in line for c in ("🟩", "🟨", "⬜", "⬛"))
+            ]
+            if any("🟩🟩🟩🟩🟩🟩" in line for line in grid_lines):
+                self.tries = str(len(grid_lines))
+            else:
+                self.tries = "X"
+            return
 
         punteggio_bonificato = ""
         for char in text:

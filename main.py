@@ -712,11 +712,6 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     giochino = context.giochino[0]
     giochino = giochino(update)
     result = giochino.punteggio
-    sync_user(
-        result.get("user_id"),
-        result.get("user_name"),
-        update.effective_user.username if update.effective_user else None,
-    )
 
     # This is a way to skip a known, unsupported game.
     if giochino.message == "ignora":
@@ -726,6 +721,15 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if giochino.message == "sconosciuto":
         await update.message.set_reaction(reaction="🤔")
         return
+
+    if not result:
+        return
+
+    sync_user(
+        result.get("user_id"),
+        result.get("user_name"),
+        update.effective_user.username if update.effective_user else None,
+    )
 
 
     # If it's a lost game, send a message and change the score to 9999999
