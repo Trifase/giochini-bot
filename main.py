@@ -27,6 +27,8 @@ from telegram import (
     Update,
     WebAppInfo,
 )
+from telegram.error import NetworkError, RetryAfter, TimedOut
+from telegram.request import HTTPXRequest
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -850,11 +852,22 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 else:
                     classifica += f'\n{print_progressbar(game_played_today, complete=tot_games, prefix="", suffix="")} {game_played_today}/{tot_games}'
 
-                mymsg = await update.message.reply_html(classifica)
+                mymsg = None
+                try:
+                    mymsg = await update.message.reply_html(classifica)
+                except Exception as e:
+                    logger.error(f"Errore invio classifica per {result['name']}: {e}")
 
-                await mymsg.reply_to_message.set_reaction(reaction="✍")
+                try:
+                    await update.message.set_reaction(reaction="✍")
+                except Exception as e:
+                    logger.error(f"Errore set_reaction per {result['name']}: {e}")
+
                 if giochino.win_message:
-                    await mymsg.reply_to_message.reply_html(giochino.win_message)
+                    try:
+                        await update.message.reply_html(giochino.win_message)
+                    except Exception as e:
+                        logger.error(f"Errore invio win_message per {result['name']}: {e}")
 
                 completed_key = f"favs_completed_{datetime.date.today()}_{result['user_id']}"
                 if tot_favs > 0 and favs_played_today == tot_favs and result["name"] in active_favorites:
@@ -862,7 +875,8 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                         context.bot_data[completed_key] = True
                         await update.message.reply_html(f"🎉 Complimenti {result['user_name']}! Hai completato tutti i tuoi {tot_favs} giochi preferiti di oggi! 🥳")
 
-                schedule_delete(context, [mymsg], after_seconds=60, name_prefix="minimize", msg_id=update.effective_message.id)
+                if mymsg:
+                    schedule_delete(context, [mymsg], after_seconds=60, name_prefix="minimize", msg_id=update.effective_message.id)
 
             else:
                 mymsg = await update.message.reply_html("Ah, non l'ha ancora fatto nessuno, fico.")
@@ -2482,6 +2496,30 @@ async def sync_telegram_user(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
 
 
+class RetryingHTTPXRequest(HTTPXRequest):
+    """HTTPXRequest that automatically retries transient NetworkError/TimedOut failures."""
+
+    def __init__(self, *args, max_retries: int = 3, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._max_retries = max_retries
+
+    async def do_request(self, *args, **kwargs):
+        for attempt in range(self._max_retries):
+            try:
+                return await super().do_request(*args, **kwargs)
+            except RetryAfter:
+                raise
+            except (NetworkError, TimedOut) as exc:
+                if attempt == self._max_retries - 1:
+                    raise
+                delay = 0.5 * (2 ** attempt)
+                logger.warning(
+                    f"Transient Telegram API error ({exc}), retrying in {delay:.1f}s "
+                    f"(attempt {attempt + 1}/{self._max_retries})"
+                )
+                await asyncio.sleep(delay)
+
+
 def main():
     defaults = Defaults(
         link_preview_options=LinkPreviewOptions(is_disabled=True),
@@ -2490,6 +2528,18 @@ def main():
     builder = ApplicationBuilder()
     builder.token(TOKEN)
     builder.defaults(defaults)
+    builder.request(
+        RetryingHTTPXRequest(
+            connection_pool_size=16,
+            connect_timeout=10.0,
+            read_timeout=20.0,
+            write_timeout=20.0,
+            pool_timeout=10.0,
+        )
+    )
+    builder.get_updates_request(
+        HTTPXRequest(connection_pool_size=4, connect_timeout=10.0, read_timeout=35.0)
+    )
     builder.post_init(post_init)
 
     app = builder.build()

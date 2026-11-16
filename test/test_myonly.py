@@ -303,3 +303,34 @@ async def test_myonly_and_myscore_detect_played_games_today():
     assert "Non hai ancora giocato oggi" not in myscore_text
     assert "Wordle" in myscore_text
 
+
+@pytest.mark.anyio
+async def test_retrying_httpx_request_retries_network_error(monkeypatch):
+    from unittest.mock import patch
+    from telegram.error import NetworkError, RetryAfter
+    from telegram.request import HTTPXRequest
+    from main import RetryingHTTPXRequest
+
+    req = RetryingHTTPXRequest(max_retries=3)
+
+    calls = {"count": 0}
+
+    async def fake_super_do_request(self, *args, **kwargs):
+        calls["count"] += 1
+        if calls["count"] < 3:
+            raise NetworkError("ConnectError")
+        return 200, b'{"ok": true}'
+
+    monkeypatch.setattr(HTTPXRequest, "do_request", fake_super_do_request)
+    with patch("main.asyncio.sleep", new=AsyncMock()):
+        status, body = await req.do_request("https://example.com", "POST")
+    assert status == 200
+    assert calls["count"] == 3
+
+    async def fake_retry_after(self, *args, **kwargs):
+        raise RetryAfter(5)
+
+    monkeypatch.setattr(HTTPXRequest, "do_request", fake_retry_after)
+    with pytest.raises(RetryAfter):
+        await req.do_request("https://example.com", "POST")
+
