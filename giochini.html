@@ -1374,6 +1374,15 @@
                         res.push(months[idx]);
                     }
                     return res;
+                },
+                heatRange() {
+                    const stats = (this.gameStats && this.gameStats.total_stats) || [];
+                    const counts = stats.map(s => s.game_count).filter(c => c > 0);
+                    if (!counts.length) return { min: 0, max: 0 };
+                    return {
+                        min: Math.min(...counts),
+                        max: Math.max(...counts),
+                    };
                 }
             },
             methods: {
@@ -1444,10 +1453,13 @@
                     return pts === minPts && pos > 3;
                 },
                 getHeatColor(count) {
-                    if (!count || count === 0) return 'heat-0';
-                    if (count <= 3) return 'heat-1';
-                    if (count <= 8) return 'heat-2';
-                    if (count <= 15) return 'heat-3';
+                    if (!count || count <= 0) return 'heat-0';
+                    const { min, max } = this.heatRange;
+                    if (max <= min) return 'heat-4';
+                    const ratio = (count - min) / (max - min);
+                    if (ratio <= 0.25) return 'heat-1';
+                    if (ratio <= 0.5) return 'heat-2';
+                    if (ratio <= 0.75) return 'heat-3';
                     return 'heat-4';
                 },
                 filterByGame(gameName) {
