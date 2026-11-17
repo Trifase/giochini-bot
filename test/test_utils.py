@@ -649,3 +649,26 @@ def test_ensure_utenti_backfill_and_pk_migration():
         legacy_db.close()
 
 
+def test_overridle_level_and_time_ranking():
+    from utils import Classifica, Giocata, process_tries
+
+    assert process_tries("Overridle", 2550) == "25.5s"
+    assert process_tries("Overridle", 1_000_001) == "Lv.4/5"
+    assert process_tries("Overridle", 9999999) == "N/A"
+
+    cl = Classifica(game="Overridle", day="4", date=datetime.date(2026, 11, 17), emoji="💣")
+    cl.giocate = [
+        Giocata(user_id=1, user_name="Lord Davide", tries=9999999, game="Overridle", extra=0),
+        Giocata(user_id=2, user_name="Daniele", tries=1_000_001, game="Overridle", extra=2),
+        Giocata(user_id=3, user_name="Stell", tries=3440, game="Overridle", extra=3),
+        Giocata(user_id=4, user_name="Trifase", tries=2550, game="Overridle", extra=3),
+    ]
+    cl.order_and_position()
+    by_name = {g.user_name: g for g in cl.giocate}
+    assert by_name["Trifase"].posizione == 1
+    assert by_name["Stell"].posizione == 2
+    assert by_name["Daniele"].posizione == 3
+    assert by_name["Daniele"].lost is False
+    assert by_name["Lord Davide"].lost is True
+
+

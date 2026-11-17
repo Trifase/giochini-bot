@@ -1166,7 +1166,11 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == "Overridle":
         if str(tries) in ['9999999', 'X']:
             return "X"
-        val = int(tries) / 100.0
+        t_int = int(tries)
+        if t_int >= 1_000_000:
+            levels = 5 - (t_int - 1_000_000)
+            return f"Lv.{levels}/5"
+        val = t_int / 100.0
         return f"{val:.1f}s" if round(val, 2) == round(val, 1) else f"{val:.2f}s"
 
     if game == "Reversle":

@@ -5791,11 +5791,15 @@ class Overridle(Giochino):
         "OVERRIDLE #20261114 — 💥 | 🖤🖤🖤\n🟥 ⬛ ⬛ ⬛ ⬛\nhttps://overridle.trifase.online",
         "OVERRIDLE #20261114 — 17.3s | ❤️❤️🖤\n🟩 🟩 🟩 🟩 🟩\nhttps://overridle.com",
         "OVERRIDLE #20261115 — 22.4s | ❤️❤️🖤\n🟩 🟩 🟩 🟩 🟩\nhttps://overridle.com",
+        "OVERRIDLE #20261117 — 💥 | ❤️❤️🖤\n🟩 🟩 🟩 🟩 🟥\nhttps://overridle.com",
+        "OVERRIDLE #20261117 — 💥 | 🖤🖤🖤\n🟩 🟩 🟩 🟥 ⬛️\nhttps://overridle.com",
     ]
     expected = [
         {"day": "1", "name": "Overridle", "timestamp": 10, "tries": "X", "stars": None, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "1", "name": "Overridle", "timestamp": 10, "tries": 1730, "stars": 2, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "2", "name": "Overridle", "timestamp": 10, "tries": 2240, "stars": 2, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "4", "name": "Overridle", "timestamp": 10, "tries": 1000001, "stars": 2, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "4", "name": "Overridle", "timestamp": 10, "tries": "X", "stars": None, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
@@ -5814,12 +5818,20 @@ class Overridle(Giochino):
 
         time_match = re.search(r"—\s*(\d+(?:\.\d+)?)s", text)
         hearts = text.count("❤")
-        if "💥" in text or not time_match or hearts == 0:
+        greens = text.count("🟩")
+        if hearts == 0:
             self.tries = "X"
             self.stars = None
-        else:
+        elif time_match and "💥" not in text:
             self.tries = round(float(time_match.group(1)) * 100)
             self.stars = hearts
+        elif greens > 0:
+            # Timed out with lives remaining: rank below 5/5 finishers, ordered by levels completed (higher is better)
+            self.tries = 1_000_000 + (5 - greens)
+            self.stars = hearts
+        else:
+            self.tries = "X"
+            self.stars = None
 
 
 def get_giochini():
