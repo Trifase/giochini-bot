@@ -334,3 +334,17 @@ async def test_retrying_httpx_request_retries_network_error(monkeypatch):
     with pytest.raises(RetryAfter):
         await req.do_request("https://example.com", "POST")
 
+
+@pytest.mark.anyio
+async def test_error_handler_handles_none_update():
+    from main import error_handler
+
+    bot = MagicMock()
+    bot.send_message = AsyncMock()
+    context = MagicMock()
+    context.bot = bot
+    context.error = RuntimeError("boom")
+
+    await error_handler(None, context)
+    assert bot.send_message.await_count == 2
+

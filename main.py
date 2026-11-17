@@ -328,27 +328,31 @@ async def setting_fav(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
-    logging.info(f"È accaduto un errore!\n============\n{tb_list[-2]}{tb_list[-1]}============")
+    snippet = "".join(tb_list[-2:]) if len(tb_list) >= 2 else tb_string
+    logging.info(f"È accaduto un errore!\n============\n{snippet}============")
 
-    chat_id = update.effective_chat.id
-    link_chat_id = str(chat_id).replace("-100", "")
+    effective_chat = getattr(update, "effective_chat", None)
+    effective_message = getattr(update, "effective_message", None)
+    message = getattr(update, "message", None)
 
-    message_id = None
-
-    if update.effective_message and update.effective_message.message_id:
-        message_id = update.effective_message.message_id
+    chat_id = effective_chat.id if effective_chat else None
+    link_chat_id = str(chat_id).replace("-100", "") if chat_id is not None else ""
+    message_id = effective_message.message_id if effective_message and effective_message.message_id else None
 
     emoji_link = ''
     if link_chat_id and message_id:
         emoji_link = f'<a href="t.me/c/{link_chat_id}/{message_id}">🔗</a> '
-    
+
     await context.bot.send_message(
         chat_id=ID_BOTCENTRAL,
         text=f'{emoji_link}ERRORE!',
         parse_mode="HTML",
     )
-    await update.message.forward(ID_BOTCENTRAL)
-
+    if message:
+        try:
+            await message.forward(ID_BOTCENTRAL)
+        except Exception:
+            pass
 
     tb_escaped = html.escape(tb_string[:4000])
     await context.bot.send_message(
