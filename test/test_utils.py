@@ -652,8 +652,8 @@ def test_ensure_utenti_backfill_and_pk_migration():
 def test_overridle_level_and_time_ranking():
     from utils import Classifica, Giocata, process_tries
 
-    assert process_tries("Overridle", 2550) == "25.5s"
-    assert process_tries("Overridle", 1_000_001) == "Lv.4/5"
+    assert process_tries("Overridle", 2550) == "Escaped in 25.5s"
+    assert process_tries("Overridle", 1_000_001) == "Timeout 4/5"
     assert process_tries("Overridle", 9999999) == "N/A"
 
     cl = Classifica(game="Overridle", day="4", date=datetime.date(2026, 11, 17), emoji="💣")
