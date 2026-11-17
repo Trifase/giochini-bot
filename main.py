@@ -2514,7 +2514,16 @@ class RetryingHTTPXRequest(HTTPXRequest):
     async def do_request(self, *args, **kwargs):
         for attempt in range(self._max_retries):
             try:
-                return await super().do_request(*args, **kwargs)
+                status, payload = await super().do_request(*args, **kwargs)
+                if status in (502, 503, 504) and attempt < self._max_retries - 1:
+                    delay = 0.5 * (2 ** attempt)
+                    logger.warning(
+                        f"Transient Telegram HTTP {status}, retrying in {delay:.1f}s "
+                        f"(attempt {attempt + 1}/{self._max_retries})"
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                return status, payload
             except RetryAfter:
                 raise
             except (NetworkError, TimedOut) as exc:
@@ -2622,7 +2631,7 @@ def main():
     # Error handler
     app.add_error_handler(error_handler)
 
-    app.run_polling(drop_pending_updates=False, allowed_updates=Update.ALL_TYPES)
+    app.run_polling(drop_pending_updates=False, allowed_updates=Update.ALL_TYPES, bootstrap_retries=-1)
 
 
 if __name__ == "__main__":

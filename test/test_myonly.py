@@ -334,6 +334,20 @@ async def test_retrying_httpx_request_retries_network_error(monkeypatch):
     with pytest.raises(RetryAfter):
         await req.do_request("https://example.com", "POST")
 
+    calls["count"] = 0
+
+    async def fake_502_then_ok(self, *args, **kwargs):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return 502, b"Bad Gateway"
+        return 200, b'{"ok": true}'
+
+    monkeypatch.setattr(HTTPXRequest, "do_request", fake_502_then_ok)
+    with patch("main.asyncio.sleep", new=AsyncMock()):
+        status, _ = await req.do_request("https://example.com", "POST")
+    assert status == 200
+    assert calls["count"] == 2
+
 
 @pytest.mark.anyio
 async def test_error_handler_handles_none_update():
