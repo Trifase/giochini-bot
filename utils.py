@@ -267,6 +267,53 @@ def sync_user(user_id: int | None, user_name: str | None, username: str | None =
         pass
 
 
+DAILY_PLAY_MILESTONES = (
+    (10, 2),
+    (20, 5),
+    (50, 15),
+)
+
+
+def award_daily_play_milestones(
+    user_id: int,
+    user_name: str,
+    game_played_today: int,
+    target_date: datetime.date | None = None,
+) -> list[tuple[int, int]]:
+    """Grant PuntiBonus for daily play milestones (10->+2, 20->+5, 50->+15), idempotently."""
+    if target_date is None:
+        target_date = datetime.date.today()
+
+    PuntiBonus.create_table(safe=True)
+    awarded: list[tuple[int, int]] = []
+    for threshold, stars in DAILY_PLAY_MILESTONES:
+        if game_played_today < threshold:
+            continue
+        reason = f"Traguardo {threshold} giochini"
+        already = (
+            PuntiBonus.select(PuntiBonus.id)
+            .where(
+                PuntiBonus.date == target_date,
+                PuntiBonus.user_id == int(user_id),
+                PuntiBonus.reason == reason,
+            )
+            .exists()
+        )
+        if already:
+            continue
+        PuntiBonus.create(
+            date=target_date,
+            user_id=int(user_id),
+            user_name=user_name,
+            punti=stars,
+            reason=reason,
+            assigned_by=None,
+            timestamp=int(datetime.datetime.now().timestamp()),
+        )
+        awarded.append((threshold, stars))
+    return awarded
+
+
 def get_display_names(user_ids) -> dict[int, str]:
     """Return {user_id: current_user_name} from Utente for a collection of user_ids."""
     ids = {int(uid) for uid in user_ids if uid is not None}

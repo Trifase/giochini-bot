@@ -671,3 +671,22 @@ def test_overridle_level_and_time_ranking():
     assert by_name["Lord Davide"].lost is True
 
 
+def test_award_daily_play_milestones():
+    from utils import award_daily_play_milestones
+
+    target = datetime.date(2026, 11, 18)
+    assert award_daily_play_milestones(100, "Mario", 9, target) == []
+    assert award_daily_play_milestones(100, "Mario", 10, target) == [(10, 2)]
+    # Idempotent on repeat
+    assert award_daily_play_milestones(100, "Mario", 15, target) == []
+    assert award_daily_play_milestones(100, "Mario", 20, target) == [(20, 5)]
+    assert award_daily_play_milestones(100, "Mario", 50, target) == [(50, 15)]
+
+    total_bonus = (
+        PuntiBonus.select(peewee.fn.SUM(PuntiBonus.punti))
+        .where(PuntiBonus.date == target, PuntiBonus.user_id == 100)
+        .scalar()
+    )
+    assert total_bonus == 22
+
+

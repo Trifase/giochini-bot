@@ -66,6 +66,7 @@ from utils import (
     GiocoBonus,
     PuntiBonus,
     POOP_MEDAL,
+    award_daily_play_milestones,
     correct_name,
     daily_ranking,
     ensure_gioco_bonus_schema,
@@ -889,6 +890,21 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             else:
                 mymsg = await update.message.reply_html("Ah, non l'ha ancora fatto nessuno, fico.")
                 schedule_delete(context, [mymsg], after_seconds=60, name_prefix="delete_post", msg_id=update.effective_message.id)
+
+            if str_as_int(result["day"]) == today_game:
+                awarded_milestones = award_daily_play_milestones(
+                    result["user_id"],
+                    result["user_name"],
+                    game_played_today,
+                )
+                for threshold, bonus_stars in awarded_milestones:
+                    try:
+                        await update.message.reply_html(
+                            f"🏅 Complimenti {html.escape(result['user_name'])}! "
+                            f"Hai giocato <b>{threshold}</b> giochini oggi: <b>+{bonus_stars}{STAR_SYMBOL}</b> bonus!"
+                        )
+                    except Exception as e:
+                        logger.error(f"Errore invio messaggio traguardo {threshold}: {e}")
 
         else:
             days_ago = int(today_game) - str_as_int(result["day"])
