@@ -90,3 +90,10 @@ def test_overridle_ignores_plain_url_message():
     ) is False
 
 
+def test_gerrymandle_ignores_plain_mention():
+    from games import Gerrymandle
+
+    assert Gerrymandle.can_handle_this("oggi gerrymandle è proprio bello") is False
+    assert Gerrymandle.can_handle_this("https://gerrymandle.com/day/186") is False
+
+

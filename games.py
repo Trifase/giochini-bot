@@ -2307,7 +2307,10 @@ class Gerrymandle(Giochino):
 
     @staticmethod
     def can_handle_this(raw_text: str) -> bool:
-        return "gerrymandle" in raw_text.lower()
+        return bool(
+            re.search(r"Gerrymandle\s*#\d+", raw_text, re.IGNORECASE)
+            and re.search(r"(?:Won|Lost)\s+the\s+election\s+in\s+\d+:\d{2}", raw_text, re.IGNORECASE)
+        )
 
     def parse(self):
         text = self.raw_text
