@@ -384,7 +384,7 @@ def grant_reenabled_game_bonus(game_name: str, enabled_date: datetime.date = Non
         enabled_date = enabled_date.date()
     try:
         ensure_gioco_bonus_schema()
-        days = getattr(config, "REENABLED_GAME_DAYS", 2)
+        days = getattr(config, "REENABLED_GAME_DAYS", 1)
         mult = getattr(config, "REENABLED_GAME_MULTIPLIER", 3)
         entries = []
         for offset in range(days):
@@ -410,7 +410,7 @@ def sync_reenabled_game_bonuses(target_date: datetime.date = None) -> list[Gioco
         target_date = datetime.date.today()
     try:
         ensure_gioco_bonus_schema()
-        days = getattr(config, "REENABLED_GAME_DAYS", 2)
+        days = getattr(config, "REENABLED_GAME_DAYS", 1)
         mult = getattr(config, "REENABLED_GAME_MULTIPLIER", 3)
         active_set = set(get_active_games())
         statuses = GameStatus.select().where(
