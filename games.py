@@ -3758,6 +3758,39 @@ class Patches(Giochino):
 
 
 @dataclass
+class Sumbreak(Giochino):
+    _name = "Sumbreak"
+    _category = "Logica e matematica"
+    _date = datetime.date(2026, 11, 18)
+    _day = "1"
+    _emoji = "🔢"
+    _url = "https://lnkd.in/sumbreak"
+    _added_date = datetime.date(2026, 11, 18)
+
+    examples = [
+        "Sumbreak #1 | 0:02 🔢\n🥇 In gioco dal primo giorno! Ho risolto il nuovo gioco matematico di LinkedIn il giorno del lancio. Ora tocca a te.\nlnkd.in/sumbreak.",
+        "Sumbreak #1 | 0:02 🔢\nWith no hints & no backtracks\nDay One Original! Solved LinkedIn’s new math game on launch day. Your turn.\nlnkd.in/sumbreak.",
+        "Sumbreak #1 | 0:05 🔢\nlnkd.in/sumbreak.",
+    ]
+    expected = [
+        {"day": "1", "name": "Sumbreak", "timestamp": 10, "tries": "002", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "Sumbreak", "timestamp": 10, "tries": "002", "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1", "name": "Sumbreak", "timestamp": 10, "tries": "005", "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        return "Sumbreak" in raw_text and "lnkd.in/sumbreak" in raw_text
+
+    def parse(self):
+        text = self.raw_text
+        matches_day = re.search(r"Sumbreak (?:n\. |#|Nr\. )(\d+)", text)
+        matches_time = re.search(r"(\d+):(\d+)", text)
+        self.day = matches_day.group(1) if matches_day else None
+        self.tries = matches_time.group(1) + matches_time.group(2) if matches_time else None
+
+
+@dataclass
 class Paintiquity(Giochino):
     _name = "Paintiquity"
     _category = "Storia"
