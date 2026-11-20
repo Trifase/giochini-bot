@@ -5870,6 +5870,38 @@ class Overridle(Giochino):
             self.stars = None
 
 
+@dataclass
+class DailyHunch(Giochino):
+    _name = "DailyHunch"
+    _category = "Miscellanea"
+    _date = datetime.date(2026, 11, 20)
+    _day = "5"
+    _emoji = "📊"
+    _url = "https://playdailyhunch.com"
+    _added_date = datetime.date(2026, 11, 20)
+
+    examples = [
+        "The Daily Hunch No. 5: 258/400\nBeat 100% of readers\nBar  ■■■■■■■■■□ 85\nLine ■■■■■■■□□□ 70\nPie  ■■■■■□□□□□ 50\nGrid ■■■■■□□□□□ 53\nhttps://playdailyhunch.com",
+        "The Daily Hunch No. 4: 164/400\nBeat 20% of readers\nBar  ■■■■■□□□□□ 45\nLine ■■■■■■■■□□ 78\nPie  ■■■□□□□□□□ 32\nGrid ■□□□□□□□□□ 9\nhttps://playdailyhunch.com",
+    ]
+    expected = [
+        {"day": "5", "name": "DailyHunch", "timestamp": 10, "tries": -258, "stars": None, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "4", "name": "DailyHunch", "timestamp": 10, "tries": -164, "stars": None, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        return bool(re.search(r"The Daily Hunch No\.\s*\d+\s*:\s*\d+/\d+", raw_text, re.IGNORECASE))
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"The Daily Hunch No\.\s*(\d+)", text, re.IGNORECASE)
+        score_match = re.search(r":\s*(\d+)\s*/\s*\d+", text)
+        self.day = day_match.group(1) if day_match else None
+        self.tries = -int(score_match.group(1)) if score_match else None
+        self.stars = None
+
+
 def get_giochini():
     klasses = [
         cls_obj

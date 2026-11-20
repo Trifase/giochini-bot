@@ -1249,7 +1249,7 @@ def process_tries(game: str, tries: int | str) -> int | str:
             score = int(score)
         tries = f"{score}/10"
 
-    if game in ['Geozee', 'MinuteCryptic', 'DontWordle', 'MoreLess', 'Krillion', 'Borderline', 'SizeItUp', 'HigherLower', 'Farflung', 'Perceptle', 'Extraplot', 'Bordivide', 'Paintiquity', 'DailyHeadlines', 'Trivmount']:
+    if game in ['Geozee', 'MinuteCryptic', 'DontWordle', 'MoreLess', 'Krillion', 'Borderline', 'SizeItUp', 'HigherLower', 'Farflung', 'Perceptle', 'Extraplot', 'Bordivide', 'Paintiquity', 'DailyHeadlines', 'Trivmount', 'DailyHunch']:
         if str(tries) in ['9999999', 'X']:
             return "X"
         tries = -int(tries)
