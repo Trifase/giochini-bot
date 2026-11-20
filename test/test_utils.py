@@ -691,7 +691,9 @@ def test_award_daily_play_milestones():
 
 
 def test_olympic_gold_scoring():
-    from utils import Classifica, Giocata
+    from utils import Classifica, Giocata, daily_ranking
+    from games import ALL_GAMES, get_day_from_date
+    from config import ID_GIOCHINI
 
     cl = Classifica(game="Wordle", day="100", date=datetime.date(2026, 11, 20), emoji="🟩")
     cl.giocate = [
@@ -704,5 +706,37 @@ def test_olympic_gold_scoring():
     cl.assign_stars("olympic-gold")
     by_name = {g.user_name: g.stelle for g in cl.giocate}
     assert by_name == {"Gold1": 1, "Gold2": 1, "Bronze": 0, "Lost": 0}
+
+    # Solo-player game gives 0 points
+    solo = Classifica(game="Wordle", day="100", date=datetime.date(2026, 11, 20), emoji="🟩")
+    solo.giocate = [Giocata(user_id=1, user_name="Solo", tries=2, game="Wordle", extra=0)]
+    solo.order_and_position()
+    solo.assign_stars("olympic-gold")
+    assert solo.giocate[0].stelle == 0
+
+    # daily_ranking: multipliers apply, PuntiBonus ignored, ties broken by silver then bronze
+    today = datetime.date.today()
+    w_day = get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today)
+    b_day = get_day_from_date(ALL_GAMES["Bandle"]["date"], ALL_GAMES["Bandle"]["day"], "Bandle", today)
+    a_day = get_day_from_date(ALL_GAMES["Angle"]["date"], ALL_GAMES["Angle"]["day"], "Angle", today)
+
+    # Wordle: U1 wins gold (1), U2 wins silver
+    Punteggio.create(date=today, timestamp=1, chat_id=ID_GIOCHINI, user_id=1, user_name="U1", game="Wordle", day=w_day, tries=2, lost=False)
+    Punteggio.create(date=today, timestamp=2, chat_id=ID_GIOCHINI, user_id=2, user_name="U2", game="Wordle", day=w_day, tries=3, lost=False)
+    # Bandle: U2 wins gold (1), U1 gets 3rd (bronze)
+    Punteggio.create(date=today, timestamp=3, chat_id=ID_GIOCHINI, user_id=2, user_name="U2", game="Bandle", day=b_day, tries=1, lost=False)
+    Punteggio.create(date=today, timestamp=4, chat_id=ID_GIOCHINI, user_id=3, user_name="U3", game="Bandle", day=b_day, tries=2, lost=False)
+    Punteggio.create(date=today, timestamp=5, chat_id=ID_GIOCHINI, user_id=1, user_name="U1", game="Bandle", day=b_day, tries=3, lost=False)
+    # Angle: U1 plays alone -> 0 points
+    Punteggio.create(date=today, timestamp=6, chat_id=ID_GIOCHINI, user_id=1, user_name="U1", game="Angle", day=a_day, tries=1, lost=False)
+    # PuntiBonus for U1 -> ignored by olympic-gold
+    PuntiBonus.create(date=today, user_id=1, user_name="U1", punti=5, reason="Traguardo 10 giochini", timestamp=10)
+
+    ranking = daily_ranking("olympic-gold", today)
+    # Both U2 and U1 have 1 gold, but U2 has 1 silver vs U1 0 silver -> U2 is 1st, U1 is 2nd
+    assert [(pos, uid, pts, bon) for pos, uid, _name, pts, bon in ranking[:2]] == [
+        (1, 2, 1, 0),
+        (2, 1, 1, 0),
+    ]
 
 

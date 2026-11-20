@@ -767,6 +767,10 @@ class Classifica:
             g.stelle = stelle_assegnate.get(g.posizione, 0)
 
     def _score_olympic_gold(self):
+        if len(self.giocate) < 2:
+            for g in self.giocate:
+                g.stelle = 0
+            return
         for g in self.giocate:
             g.stelle = 1 if (not g.lost and g.posizione == 1) else 0
 
@@ -1044,6 +1048,7 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
     # GAMES = get_games()
     
     player_scores = {}
+    is_olympic = model in ("olympic-gold", "olympic_gold")
 
     bonuses_by_game = get_all_bonuses_for_date(from_day, auto_pick_jolly=(from_day == today))
 
@@ -1073,64 +1078,84 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
         cl.order_and_position()
         cl.assign_stars(model, multiplier=current_multiplier)
         positions = cl.get_stars_list()
+        multi_player = len(cl.giocate) >= 2
 
         # sum this games stars to the player_scores dict
-        for _position, user_id, user_name, stars in positions:
-            if user_id in player_scores:
-                player_scores[user_id]["stars"] += stars
-            else:
-                player_scores[user_id] = {"user_name": user_name, "stars": stars, "bonus": 0}
+        for position, user_id, user_name, stars in positions:
+            if user_id not in player_scores:
+                player_scores[user_id] = {"user_name": user_name, "stars": 0, "bonus": 0, "silver": 0, "bronze": 0}
+            player_scores[user_id]["stars"] += stars
+            if is_olympic and multi_player and stars == 0:
+                if position == 2:
+                    player_scores[user_id]["silver"] += 1
+                elif position == 3:
+                    player_scores[user_id]["bronze"] += 1
 
-    # Query daily bonus/malus
-    try:
-        PuntiBonus.create_table(safe=True)
-        bonus_query = (
-            PuntiBonus.select(
-                PuntiBonus.user_id,
-                PuntiBonus.user_name,
-                peewee.fn.SUM(PuntiBonus.punti).alias("totale_bonus"),
+    # Query daily bonus/malus (skipped for olympic-gold)
+    if not is_olympic:
+        try:
+            PuntiBonus.create_table(safe=True)
+            bonus_query = (
+                PuntiBonus.select(
+                    PuntiBonus.user_id,
+                    PuntiBonus.user_name,
+                    peewee.fn.SUM(PuntiBonus.punti).alias("totale_bonus"),
+                )
+                .where(PuntiBonus.date == from_day)
+                .group_by(PuntiBonus.user_id)
             )
-            .where(PuntiBonus.date == from_day)
-            .group_by(PuntiBonus.user_id)
-        )
 
-        for b in bonus_query:
-            delta = int(b.totale_bonus or 0)
-            uid = b.user_id
-            if uid in player_scores:
-                player_scores[uid]["bonus"] = delta
-                player_scores[uid]["stars"] = max(0, player_scores[uid]["stars"] + delta)
-            else:
-                player_scores[uid] = {
-                    "user_name": b.user_name,
-                    "stars": max(0, delta),
-                    "bonus": delta,
-                }
-    except Exception as e:
-        print(f"Error querying PuntiBonus: {e}")
+            for b in bonus_query:
+                delta = int(b.totale_bonus or 0)
+                uid = b.user_id
+                if uid in player_scores:
+                    player_scores[uid]["bonus"] = delta
+                    player_scores[uid]["stars"] = max(0, player_scores[uid]["stars"] + delta)
+                else:
+                    player_scores[uid] = {
+                        "user_name": b.user_name,
+                        "stars": max(0, delta),
+                        "bonus": delta,
+                        "silver": 0,
+                        "bronze": 0,
+                    }
+        except Exception as e:
+            print(f"Error querying PuntiBonus: {e}")
 
     for uid in player_scores:
         player_scores[uid].setdefault("bonus", 0)
 
     display_names = get_display_names(player_scores.keys())
     aggregated_list = [
-        (uid, display_names.get(uid, data['user_name']), data['stars'], data['bonus'])
+        (
+            uid,
+            display_names.get(uid, data['user_name']),
+            data['stars'],
+            data['bonus'],
+            data.get('silver', 0),
+            data.get('bronze', 0),
+        )
         for uid, data in player_scores.items()
     ]
-    sorted_players = sorted(aggregated_list, key=lambda player: player[2], reverse=True)
+    if is_olympic:
+        sorted_players = sorted(aggregated_list, key=lambda p: (p[2], p[4], p[5]), reverse=True)
+    else:
+        sorted_players = sorted(aggregated_list, key=lambda player: player[2], reverse=True)
+
     final_ranking = []
-    last_score = -1
+    last_key = None
     current_pos = 0
-    for i, (user_id, name, stars, bonus) in enumerate(sorted_players):
+    for i, (user_id, name, stars, bonus, silver, bronze) in enumerate(sorted_players):
+        rank_key = (stars, silver, bronze) if is_olympic else stars
 
         # If the score changes from the previous player, the rank is the new position (i + 1)
-        if stars != last_score:
+        if rank_key != last_key:
             current_pos = i + 1
         
         # Append the final tuple with the correct rank
         final_ranking.append((current_pos, user_id, name, stars, bonus))
         
-        last_score = stars
+        last_key = rank_key
 
     return final_ranking
     # cambiamenti = dict(points)

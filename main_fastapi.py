@@ -327,7 +327,7 @@ async def algorithm_comparison(day: str | None = None):
             "id": "olympic-gold",
             "title": "Olympic Gold",
             "badge": "Solo Ori",
-            "description": "1 punto solo a chi conquista la medaglia d'oro (1° posto), 0 punti a tutti gli altri.",
+            "description": "1 punto per ogni oro (con moltiplicatori, esclusi giochi in solitaria e bonus fissi). Spareggio per argenti e bronzi.",
         },
     ]
 
