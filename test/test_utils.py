@@ -740,3 +740,35 @@ def test_olympic_gold_scoring():
     ]
 
 
+def test_weighted_average_ranking():
+    from utils import daily_ranking, GiocoBonus
+    from games import ALL_GAMES, get_day_from_date
+    from config import ID_GIOCHINI
+
+    today = datetime.date.today()
+    GiocoBonus.create(date=today, game="Bandle", multiplier=3, bonus_type="jolly")
+    games_to_play = ["Wordle", "Bandle", "Angle", "Worldle", "Chrono", "Zip"]
+    # U1 wins 6 multi-player games; U2 plays only 1 game and wins it; U3 plays 1 solo game
+    for idx, gname in enumerate(games_to_play):
+        g_day = get_day_from_date(ALL_GAMES[gname]["date"], ALL_GAMES[gname]["day"], gname, today)
+        if idx == 0:
+            # U2 wins Wordle, U1 is 2nd
+            Punteggio.create(date=today, timestamp=10 + idx * 10, chat_id=ID_GIOCHINI, user_id=2, user_name="U2", game=gname, day=g_day, tries=1, lost=False)
+            Punteggio.create(date=today, timestamp=11 + idx * 10, chat_id=ID_GIOCHINI, user_id=1, user_name="U1", game=gname, day=g_day, tries=2, lost=False)
+        else:
+            # U1 wins the other 5 games against U4
+            Punteggio.create(date=today, timestamp=10 + idx * 10, chat_id=ID_GIOCHINI, user_id=1, user_name="U1", game=gname, day=g_day, tries=1, lost=False)
+            Punteggio.create(date=today, timestamp=11 + idx * 10, chat_id=ID_GIOCHINI, user_id=4, user_name="U4", game=gname, day=g_day, tries=5, lost=False)
+
+    # U3 plays a solo game -> excluded
+    s_day = get_day_from_date(ALL_GAMES["Queens"]["date"], ALL_GAMES["Queens"]["day"], "Queens", today)
+    Punteggio.create(date=today, timestamp=999, chat_id=ID_GIOCHINI, user_id=3, user_name="U3", game="Queens", day=s_day, tries=1, lost=False)
+
+    ranking = daily_ranking("weighted-average", today)
+    uids = [uid for _pos, uid, _name, _pts, _bon in ranking]
+    assert 3 not in uids
+    # U1 (6 games, 5 wins + 1 second) must rank above U2 (only 1 win) thanks to Bayesian smoothing
+    assert uids[0] == 1
+    assert uids.index(1) < uids.index(2)
+
+

@@ -329,6 +329,12 @@ async def algorithm_comparison(day: str | None = None):
             "badge": "Solo Ori",
             "description": "1 punto per ogni oro (con moltiplicatori, esclusi giochi in solitaria e bonus fissi). Spareggio per argenti e bronzi.",
         },
+        {
+            "id": "weighted-average",
+            "title": "Media Pesata (Bayesiana)",
+            "badge": "0–100 Rendimento",
+            "description": "Rendimento medio pesato per moltiplicatori (2x/3x) con smorzamento Bayesiano (m=5) e senza giochi in solitaria o bonus fissi.",
+        },
     ]
 
     comparisons = []

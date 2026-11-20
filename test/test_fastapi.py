@@ -168,8 +168,10 @@ def test_api_algorithm_comparison():
     assert "default_ranking" in data
     assert "comparisons" in data
     assert len(data["default_ranking"]) == 2
-    assert len(data["comparisons"]) == 7
-    assert "olympic-gold" in [c["id"] for c in data["comparisons"]]
+    assert len(data["comparisons"]) == 8
+    comp_ids = [c["id"] for c in data["comparisons"]]
+    assert "olympic-gold" in comp_ids
+    assert "weighted-average" in comp_ids
     assert any(c["id"] == "participation-bonus" for c in data["comparisons"])
     for comp in data["comparisons"]:
         assert "model_id" in comp

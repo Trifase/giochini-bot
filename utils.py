@@ -747,6 +747,8 @@ class Classifica:
             "bonus_partecipazione": self._score_participation_bonus,
             "olympic-gold": self._score_olympic_gold,
             "olympic_gold": self._score_olympic_gold,
+            "weighted-average": self._score_no_limit_with_lost_rank_based,
+            "weighted_average": self._score_no_limit_with_lost_rank_based,
         }
         
         scoring_function = scoring_models.get(model)
@@ -1049,6 +1051,7 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
     
     player_scores = {}
     is_olympic = model in ("olympic-gold", "olympic_gold")
+    is_weighted = model in ("weighted-average", "weighted_average")
 
     bonuses_by_game = get_all_bonuses_for_date(from_day, auto_pick_jolly=(from_day == today))
 
@@ -1076,9 +1079,29 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
         cl.emoji = GAMES[game]["emoji"]
         cl.giocate = [Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0) for g in query]
         cl.order_and_position()
-        cl.assign_stars(model, multiplier=current_multiplier)
+        cl.assign_stars(model, multiplier=1 if is_weighted else current_multiplier)
         positions = cl.get_stars_list()
         multi_player = len(cl.giocate) >= 2
+
+        if is_weighted:
+            if not multi_player:
+                continue
+            num_players = len(cl.giocate)
+            weight = float(current_multiplier)
+            for _position, user_id, user_name, base_stars in positions:
+                if user_id not in player_scores:
+                    player_scores[user_id] = {
+                        "user_name": user_name,
+                        "stars": 0,
+                        "bonus": 0,
+                        "silver": 0,
+                        "bronze": 0,
+                        "w_sum": 0.0,
+                        "w_total": 0.0,
+                    }
+                player_scores[user_id]["w_sum"] += weight * (base_stars / num_players)
+                player_scores[user_id]["w_total"] += weight
+            continue
 
         # sum this games stars to the player_scores dict
         for position, user_id, user_name, stars in positions:
@@ -1091,8 +1114,8 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
                 elif position == 3:
                     player_scores[user_id]["bronze"] += 1
 
-    # Query daily bonus/malus (skipped for olympic-gold)
-    if not is_olympic:
+    # Query daily bonus/malus (skipped for olympic-gold and weighted-average)
+    if not is_olympic and not is_weighted:
         try:
             PuntiBonus.create_table(safe=True)
             bonus_query = (
@@ -1124,6 +1147,11 @@ def daily_ranking(model: str = "default", from_day: datetime.date = None):
 
     for uid in player_scores:
         player_scores[uid].setdefault("bonus", 0)
+        if is_weighted:
+            m_prior, c_prior = 5.0, 0.50
+            w_sum = player_scores[uid].get("w_sum", 0.0)
+            w_total = player_scores[uid].get("w_total", 0.0)
+            player_scores[uid]["stars"] = round(((w_sum + m_prior * c_prior) / (w_total + m_prior)) * 100)
 
     display_names = get_display_names(player_scores.keys())
     aggregated_list = [
