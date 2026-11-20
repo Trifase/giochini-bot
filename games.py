@@ -5940,6 +5940,40 @@ class BalanceIt(Giochino):
         self.stars = None
 
 
+@dataclass
+class CutInHalf(Giochino):
+    _name = "CutInHalf"
+    _category = "Osservazione e percezione"
+    _date = datetime.date(2026, 11, 20)
+    _day = "41"
+    _emoji = "✂️"
+    _url = "https://hunchdaily.com/cut-in-half/daily/"
+    _added_date = datetime.date(2026, 11, 20)
+
+    examples = [
+        "Hunch Daily Cut in Half #41\n431/500\n🟨🟨🟨🟨🟨\nhttps://hunchdaily.com/cut-in-half/daily/?day=41&s=431",
+    ]
+    expected = [
+        {"day": "41", "name": "CutInHalf", "timestamp": 10, "tries": -431, "stars": None, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        return bool(re.search(r"Hunch Daily Cut in Half\s*#\d+", raw_text, re.IGNORECASE))
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"(?:Cut in Half\s*#|[?&]day=)(\d+)", text, re.IGNORECASE)
+        score_match = re.search(r"(?:^|\n)\s*(\d+)\s*/\s*\d+|[?&]s=(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+        if score_match:
+            score_val = score_match.group(1) or score_match.group(2)
+            self.tries = -int(score_val)
+        else:
+            self.tries = None
+        self.stars = None
+
+
 def get_giochini():
     klasses = [
         cls_obj
