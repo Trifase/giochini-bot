@@ -5902,6 +5902,44 @@ class DailyHunch(Giochino):
         self.stars = None
 
 
+@dataclass
+class BalanceIt(Giochino):
+    _name = "BalanceIt"
+    _category = "Osservazione e percezione"
+    _date = datetime.date(2026, 11, 20)
+    _day = "41"
+    _emoji = "⚖️"
+    _url = "https://hunchdaily.com/balance-game/daily/"
+    _added_date = datetime.date(2026, 11, 20)
+
+    examples = [
+        "Hunch Daily Balance It #41\n442/500\n🟩🟩🟨🟧🟩\nhttps://hunchdaily.com/balance-game/daily/?day=41&s=442",
+        "Hunch Daily Balance It #41\n332/500\n🟧🟧🟩🟨🟥\nhttps://hunchdaily.com/balance-game/daily/?day=41&s=332",
+        "Hunch Daily Balance It #41\n414/500\n🟧🟧🟩🟩🟨\nhttps://hunchdaily.com/balance-game/daily/?day=41&s=414",
+    ]
+    expected = [
+        {"day": "41", "name": "BalanceIt", "timestamp": 10, "tries": -442, "stars": None, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "41", "name": "BalanceIt", "timestamp": 10, "tries": -332, "stars": None, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "41", "name": "BalanceIt", "timestamp": 10, "tries": -414, "stars": None, "user_id": 456481297, "user_name": "Trifase"},
+    ]
+
+    @staticmethod
+    def can_handle_this(raw_text):
+        return bool(re.search(r"Hunch Daily Balance It\s*#\d+", raw_text, re.IGNORECASE))
+
+    def parse(self):
+        text = self.raw_text
+        day_match = re.search(r"(?:Balance It\s*#|[?&]day=)(\d+)", text, re.IGNORECASE)
+        score_match = re.search(r"(?:^|\n)\s*(\d+)\s*/\s*\d+|[?&]s=(\d+)", text)
+        self.day = day_match.group(1) if day_match else None
+        if score_match:
+            score_val = score_match.group(1) or score_match.group(2)
+            self.tries = -int(score_val)
+        else:
+            self.tries = None
+        self.stars = None
+
+
 def get_giochini():
     klasses = [
         cls_obj
