@@ -679,14 +679,14 @@ def test_award_daily_play_milestones():
     assert award_daily_play_milestones(100, "Mario", 10, target) == [(10, 2)]
     # Idempotent on repeat
     assert award_daily_play_milestones(100, "Mario", 15, target) == []
-    assert award_daily_play_milestones(100, "Mario", 20, target) == [(20, 5)]
-    assert award_daily_play_milestones(100, "Mario", 50, target) == [(50, 15)]
+    assert award_daily_play_milestones(100, "Mario", 20, target) == [(20, 3)]
+    assert award_daily_play_milestones(100, "Mario", 50, target) == [(50, 5)]
 
     total_bonus = (
         PuntiBonus.select(peewee.fn.SUM(PuntiBonus.punti))
         .where(PuntiBonus.date == target, PuntiBonus.user_id == 100)
         .scalar()
     )
-    assert total_bonus == 22
+    assert total_bonus == 10
 
 
