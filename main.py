@@ -1940,6 +1940,11 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not user_games:
         message = "Non hai ancora giocato oggi. 🎮"
     else:
+        user_games.sort(key=lambda g: (0 if g["position"] <= 3 else 1, g["position"], g["game"]))
+        gold_count = sum(1 for g in user_games if g["position"] == 1)
+        silver_count = sum(1 for g in user_games if g["position"] == 2)
+        bronze_count = sum(1 for g in user_games if g["position"] == 3)
+
         message = f"<b>Il tuo punteggio di oggi:</b> {total_stars}{STAR_SYMBOL}\n\n"
         new_emoji = getattr(config, "NEW_GAME_EMOJI", "🆕")
         reenabled_emoji = getattr(config, "REENABLED_GAME_EMOJI", "✨")
@@ -1954,6 +1959,8 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             mult_str = f" (x{game_info['multiplier']} {b_icon})" if game_info.get("multiplier", 1) > 1 else ""
             stars_display = f"+{game_info['stars']}{STAR_SYMBOL}{mult_str}" if game_info['stars'] > 0 else ""
             message += f"{game_info['medal_emoji']}{stars_display} {game_info['game']}\n"
+
+        message += f"\n🥇 {gold_count}  🥈 {silver_count}  🥉 {bronze_count}"
     
     reply_params = ReplyParameters(message_id=update.message.message_id)
     ephemeral_params = {"receiver_user_id": int(user_id)}

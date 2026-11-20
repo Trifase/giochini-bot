@@ -362,3 +362,45 @@ async def test_error_handler_handles_none_update():
     await error_handler(None, context)
     assert bot.send_message.await_count == 2
 
+
+@pytest.mark.anyio
+async def test_myscore_sorts_by_medal_and_shows_counts():
+    import datetime
+    from games import ALL_GAMES, get_day_from_date
+
+    today = datetime.date.today()
+
+    # Angle: 4th place (no medal) -> 3 opponents beat user 12345
+    angle_day = str(get_day_from_date(ALL_GAMES["Angle"]["date"], ALL_GAMES["Angle"]["day"], "Angle", today))
+    for i, tries in enumerate([1, 2, 3], start=1):
+        Punteggio.create(date=today, timestamp=100 + i, chat_id=999, user_id=i, user_name=f"P{i}", game="Angle", day=angle_day, tries=tries, lost=False)
+    Punteggio.create(date=today, timestamp=105, chat_id=999, user_id=12345, user_name="Tester", game="Angle", day=angle_day, tries=4, lost=False)
+
+    # Bandle: 2nd place (silver) -> 1 opponent beats user 12345
+    bandle_day = str(get_day_from_date(ALL_GAMES["Bandle"]["date"], ALL_GAMES["Bandle"]["day"], "Bandle", today))
+    Punteggio.create(date=today, timestamp=200, chat_id=999, user_id=1, user_name="P1", game="Bandle", day=bandle_day, tries=1, lost=False)
+    Punteggio.create(date=today, timestamp=201, chat_id=999, user_id=12345, user_name="Tester", game="Bandle", day=bandle_day, tries=3, lost=False)
+
+    # Wordle: 1st place (gold)
+    wordle_day = str(get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today))
+    Punteggio.create(date=today, timestamp=300, chat_id=999, user_id=12345, user_name="Tester", game="Wordle", day=wordle_day, tries=2, lost=False)
+    Punteggio.create(date=today, timestamp=301, chat_id=999, user_id=1, user_name="P1", game="Wordle", day=wordle_day, tries=4, lost=False)
+
+    user = MagicMock()
+    user.id = 12345
+    chat = MagicMock()
+    chat.id = 999
+    message = MagicMock()
+    message.message_id = 42
+    message.reply_text = AsyncMock()
+    update = MagicMock()
+    update.message = message
+    update.effective_user = user
+    update.effective_chat = chat
+    context = MagicMock()
+
+    await myscore(update, context)
+    text = message.reply_text.call_args.args[0]
+    assert text.index("Wordle") < text.index("Bandle") < text.index("Angle")
+    assert "🥇 1  🥈 1  🥉 0" in text
+
