@@ -4,14 +4,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from config import Punteggio, Punti, Medaglia, PuntiBonus, Utente, ID_GIOCHINI
-from utils import GiocoBonus
+from utils import GiocoBonus, BotEvent
 from main_fastapi import app
 
 
 @pytest.fixture(autouse=True)
 def setup_fastapi_test_db():
     test_db = peewee.SqliteDatabase("file:testfastapidb?mode=memory&cache=shared", uri=True)
-    models = [Punteggio, Punti, Medaglia, PuntiBonus, GiocoBonus, Utente]
+    models = [Punteggio, Punti, Medaglia, PuntiBonus, GiocoBonus, Utente, BotEvent]
     test_db.bind(models, bind_refs=False, bind_backrefs=False)
     test_db.connect()
     test_db.create_tables(models)
@@ -256,4 +256,36 @@ def test_api_username_change_decoupling():
     medals = client.get("/api/medals/?all_time=true").json()
     assert medals["medals"][0]["user_name"] == "NewMario"
     assert medals["medals"][0]["gold"] == 1
+
+
+def test_api_admin_overview_auth_and_aggregation(monkeypatch):
+    from utils import log_bot_event
+    import config as cfg
+
+    monkeypatch.setattr(cfg, "ADMIN_DASHBOARD_TOKEN", "secret-admin-123", raising=False)
+    client = TestClient(app)
+
+    assert client.get("/api/admin/overview/").status_code == 401
+    assert client.get("/api/admin/overview/", headers={"X-Admin-Token": "wrong"}).status_code == 401
+
+    Utente.replace(user_id=10, user_name="Mario", username="mario").execute()
+    log_bot_event("command", "/myday", user_id=10, chat_id=-1)
+    log_bot_event("command", "/myday", user_id=10, chat_id=-1)
+    log_bot_event("callback", "myonly_more", user_id=10, chat_id=-1, detail="myonly_more_10")
+    log_bot_event("score", "Wordle", user_id=10, chat_id=-1, detail="#100")
+
+    res = client.get("/api/admin/overview/?days=7", headers={"X-Admin-Token": "secret-admin-123"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["kpis"]["dau_today"] == 1
+    assert data["kpis"]["commands_today"] == 2
+    assert data["kpis"]["callbacks_period"] == 1
+    assert data["kpis"]["scores_period"] == 1
+    assert data["top_commands"][0] == {"name": "/myday", "count": 2, "unique_users": 1}
+    assert data["top_callbacks"][0] == {"name": "myonly_more", "count": 1, "unique_users": 1}
+    assert data["top_users"][0]["name"] == "Mario"
+
+    html_res = client.get("/admin")
+    assert html_res.status_code == 200
+    assert "Giochini Admin Analytics" in html_res.text
 

@@ -24,6 +24,24 @@ except ImportError:
         class Meta:
             database = config.db
             table_name = "utenti"
+
+try:
+    from config import BotEvent
+except ImportError:
+    class BotEvent(peewee.Model):
+        id = peewee.AutoField()
+        date = peewee.DateField(index=True)
+        timestamp = peewee.IntegerField(index=True)
+        chat_id = peewee.IntegerField(null=True)
+        user_id = peewee.IntegerField(null=True, index=True)
+        event_type = peewee.TextField(index=True)
+        name = peewee.TextField(index=True)
+        detail = peewee.TextField(null=True)
+        duration_ms = peewee.IntegerField(null=True)
+
+        class Meta:
+            database = config.db
+            table_name = "bot_events"
 try:
     from config import POOP_MEDAL
 except ImportError:
@@ -332,6 +350,35 @@ def resolve_display_name(user_id: int | None, fallback: str = "") -> str:
     if user_id is None:
         return fallback
     return get_display_names([user_id]).get(int(user_id), fallback)
+
+
+def log_bot_event(
+    event_type: str,
+    name: str,
+    user_id: int | None = None,
+    chat_id: int | None = None,
+    detail: str | None = None,
+    duration_ms: int | None = None,
+) -> None:
+    """Persist a lightweight analytics event in bot_events without raising on failure."""
+    try:
+        db = BotEvent._meta.database
+        if db is None:
+            return
+        BotEvent.create_table(safe=True)
+        now = datetime.datetime.now()
+        BotEvent.create(
+            date=now.date(),
+            timestamp=int(now.timestamp()),
+            chat_id=int(chat_id) if chat_id is not None else None,
+            user_id=int(user_id) if user_id is not None else None,
+            event_type=event_type,
+            name=name,
+            detail=detail,
+            duration_ms=duration_ms,
+        )
+    except Exception:
+        pass
 
 
 def get_active_games() -> list[str]:

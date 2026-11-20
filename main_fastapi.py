@@ -1,5 +1,6 @@
+import os
 from typing import Optional
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -18,6 +19,7 @@ from utils import (
     pick_or_get_bonus_game,
     process_tries,
     resolve_display_name,
+    BotEvent,
     Classifica,
     Giocata,
     GiocoBonus,
@@ -773,6 +775,225 @@ async def get_game_stats(user_id: Optional[int] = None, player: Optional[str] = 
         }
 
 
+def _get_admin_token() -> str:
+    return (
+        getattr(config, "ADMIN_DASHBOARD_TOKEN", None)
+        or os.environ.get("ADMIN_DASHBOARD_TOKEN")
+        or str(getattr(config, "ADMIN_ID", ""))
+    )
+
+
+def _require_admin(request: Request, token: str | None = None) -> None:
+    expected = _get_admin_token()
+    provided = request.headers.get("X-Admin-Token") or token or ""
+    if not expected or provided != str(expected):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+@app.get("/admin/overview/")
+@app.get("/api/admin/overview/")
+async def admin_overview(request: Request, days: int = 30, token: str | None = None):
+    """Admin analytics overview of bot commands, callbacks, scores, and errors."""
+    _require_admin(request, token)
+    days = max(1, min(days, 365))
+
+    BotEvent.create_table(safe=True)
+    today = date.today()
+    start_date = today - timedelta(days=days - 1)
+    start_7d = today - timedelta(days=6)
+    start_30d = today - timedelta(days=29)
+
+    events = list(
+        BotEvent.select()
+        .where(BotEvent.date >= min(start_date, start_30d))
+        .order_by(BotEvent.timestamp.desc())
+    )
+
+    dau_users: set[int] = set()
+    wau_users: set[int] = set()
+    mau_users: set[int] = set()
+    commands_today = 0
+
+    daily_map: dict[str, dict] = {}
+    for offset in range(days):
+        d_str = (start_date + timedelta(days=offset)).isoformat()
+        daily_map[d_str] = {
+            "date": d_str,
+            "commands": 0,
+            "callbacks": 0,
+            "scores": 0,
+            "errors": 0,
+            "users": set(),
+        }
+
+    cmd_stats: dict[str, dict] = {}
+    cb_stats: dict[str, dict] = {}
+    user_stats: dict[int, dict] = {}
+    hourly_heatmap = [[0 for _ in range(24)] for _ in range(7)]
+
+    commands_period = 0
+    callbacks_period = 0
+    scores_period = 0
+    errors_period = 0
+    recent_events = []
+    recent_errors = []
+
+    for ev in events:
+        ev_date = ev.date if isinstance(ev.date, date) else datetime.strptime(str(ev.date), "%Y-%m-%d").date()
+        uid = ev.user_id
+
+        if uid is not None:
+            if ev_date == today:
+                dau_users.add(uid)
+            if ev_date >= start_7d:
+                wau_users.add(uid)
+            if ev_date >= start_30d:
+                mau_users.add(uid)
+
+        if ev_date == today and ev.event_type == "command":
+            commands_today += 1
+
+        if ev_date < start_date:
+            continue
+
+        d_str = ev_date.isoformat()
+        bucket = daily_map.get(d_str)
+        if bucket:
+            if uid is not None:
+                bucket["users"].add(uid)
+            if ev.event_type == "command":
+                bucket["commands"] += 1
+            elif ev.event_type == "callback":
+                bucket["callbacks"] += 1
+            elif ev.event_type == "score":
+                bucket["scores"] += 1
+            elif ev.event_type == "error":
+                bucket["errors"] += 1
+
+        if ev.event_type == "command":
+            commands_period += 1
+            entry = cmd_stats.setdefault(ev.name, {"name": ev.name, "count": 0, "users": set()})
+            entry["count"] += 1
+            if uid is not None:
+                entry["users"].add(uid)
+        elif ev.event_type == "callback":
+            callbacks_period += 1
+            entry = cb_stats.setdefault(ev.name, {"name": ev.name, "count": 0, "users": set()})
+            entry["count"] += 1
+            if uid is not None:
+                entry["users"].add(uid)
+        elif ev.event_type == "score":
+            scores_period += 1
+        elif ev.event_type == "error":
+            errors_period += 1
+
+        if ev.event_type != "error":
+            dt_obj = datetime.fromtimestamp(ev.timestamp)
+            hourly_heatmap[dt_obj.weekday()][dt_obj.hour] += 1
+
+        if uid is not None:
+            u_entry = user_stats.setdefault(
+                uid,
+                {"user_id": uid, "commands": 0, "callbacks": 0, "scores": 0, "total": 0, "last_ts": 0},
+            )
+            if ev.event_type == "command":
+                u_entry["commands"] += 1
+            elif ev.event_type == "callback":
+                u_entry["callbacks"] += 1
+            elif ev.event_type == "score":
+                u_entry["scores"] += 1
+            if ev.event_type != "error":
+                u_entry["total"] += 1
+            if ev.timestamp > u_entry["last_ts"]:
+                u_entry["last_ts"] = ev.timestamp
+
+        if len(recent_events) < 60:
+            recent_events.append({
+                "timestamp": ev.timestamp,
+                "time_str": datetime.fromtimestamp(ev.timestamp).strftime("%Y-%m-%d %H:%M:%S"),
+                "user_id": uid,
+                "event_type": ev.event_type,
+                "name": ev.name,
+                "detail": ev.detail,
+            })
+        if ev.event_type == "error" and len(recent_errors) < 25:
+            recent_errors.append({
+                "timestamp": ev.timestamp,
+                "time_str": datetime.fromtimestamp(ev.timestamp).strftime("%Y-%m-%d %H:%M:%S"),
+                "user_id": uid,
+                "name": ev.name,
+                "detail": ev.detail,
+            })
+
+    all_uids = set(user_stats.keys()) | {e["user_id"] for e in recent_events if e["user_id"] is not None}
+    display_names = get_display_names(all_uids)
+
+    for e in recent_events:
+        e["user_name"] = display_names.get(e["user_id"], str(e["user_id"])) if e["user_id"] else "Sistema"
+    for e in recent_errors:
+        e["user_name"] = display_names.get(e["user_id"], str(e["user_id"])) if e["user_id"] else "Sistema"
+
+    daily_series = [
+        {
+            "date": v["date"],
+            "commands": v["commands"],
+            "callbacks": v["callbacks"],
+            "scores": v["scores"],
+            "errors": v["errors"],
+            "active_users": len(v["users"]),
+        }
+        for v in daily_map.values()
+    ]
+
+    top_commands = sorted(
+        [{"name": v["name"], "count": v["count"], "unique_users": len(v["users"])} for v in cmd_stats.values()],
+        key=lambda x: x["count"],
+        reverse=True,
+    )
+    top_callbacks = sorted(
+        [{"name": v["name"], "count": v["count"], "unique_users": len(v["users"])} for v in cb_stats.values()],
+        key=lambda x: x["count"],
+        reverse=True,
+    )
+    top_users = sorted(
+        [
+            {
+                "user_id": uid,
+                "name": display_names.get(uid, str(uid)),
+                "commands": v["commands"],
+                "callbacks": v["callbacks"],
+                "scores": v["scores"],
+                "total": v["total"],
+                "last_seen": datetime.fromtimestamp(v["last_ts"]).strftime("%Y-%m-%d %H:%M") if v["last_ts"] else "",
+            }
+            for uid, v in user_stats.items()
+        ],
+        key=lambda x: x["total"],
+        reverse=True,
+    )
+
+    return {
+        "days": days,
+        "kpis": {
+            "dau_today": len(dau_users),
+            "wau_7d": len(wau_users),
+            "mau_30d": len(mau_users),
+            "commands_today": commands_today,
+            "commands_period": commands_period,
+            "callbacks_period": callbacks_period,
+            "scores_period": scores_period,
+            "errors_period": errors_period,
+        },
+        "daily_series": daily_series,
+        "top_commands": top_commands,
+        "top_callbacks": top_callbacks,
+        "top_users": top_users,
+        "hourly_heatmap": hourly_heatmap,
+        "recent_events": recent_events,
+        "recent_errors": recent_errors,
+    }
+
+
 # Direct web shortcuts
 @app.get("/", include_in_schema=False)
 async def serve_root():
@@ -786,6 +1007,14 @@ async def serve_giochini_root():
 @app.get("/giochini/players.html", include_in_schema=False)
 async def serve_players_page():
     return FileResponse("www/html/trifase.online/giochini/players.html")
+
+@app.get("/admin", include_in_schema=False)
+@app.get("/admin/", include_in_schema=False)
+@app.get("/giochini/admin", include_in_schema=False)
+@app.get("/giochini/admin/", include_in_schema=False)
+@app.get("/giochini/admin.html", include_in_schema=False)
+async def serve_admin_page():
+    return FileResponse("www/html/trifase.online/giochini/admin.html")
 
 
 # Mount static files under root path

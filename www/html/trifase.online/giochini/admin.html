@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giochini Admin Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        [v-cloak] { display: none; }
+        body { font-family: Inter, system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+<div id="app" v-cloak class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <span class="text-2xl">📊</span>
+                <h1 class="text-xl sm:text-2xl font-black tracking-tight">Giochini Admin Analytics</h1>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Insight su comandi, callback, giocate e fasce orarie</p>
+        </div>
+        <div v-if="authenticated" class="flex items-center gap-2 flex-wrap">
+            <select v-model.number="days" @change="fetchOverview" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold">
+                <option :value="7">Ultimi 7 giorni</option>
+                <option :value="30">Ultimi 30 giorni</option>
+                <option :value="90">Ultimi 90 giorni</option>
+            </select>
+            <button @click="fetchOverview" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-bold transition">
+                🔄 Aggiorna
+            </button>
+            <button @click="logout" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">
+                Esci
+            </button>
+        </div>
+    </header>
+
+    <!-- Login Gate -->
+    <div v-if="!authenticated" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 mt-12">
+        <h2 class="text-lg font-bold">Accesso Admin</h2>
+        <p class="text-xs text-slate-400">Inserisci il token admin (`ADMIN_DASHBOARD_TOKEN` oppure il tuo `ADMIN_ID`).</p>
+        <form @submit.prevent="login" class="space-y-3">
+            <input v-model="tokenInput" type="password" placeholder="Admin token..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+            <p v-if="authError" class="text-xs text-rose-400 font-semibold">{{ authError }}</p>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-bold transition">
+                Accedi
+            </button>
+        </form>
+    </div>
+
+    <!-- Dashboard -->
+    <template v-else-if="data">
+        <!-- KPIs -->
+        <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs text-slate-400 font-semibold">Utenti Attivi (DAU / WAU / MAU)</div>
+                <div class="text-2xl font-black mt-1 text-indigo-400">
+                    {{ data.kpis.dau_today }} <span class="text-slate-600">/</span> {{ data.kpis.wau_7d }} <span class="text-slate-600">/</span> {{ data.kpis.mau_30d }}
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs text-slate-400 font-semibold">Comandi (Oggi / {{ days }}g)</div>
+                <div class="text-2xl font-black mt-1 text-sky-400">
+                    {{ data.kpis.commands_today }} <span class="text-slate-600">/</span> {{ data.kpis.commands_period }}
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs text-slate-400 font-semibold">Callback & Giocate ({{ days }}g)</div>
+                <div class="text-2xl font-black mt-1 text-emerald-400">
+                    {{ data.kpis.callbacks_period }} <span class="text-slate-600">/</span> {{ data.kpis.scores_period }}
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <div class="text-xs text-slate-400 font-semibold">Errori ({{ days }}g)</div>
+                <div class="text-2xl font-black mt-1" :class="data.kpis.errors_period > 0 ? 'text-rose-400' : 'text-slate-300'">
+                    {{ data.kpis.errors_period }}
+                </div>
+            </div>
+        </section>
+
+        <!-- Daily Trend -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <h2 class="text-base font-bold">Andamento Giornaliero</h2>
+                <div class="flex items-center gap-4 text-xs text-slate-400">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-sky-500"></span> Comandi</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> Giocate</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span> Callback</span>
+                </div>
+            </div>
+            <div class="flex items-end gap-1 h-40 pt-4 overflow-x-auto">
+                <div v-for="d in data.daily_series" :key="d.date" class="flex-1 min-w-[10px] flex flex-col items-center gap-0.5 h-full justify-end group relative"
+                     :title="`${d.date}: ${d.commands} comandi, ${d.callbacks} callback, ${d.scores} giocate (${d.active_users} utenti)`">
+                    <div class="w-full flex flex-col justify-end gap-[1px] h-full">
+                        <div class="w-full bg-amber-400/80 rounded-t-sm" :style="{ height: barHeight(d.callbacks) }"></div>
+                        <div class="w-full bg-sky-500/90" :style="{ height: barHeight(d.commands) }"></div>
+                        <div class="w-full bg-emerald-500/80 rounded-b-sm" :style="{ height: barHeight(d.scores) }"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+                <span>{{ data.daily_series[0]?.date }}</span>
+                <span>{{ data.daily_series[data.daily_series.length - 1]?.date }}</span>
+            </div>
+        </section>
+
+        <!-- Top Commands & Top Callbacks -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h2 class="text-base font-bold mb-3">Comandi più usati</h2>
+                <div v-if="!data.top_commands.length" class="text-xs text-slate-500">Nessun comando registrato nel periodo.</div>
+                <div v-else class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    <div v-for="c in data.top_commands" :key="c.name" class="flex items-center justify-between bg-slate-950/60 border border-slate-800/80 rounded-xl px-3.5 py-2 text-sm">
+                        <span class="font-mono font-bold text-sky-300">{{ c.name }}</span>
+                        <div class="flex items-center gap-3 text-xs text-slate-400">
+                            <span>{{ c.unique_users }} utenti</span>
+                            <span class="font-bold text-slate-100 bg-slate-800 px-2 py-0.5 rounded-lg">{{ c.count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h2 class="text-base font-bold mb-3">Interazioni UI (Callback)</h2>
+                <div v-if="!data.top_callbacks.length" class="text-xs text-slate-500">Nessuna callback registrata nel periodo.</div>
+                <div v-else class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    <div v-for="cb in data.top_callbacks" :key="cb.name" class="flex items-center justify-between bg-slate-950/60 border border-slate-800/80 rounded-xl px-3.5 py-2 text-sm">
+                        <span class="font-mono font-bold text-amber-300">{{ cb.name }}</span>
+                        <div class="flex items-center gap-3 text-xs text-slate-400">
+                            <span>{{ cb.unique_users }} utenti</span>
+                            <span class="font-bold text-slate-100 bg-slate-800 px-2 py-0.5 rounded-lg">{{ cb.count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hourly Heatmap -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 overflow-x-auto">
+            <h2 class="text-base font-bold">Heatmap Oraria (Giorno × Ora)</h2>
+            <div class="min-w-[640px] space-y-1">
+                <div class="grid grid-cols-[48px_repeat(24,minmax(0,1fr))] gap-1 text-[10px] font-mono text-slate-500 text-center">
+                    <span></span>
+                    <span v-for="h in 24" :key="h">{{ String(h - 1).padStart(2, '0') }}</span>
+                </div>
+                <div v-for="(row, dIdx) in data.hourly_heatmap" :key="dIdx" class="grid grid-cols-[48px_repeat(24,minmax(0,1fr))] gap-1 items-center">
+                    <span class="text-xs font-semibold text-slate-400">{{ dayLabels[dIdx] }}</span>
+                    <div v-for="(val, hIdx) in row" :key="hIdx"
+                         class="h-6 rounded-md transition"
+                         :style="{ backgroundColor: heatColor(val) }"
+                         :title="`${dayLabels[dIdx]} ${String(hIdx).padStart(2, '0')}:00 — ${val} eventi`">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Users & Recent Events -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h2 class="text-base font-bold mb-3">Utenti più attivi</h2>
+                <div v-if="!data.top_users.length" class="text-xs text-slate-500">Nessun dato utente nel periodo.</div>
+                <div v-else class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="py-2">Utente</th>
+                                <th class="py-2 text-right">Cmd</th>
+                                <th class="py-2 text-right">Btn</th>
+                                <th class="py-2 text-right">Giochi</th>
+                                <th class="py-2 text-right">Ultimo</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            <tr v-for="u in data.top_users" :key="u.user_id">
+                                <td class="py-2 font-semibold text-slate-200">{{ u.name }}</td>
+                                <td class="py-2 text-right font-mono text-sky-400">{{ u.commands }}</td>
+                                <td class="py-2 text-right font-mono text-amber-400">{{ u.callbacks }}</td>
+                                <td class="py-2 text-right font-mono text-emerald-400">{{ u.scores }}</td>
+                                <td class="py-2 text-right font-mono text-slate-400">{{ u.last_seen }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                    <h2 class="text-base font-bold">Eventi Recenti</h2>
+                    <select v-model="eventFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-semibold">
+                        <option value="all">Tutti</option>
+                        <option value="command">Comandi</option>
+                        <option value="callback">Callback</option>
+                        <option value="score">Giocate</option>
+                        <option value="error">Errori</option>
+                    </select>
+                </div>
+                <div class="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                    <div v-for="(ev, idx) in filteredEvents" :key="idx" class="flex items-center justify-between gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
+                        <div class="min-w-0">
+                            <span class="px-1.5 py-0.5 rounded font-mono text-[10px] mr-1.5" :class="badgeClass(ev.event_type)">{{ ev.event_type }}</span>
+                            <span class="font-semibold text-slate-200">{{ ev.user_name }}</span>
+                            <span class="text-slate-400 mx-1">→</span>
+                            <span class="font-mono text-slate-100">{{ ev.name }}</span>
+                            <span v-if="ev.detail" class="text-slate-500 ml-1 truncate">({{ ev.detail }})</span>
+                        </div>
+                        <span class="font-mono text-[10px] text-slate-500 shrink-0">{{ ev.time_str.slice(5, 16) }}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+</div>
+
+<script>
+const { createApp } = Vue;
+createApp({
+    data() {
+        return {
+            token: localStorage.getItem('giochini_admin_token') || '',
+            tokenInput: '',
+            authenticated: false,
+            authError: '',
+            days: 30,
+            data: null,
+            eventFilter: 'all',
+            dayLabels: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
+        };
+    },
+    computed: {
+        maxDailyTotal() {
+            if (!this.data || !this.data.daily_series.length) return 1;
+            return Math.max(1, ...this.data.daily_series.map(d => d.commands + d.callbacks + d.scores));
+        },
+        maxHeatVal() {
+            if (!this.data) return 1;
+            return Math.max(1, ...this.data.hourly_heatmap.flat());
+        },
+        filteredEvents() {
+            if (!this.data) return [];
+            if (this.eventFilter === 'all') return this.data.recent_events;
+            return this.data.recent_events.filter(e => e.event_type === this.eventFilter);
+        },
+    },
+    methods: {
+        async login() {
+            this.authError = '';
+            this.token = this.tokenInput.trim();
+            const ok = await this.fetchOverview();
+            if (ok) {
+                localStorage.setItem('giochini_admin_token', this.token);
+            } else {
+                localStorage.removeItem('giochini_admin_token');
+                this.token = '';
+            }
+        },
+        logout() {
+            localStorage.removeItem('giochini_admin_token');
+            this.token = '';
+            this.tokenInput = '';
+            this.authenticated = false;
+            this.data = null;
+        },
+        async fetchOverview() {
+            if (!this.token) return false;
+            try {
+                const res = await fetch(`/api/admin/overview/?days=${this.days}`, {
+                    headers: { 'X-Admin-Token': this.token },
+                });
+                if (res.status === 401) {
+                    this.authenticated = false;
+                    this.authError = 'Token non valido.';
+                    return false;
+                }
+                if (!res.ok) return false;
+                this.data = await res.json();
+                this.authenticated = true;
+                return true;
+            } catch (e) {
+                this.authError = 'Errore di rete.';
+                return false;
+            }
+        },
+        barHeight(val) {
+            return `${Math.round((val / this.maxDailyTotal) * 100)}%`;
+        },
+        heatColor(val) {
+            if (!val) return 'rgba(148, 163, 184, 0.1)';
+            const ratio = val / this.maxHeatVal;
+            if (ratio <= 0.25) return '#0c4a6e';
+            if (ratio <= 0.5) return '#0369a1';
+            if (ratio <= 0.75) return '#0ea5e9';
+            return '#7dd3fc';
+        },
+        badgeClass(t) {
+            if (t === 'command') return 'bg-sky-500/20 text-sky-300';
+            if (t === 'callback') return 'bg-amber-500/20 text-amber-300';
+            if (t === 'score') return 'bg-emerald-500/20 text-emerald-300';
+            return 'bg-rose-500/20 text-rose-300';
+        },
+    },
+    mounted() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('token')) {
+            this.token = params.get('token');
+            localStorage.setItem('giochini_admin_token', this.token);
+        }
+        if (this.token) {
+            this.fetchOverview();
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>

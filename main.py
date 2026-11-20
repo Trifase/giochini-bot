@@ -72,6 +72,7 @@ from utils import (
     ensure_gioco_bonus_schema,
     ensure_punteggi_pk_migration,
     ensure_utenti_schema_and_backfill,
+    BotEvent,
     Utente,
     get_display_names,
     get_day_from_date,
@@ -87,6 +88,7 @@ from utils import (
     sync_reenabled_game_bonuses,
     group_stats,
     longest_streak,
+    log_bot_event,
     make_buttons,
     medaglie_count,
     personal_stats,
@@ -339,6 +341,15 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     chat_id = effective_chat.id if effective_chat else None
     link_chat_id = str(chat_id).replace("-100", "") if chat_id is not None else ""
     message_id = effective_message.message_id if effective_message and effective_message.message_id else None
+
+    effective_user = getattr(update, "effective_user", None)
+    log_bot_event(
+        "error",
+        type(context.error).__name__ if context.error else "Error",
+        user_id=effective_user.id if effective_user else None,
+        chat_id=chat_id,
+        detail=str(context.error)[:200] if context.error else None,
+    )
 
     emoji_link = ''
     if link_chat_id and message_id:
@@ -806,6 +817,13 @@ async def parse_punteggio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             extra=result.get("stars", None),
             streak=streak + 1,
             lost=play_is_lost,
+        )
+        log_bot_event(
+            "score",
+            result["name"],
+            user_id=int(result["user_id"]),
+            chat_id=int(update.message.chat.id),
+            detail=f"#{result['day']}",
         )
 
         # Check if this is a disabled game and notify the user
@@ -2489,6 +2507,7 @@ async def post_init(app: Application) -> None:
     ensure_punteggi_pk_migration()
     ensure_utenti_schema_and_backfill()
     ensure_gioco_bonus_schema()
+    BotEvent.create_table(safe=True)
     # Setting.create_table()
     
     sync_disabled_games()
@@ -2531,6 +2550,24 @@ async def sync_telegram_user(update: Update, context: ContextTypes.DEFAULT_TYPE)
             update.effective_user.full_name,
             update.effective_user.username,
         )
+    uid = update.effective_user.id if update.effective_user else None
+    cid = update.effective_chat.id if update.effective_chat else None
+    if update.message and update.message.text and update.message.text.startswith("/"):
+        parts = update.message.text.split(maxsplit=1)
+        cmd = parts[0].split("@")[0].lower()
+        detail = parts[1].strip()[:200] if len(parts) > 1 else None
+        log_bot_event("command", cmd, user_id=uid, chat_id=cid, detail=detail)
+    elif update.callback_query and update.callback_query.data:
+        cb_data = update.callback_query.data
+        if cb_data.startswith("myonly_more"):
+            cb_name = "myonly_more"
+        elif cb_data.startswith("cls_"):
+            cb_name = "cls_nav"
+        elif cb_data.startswith("favs"):
+            cb_name = "favs"
+        else:
+            cb_name = cb_data.split("_")[0][:40]
+        log_bot_event("callback", cb_name, user_id=uid, chat_id=cid, detail=cb_data[:120])
 
 
 class RetryingHTTPXRequest(HTTPXRequest):

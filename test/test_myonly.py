@@ -7,14 +7,14 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from config import Punteggio, Medaglia
-from utils import PuntiBonus, GiocoBonus, GameStatus
+from utils import PuntiBonus, GiocoBonus, GameStatus, BotEvent
 from main import myonly, myonly_full, myscore, extract_ephemeral_id, mytoday, mytoday_full
 
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
     test_db = peewee.SqliteDatabase(":memory:")
-    models = [Punteggio, Medaglia, PuntiBonus, GiocoBonus, GameStatus]
+    models = [Punteggio, Medaglia, PuntiBonus, GiocoBonus, GameStatus, BotEvent]
     test_db.bind(models, bind_refs=False, bind_backrefs=False)
     test_db.connect()
     test_db.create_tables(models)
@@ -403,4 +403,42 @@ async def test_myscore_sorts_by_medal_and_shows_counts():
     text = message.reply_text.call_args.args[0]
     assert text.index("Wordle") < text.index("Bandle") < text.index("Angle")
     assert "🥇 1  🥈 1  🥉 0" in text
+
+
+@pytest.mark.anyio
+async def test_sync_telegram_user_logs_commands_and_callbacks():
+    from main import sync_telegram_user
+
+    user = MagicMock()
+    user.id = 777
+    user.full_name = "Tester"
+    user.username = "tester"
+    chat = MagicMock()
+    chat.id = -1001
+
+    msg = MagicMock()
+    msg.text = "/c@giochini_bot Wordle"
+    upd_cmd = MagicMock()
+    upd_cmd.effective_user = user
+    upd_cmd.effective_chat = chat
+    upd_cmd.message = msg
+    upd_cmd.callback_query = None
+
+    await sync_telegram_user(upd_cmd, MagicMock())
+
+    cq = MagicMock()
+    cq.data = "myonly_more_777_99"
+    upd_cb = MagicMock()
+    upd_cb.effective_user = user
+    upd_cb.effective_chat = chat
+    upd_cb.message = None
+    upd_cb.callback_query = cq
+
+    await sync_telegram_user(upd_cb, MagicMock())
+
+    events = list(BotEvent.select().order_by(BotEvent.id.asc()))
+    assert [(e.event_type, e.name, e.detail) for e in events] == [
+        ("command", "/c", "Wordle"),
+        ("callback", "myonly_more", "myonly_more_777_99"),
+    ]
 

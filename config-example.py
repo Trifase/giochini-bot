@@ -103,6 +103,22 @@ class Utente(peewee.Model):
         table_name = "utenti"
 
 
+class BotEvent(peewee.Model):
+    id = peewee.AutoField()
+    date = peewee.DateField(index=True)
+    timestamp = peewee.IntegerField(index=True)
+    chat_id = peewee.IntegerField(null=True)
+    user_id = peewee.IntegerField(null=True, index=True)
+    event_type = peewee.TextField(index=True)
+    name = peewee.TextField(index=True)
+    detail = peewee.TextField(null=True)
+    duration_ms = peewee.IntegerField(null=True)
+
+    class Meta:
+        database = db
+        table_name = "bot_events"
+
+
 # ==========================================
 # GIOCO BONUS DEL GIORNO (JOLLY)
 # ==========================================
