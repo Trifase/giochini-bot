@@ -679,8 +679,8 @@ def test_award_daily_play_milestones():
     assert award_daily_play_milestones(100, "Mario", 10, target) == [(10, 2)]
     # Idempotent on repeat
     assert award_daily_play_milestones(100, "Mario", 15, target) == []
-    assert award_daily_play_milestones(100, "Mario", 20, target) == [(20, 3)]
-    assert award_daily_play_milestones(100, "Mario", 50, target) == [(50, 5)]
+    assert award_daily_play_milestones(100, "Mario", 20, target) == [(20, 2)]
+    assert award_daily_play_milestones(100, "Mario", 50, target) == [(30, 2), (40, 2), (50, 2)]
 
     total_bonus = (
         PuntiBonus.select(peewee.fn.SUM(PuntiBonus.punti))

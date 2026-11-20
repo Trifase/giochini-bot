@@ -267,11 +267,7 @@ def sync_user(user_id: int | None, user_name: str | None, username: str | None =
         pass
 
 
-DAILY_PLAY_MILESTONES = (
-    (10, 2),
-    (20, 3),
-    (50, 5),
-)
+DAILY_PLAY_MILESTONES = tuple((n, 2) for n in range(10, 51, 10))
 
 
 def award_daily_play_milestones(
@@ -280,7 +276,7 @@ def award_daily_play_milestones(
     game_played_today: int,
     target_date: datetime.date | None = None,
 ) -> list[tuple[int, int]]:
-    """Grant PuntiBonus for daily play milestones (10->+2, 20->+3, 50->+5; total 10), idempotently."""
+    """Grant PuntiBonus (+2 every 10 plays up to 50; total +10), idempotently."""
     if target_date is None:
         target_date = datetime.date.today()
 
