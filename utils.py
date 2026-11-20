@@ -745,6 +745,8 @@ class Classifica:
             "participation": self._score_participation_bonus,
             "bonus-partecipazione": self._score_participation_bonus,
             "bonus_partecipazione": self._score_participation_bonus,
+            "olympic-gold": self._score_olympic_gold,
+            "olympic_gold": self._score_olympic_gold,
         }
         
         scoring_function = scoring_models.get(model)
@@ -763,6 +765,10 @@ class Classifica:
         stelle_assegnate = {1: 3, 2: 2, 3: 1}
         for g in self.giocate:
             g.stelle = stelle_assegnate.get(g.posizione, 0)
+
+    def _score_olympic_gold(self):
+        for g in self.giocate:
+            g.stelle = 1 if (not g.lost and g.posizione == 1) else 0
 
     def _score_alternate(self):
         valid_players = [g for g in self.giocate if not g.lost]

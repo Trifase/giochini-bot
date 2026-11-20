@@ -323,6 +323,12 @@ async def algorithm_comparison(day: str | None = None):
             "badge": "No Persi",
             "description": "Progressivo fino a 3 punti (3, 2, 1) conteggiando solo ed esclusivamente le partite vinte/valide.",
         },
+        {
+            "id": "olympic-gold",
+            "title": "Olympic Gold",
+            "badge": "Solo Ori",
+            "description": "1 punto solo a chi conquista la medaglia d'oro (1° posto), 0 punti a tutti gli altri.",
+        },
     ]
 
     comparisons = []

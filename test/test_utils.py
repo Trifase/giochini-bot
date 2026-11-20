@@ -690,3 +690,19 @@ def test_award_daily_play_milestones():
     assert total_bonus == 10
 
 
+def test_olympic_gold_scoring():
+    from utils import Classifica, Giocata
+
+    cl = Classifica(game="Wordle", day="100", date=datetime.date(2026, 11, 20), emoji="🟩")
+    cl.giocate = [
+        Giocata(user_id=1, user_name="Gold1", tries=2, game="Wordle", extra=0),
+        Giocata(user_id=2, user_name="Gold2", tries=2, game="Wordle", extra=0),
+        Giocata(user_id=3, user_name="Bronze", tries=4, game="Wordle", extra=0),
+        Giocata(user_id=4, user_name="Lost", tries=9999999, game="Wordle", extra=0),
+    ]
+    cl.order_and_position()
+    cl.assign_stars("olympic-gold")
+    by_name = {g.user_name: g.stelle for g in cl.giocate}
+    assert by_name == {"Gold1": 1, "Gold2": 1, "Bronze": 0, "Lost": 0}
+
+
