@@ -4468,8 +4468,8 @@ class SizeItUp(Giochino):
 class Spellcheck(Giochino):
     _name = "Spellcheck"
     _category = "Giochi di parole"
-    _date = datetime.date(2024, 3, 9)
-    _day = "57"
+    _date = datetime.date(2026, 11, 20)
+    _day = "1043"
     _emoji = "👂"
     _url = "https://www.ted.com/games/spellcheck"
 
