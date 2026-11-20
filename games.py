@@ -4471,34 +4471,61 @@ class Spellcheck(Giochino):
     _date = datetime.date(2024, 3, 9)
     _day = "57"
     _emoji = "👂"
-    _url = "https://spellcheck.xyz"
+    _url = "https://www.ted.com/games/spellcheck"
 
     can_lose: False
     disabled: bool = False
+
+    _MONTHS = {
+        "january": 1, "february": 2, "march": 3, "april": 4,
+        "may": 5, "june": 6, "july": 7, "august": 8,
+        "september": 9, "october": 10, "november": 11, "december": 12,
+    }
 
     examples = [
         "Spellcheck #75\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
         "Spellcheck #74\n🟩🟥🟩🟥🟩\n🟩🟩🟩🟩🟩\n🟩🟥🟥🟥🟥",
         "Spellcheck #87\n🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥\n\nhttps://spellcheckgame.com/",
+        "Spellcheck: (November 20, 2026)\n1️⃣✅❌❌❌✅\n2️⃣✅✅✅✅✅✅✅\n3️⃣✅\n4️⃣✅\n\nWord points: 277\nFinal multiplier: x2.5\nFinal score: 693\n\nThink you can do better?\nhttps://www.ted.com/games/spellcheck?utm_campaign=tedspread&utm_medium=referral&utm_source=tedcomshare",
     ]
     expected = [
         {"day": "75", "name": "Spellcheck", "timestamp": 10, "tries": 0, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "74", "name": "Spellcheck", "timestamp": 10, "tries": 6, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "87", "name": "Spellcheck", "timestamp": 10, "tries": 15, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "1043", "name": "Spellcheck", "timestamp": 10, "tries": -693, "user_id": 456481297, "user_name": "Trifase"},
     ]
 
     @staticmethod
     def can_handle_this(raw_text):
-        wordlist = ["Spellcheck #"]
-        _can_handle_this = all(w in raw_text for w in wordlist)
-        return _can_handle_this
+        if "Spellcheck #" in raw_text:
+            return True
+        return bool(
+            re.search(r"Spellcheck:\s*\([A-Za-z]+\s+\d+,\s+\d{4}\)", raw_text)
+            and re.search(r"Final score:\s*\d+", raw_text, re.IGNORECASE)
+        )
 
     def parse(self):
         text = self.raw_text
         day_match = re.search(r"Spellcheck #(\d+)", text)
-        self.day = day_match.group(1) if day_match else None
+        if day_match:
+            self.day = day_match.group(1)
+            self.tries = 15 - text.count("🟩")
+            self.stars = None
+            return
 
-        self.tries = 15 - text.count("🟩")
+        date_match = re.search(r"Spellcheck:\s*\(([A-Za-z]+)\s+(\d+),\s+(\d{4})\)", text)
+        if date_match:
+            month = self._MONTHS.get(date_match.group(1).lower())
+            if month:
+                parsed_date = datetime.date(int(date_match.group(3)), month, int(date_match.group(2)))
+                self.day = get_day_from_date(self._date, self._day, "Spellcheck", parsed_date)
+            else:
+                self.day = None
+        else:
+            self.day = None
+
+        score_match = re.search(r"Final score:\s*(\d+)", text, re.IGNORECASE)
+        self.tries = -int(score_match.group(1)) if score_match else None
         self.stars = None
 
 

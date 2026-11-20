@@ -1151,9 +1151,9 @@ def process_tries(game: str, tries: int | str) -> int | str:
     if game == "FoodGuessr":
         tries = 15_000 - tries
 
-    # For Spellcheck, scores are green squares, the more the better. Max points is 15 so we save them as differences from max.
+    # For Spellcheck: legacy scores are stored as 15 - green squares (>= 0); new TED format stores -final_score (< 0).
     if game == "Spellcheck":
-        tries = 15 - tries
+        tries = abs(int(tries)) if int(tries) < 0 else 15 - int(tries)
 
     # For Waffle, scores are stars/swaps remaining out of 5. Max swaps is 15 so we save them as differences from max.
     if game == "Waffle":
