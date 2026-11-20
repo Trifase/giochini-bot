@@ -14,9 +14,8 @@ from utils import GiocoBonus
 @pytest.mark.anyio
 async def test_daily_reminder_with_bonus():
     mock_bot = MagicMock()
-    mock_post = MagicMock()
-    mock_post.pin = AsyncMock()
-    mock_bot.send_message = AsyncMock(return_value=mock_post)
+    mock_bot.send_message = AsyncMock()
+    mock_bot.pin_chat_message = AsyncMock()
 
     context = MagicMock()
     context.bot = mock_bot
@@ -27,48 +26,52 @@ async def test_daily_reminder_with_bonus():
         multiplier=3,
     )
 
-    with patch("main.get_bonus_game", return_value=fake_bonus), patch("main.pick_or_get_bonus_game", return_value=fake_bonus):
+    with (
+        patch("main.get_bonus_game", return_value=fake_bonus),
+        patch("main.pick_or_get_bonus_game", return_value=fake_bonus),
+        patch("main.send_long_message", new=AsyncMock(return_value={"ok": True, "result": {"message_id": 123}})) as mock_rich,
+    ):
         await daily_reminder(context, pin=True)
 
-    assert mock_bot.send_message.called
-    first_call_args = mock_bot.send_message.call_args_list[0]
-    message_text = first_call_args.kwargs["text"]
+    assert mock_rich.called
+    message_text = mock_rich.call_args.kwargs["message"]
 
     assert "🎰 <b>Gioco Jolly di oggi (3x):</b>" in message_text
     assert "Wordle" in message_text
     assert "<b>[🎰 3x]</b>" in message_text
-    assert mock_post.pin.called
+    mock_bot.pin_chat_message.assert_awaited_once()
 
 
 @pytest.mark.anyio
 async def test_daily_reminder_without_bonus():
     mock_bot = MagicMock()
-    mock_post = MagicMock()
-    mock_post.pin = AsyncMock()
-    mock_bot.send_message = AsyncMock(return_value=mock_post)
+    mock_bot.send_message = AsyncMock()
+    mock_bot.pin_chat_message = AsyncMock()
 
     context = MagicMock()
     context.bot = mock_bot
 
-    with patch("main.get_bonus_game", return_value=None), patch("main.pick_or_get_bonus_game", return_value=None):
+    with (
+        patch("main.get_bonus_game", return_value=None),
+        patch("main.pick_or_get_bonus_game", return_value=None),
+        patch("main.send_long_message", new=AsyncMock(return_value={"ok": True, "result": {"message_id": 123}})) as mock_rich,
+    ):
         await daily_reminder(context, pin=False)
 
-    assert mock_bot.send_message.called
-    first_call_args = mock_bot.send_message.call_args_list[0]
-    message_text = first_call_args.kwargs["text"]
+    assert mock_rich.called
+    message_text = mock_rich.call_args.kwargs["message"]
 
     assert "Buongiorno, ecco a cosa si gioca oggi!" in message_text
     assert "🎰 <b>Gioco Jolly di oggi" not in message_text
     assert "[🎰" not in message_text
-    assert not mock_post.pin.called
+    assert not mock_bot.pin_chat_message.called
 
 
 @pytest.mark.anyio
 async def test_daily_reminder_with_new_games():
     mock_bot = MagicMock()
-    mock_post = MagicMock()
-    mock_post.pin = AsyncMock()
-    mock_bot.send_message = AsyncMock(return_value=mock_post)
+    mock_bot.send_message = AsyncMock()
+    mock_bot.pin_chat_message = AsyncMock()
 
     context = MagicMock()
     context.bot = mock_bot
@@ -84,10 +87,11 @@ async def test_daily_reminder_with_new_games():
         patch("main.get_bonus_game", return_value=fake_bonus),
         patch("main.pick_or_get_bonus_game", return_value=fake_bonus),
         patch("main.get_new_games_for_date", return_value=fake_new),
+        patch("main.send_long_message", new=AsyncMock(return_value={"ok": True, "result": {"message_id": 123}})) as mock_rich,
     ):
         await daily_reminder(context, pin=False)
 
-    message_text = mock_bot.send_message.call_args_list[0].kwargs["text"]
+    message_text = mock_rich.call_args.kwargs["message"]
     assert "🆕 <b>Giochi nuovi (2x):</b>" in message_text
     assert "Bordivide" in message_text
     assert "Extraplot" in message_text

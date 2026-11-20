@@ -2345,11 +2345,17 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE, pin=True) -> None:
     # for game in GAMES.keys():
     #     day = get_day_from_date(GAMES[game]['date'], GAMES[game]['day'], game, datetime.date.today())
     #     message += f'<a href="{GAMES[game]["url"]}">{GAMES[game]["emoji"]} {game} #{day}</a>\n'
-    mypost = await context.bot.send_message(chat_id=ID_GIOCHINI, text=message, disable_web_page_preview=True, parse_mode="HTML")
+    resp = await send_long_message(
+        bot_token=TOKEN,
+        chat_id=ID_GIOCHINI,
+        message=message.strip(),
+    )
     message2 = '<a href="https://trifase.online/giochini">★ Classifiche online! ★</a>'
     await context.bot.send_message(chat_id=ID_GIOCHINI, text=message2, disable_web_page_preview=True, parse_mode="HTML")
     if pin:
-        await mypost.pin(disable_notification=True)
+        msg_id = resp.get("result", {}).get("message_id") if isinstance(resp, dict) else None
+        if msg_id:
+            await context.bot.pin_chat_message(chat_id=ID_GIOCHINI, message_id=msg_id, disable_notification=True)
 
 
 async def new_games_reminder(context: ContextTypes.DEFAULT_TYPE) -> bool:
