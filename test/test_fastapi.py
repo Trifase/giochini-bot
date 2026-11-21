@@ -262,7 +262,8 @@ def test_api_username_change_decoupling():
 
 
 def test_api_admin_overview_auth_and_aggregation(monkeypatch):
-    from utils import log_bot_event
+    from datetime import date, timedelta
+    from utils import log_bot_event, GiocoBonus
     import config as cfg
 
     monkeypatch.setattr(cfg, "ADMIN_DASHBOARD_TOKEN", "secret-admin-123", raising=False)
@@ -271,7 +272,15 @@ def test_api_admin_overview_auth_and_aggregation(monkeypatch):
     assert client.get("/api/admin/overview/").status_code == 401
     assert client.get("/api/admin/overview/", headers={"X-Admin-Token": "wrong"}).status_code == 401
 
+    today = date.today()
+    yesterday = today - timedelta(days=1)
     Utente.replace(user_id=10, user_name="Mario", username="mario").execute()
+    Utente.replace(user_id=11, user_name="Luigi", username="luigi").execute()
+    GiocoBonus.create(date=today, game="Wordle", multiplier=2, bonus_type="jolly")
+    Punteggio.create(chat_id=-1, message_id=1, user_id=10, user_name="Mario", game="Wordle", day=100, tries="3", date=today, timestamp=100)
+    Punteggio.create(chat_id=-1, message_id=2, user_id=11, user_name="Luigi", game="Wordle", day=100, tries="4", date=today, timestamp=101)
+    Punteggio.create(chat_id=-1, message_id=3, user_id=10, user_name="Mario", game="Wordle", day=99, tries="4", date=yesterday, timestamp=90)
+
     log_bot_event("command", "/myday", user_id=10, chat_id=-1)
     log_bot_event("command", "/myday", user_id=10, chat_id=-1)
     log_bot_event("callback", "myonly_more", user_id=10, chat_id=-1, detail="myonly_more_10")
@@ -287,6 +296,16 @@ def test_api_admin_overview_auth_and_aggregation(monkeypatch):
     assert data["top_commands"][0] == {"name": "/myday", "count": 2, "unique_users": 1}
     assert data["top_callbacks"][0] == {"name": "myonly_more", "count": 1, "unique_users": 1}
     assert data["top_users"][0]["name"] == "Mario"
+    assert ":" in data["top_users"][0]["peak_hour"]
+
+    be = data["bonus_effectiveness"]
+    assert be["summary"]["total_bonus_days"] == 1
+    assert be["summary"]["total_bonus_plays"] == 2
+    assert len(be["games"]) == 1
+    assert be["games"][0]["game"] == "Wordle"
+    assert be["games"][0]["bonus_plays"] == 2
+    assert be["games"][0]["normal_plays"] == 1
+    assert be["games"][0]["avg_bonus"] == 2.0
 
     html_res = client.get("/admin")
     assert html_res.status_code == 200
@@ -298,6 +317,9 @@ def test_api_admin_overview_auth_and_aggregation(monkeypatch):
     ue_data = ue_res.json()
     assert ue_data["user_name"] == "Mario"
     assert len(ue_data["events"]) == 4
+    assert len(ue_data["hourly_counts"]) == 24
+    assert sum(ue_data["hourly_counts"]) == 4
+    assert len(ue_data["peak_hours"]) >= 1
     assert all("time_str" in e and "event_type" in e for e in ue_data["events"])
 
     assert client.get("/api/admin/command-events/?name=/myday&event_type=command").status_code == 401

@@ -802,6 +802,113 @@ def _require_admin(request: Request, token: str | None = None) -> None:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
+def _compute_bonus_effectiveness(start_date: date, today: date) -> dict:
+    """Compare average daily plays on bonus/new-game days vs normal days in [start_date, today]."""
+    GiocoBonus.create_table(safe=True)
+    Punteggio.create_table(safe=True)
+
+    bonus_rows = list(
+        GiocoBonus.select().where(GiocoBonus.date >= start_date, GiocoBonus.date <= today)
+    )
+    if not bonus_rows:
+        return {
+            "summary": {
+                "total_bonus_days": 0,
+                "total_bonus_plays": 0,
+                "avg_bonus_overall": 0.0,
+                "avg_normal_overall": 0.0,
+                "lift_pct_overall": 0,
+            },
+            "games": [],
+        }
+
+    bonus_by_game: dict[str, dict] = {}
+    for gb in bonus_rows:
+        d_str = gb.date.isoformat() if isinstance(gb.date, date) else str(gb.date)
+        entry = bonus_by_game.setdefault(
+            gb.game,
+            {"bonus_dates": set(), "types": set(), "max_mult": 1, "bonus_plays": 0, "normal_plays": 0},
+        )
+        entry["bonus_dates"].add(d_str)
+        entry["types"].add(getattr(gb, "bonus_type", "jolly") or "jolly")
+        entry["max_mult"] = max(entry["max_mult"], gb.multiplier or 1)
+
+    play_rows = list(
+        Punteggio.select(
+            Punteggio.game,
+            Punteggio.date,
+            peewee.fn.COUNT(Punteggio.user_id).alias("cnt"),
+        )
+        .where(
+            Punteggio.date >= start_date,
+            Punteggio.date <= today,
+            Punteggio.game.in_(list(bonus_by_game.keys())),
+        )
+        .group_by(Punteggio.game, Punteggio.date)
+    )
+
+    for row in play_rows:
+        d_str = row.date.isoformat() if isinstance(row.date, date) else str(row.date)
+        entry = bonus_by_game.get(row.game)
+        if not entry:
+            continue
+        if d_str in entry["bonus_dates"]:
+            entry["bonus_plays"] += row.cnt
+        else:
+            entry["normal_plays"] += row.cnt
+
+    total_days = max(1, (today - start_date).days + 1)
+    games_list = []
+    sum_bonus_days = 0
+    sum_bonus_plays = 0
+    sum_normal_days = 0
+    sum_normal_plays = 0
+
+    for game_name, entry in bonus_by_game.items():
+        b_days = len(entry["bonus_dates"])
+        n_days = max(0, total_days - b_days)
+        b_plays = entry["bonus_plays"]
+        n_plays = entry["normal_plays"]
+        avg_b = round(b_plays / b_days, 1) if b_days else 0.0
+        avg_n = round(n_plays / n_days, 1) if n_days else 0.0
+        lift_pct = round(((avg_b - avg_n) / avg_n) * 100) if avg_n > 0 else (100 if avg_b > 0 else 0)
+
+        sum_bonus_days += b_days
+        sum_bonus_plays += b_plays
+        sum_normal_days += n_days
+        sum_normal_plays += n_plays
+
+        games_list.append({
+            "game": game_name,
+            "emoji": GAMES.get(game_name, {}).get("emoji", "🎮"),
+            "bonus_types": sorted(entry["types"]),
+            "max_multiplier": entry["max_mult"],
+            "bonus_days": b_days,
+            "normal_days": n_days,
+            "bonus_plays": b_plays,
+            "normal_plays": n_plays,
+            "avg_bonus": avg_b,
+            "avg_normal": avg_n,
+            "lift_pct": lift_pct,
+        })
+
+    games_list.sort(key=lambda g: (g["lift_pct"], g["bonus_plays"]), reverse=True)
+    avg_b_all = round(sum_bonus_plays / sum_bonus_days, 1) if sum_bonus_days else 0.0
+    avg_n_all = round(sum_normal_plays / sum_normal_days, 1) if sum_normal_days else 0.0
+    lift_all = round(((avg_b_all - avg_n_all) / avg_n_all) * 100) if avg_n_all > 0 else (100 if avg_b_all > 0 else 0)
+
+    return {
+        "summary": {
+            "total_bonus_days": sum_bonus_days,
+            "total_bonus_plays": sum_bonus_plays,
+            "avg_bonus_overall": avg_b_all,
+            "avg_normal_overall": avg_n_all,
+            "lift_pct_overall": lift_all,
+        },
+        "games": games_list,
+    }
+
+
 @app.get("/admin/overview/")
 @app.get("/api/admin/overview/")
 async def admin_overview(request: Request, days: int = 30, token: str | None = None):
@@ -906,7 +1013,7 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
         if uid is not None:
             u_entry = user_stats.setdefault(
                 uid,
-                {"user_id": uid, "commands": 0, "callbacks": 0, "scores": 0, "total": 0, "last_ts": 0},
+                {"user_id": uid, "commands": 0, "callbacks": 0, "scores": 0, "total": 0, "last_ts": 0, "hours": [0] * 24},
             )
             if ev.event_type == "command":
                 u_entry["commands"] += 1
@@ -916,6 +1023,7 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
                 u_entry["scores"] += 1
             if ev.event_type != "error":
                 u_entry["total"] += 1
+                u_entry["hours"][datetime.fromtimestamp(ev.timestamp).hour] += 1
             if ev.timestamp > u_entry["last_ts"]:
                 u_entry["last_ts"] = ev.timestamp
 
@@ -976,6 +1084,7 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
                 "callbacks": v["callbacks"],
                 "scores": v["scores"],
                 "total": v["total"],
+                "peak_hour": f"{max(range(24), key=lambda h: v['hours'][h]):02d}:00" if v["total"] > 0 else "—",
                 "last_seen": datetime.fromtimestamp(v["last_ts"]).strftime("%Y-%m-%d %H:%M") if v["last_ts"] else "",
             }
             for uid, v in user_stats.items()
@@ -983,6 +1092,8 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
         key=lambda x: x["total"],
         reverse=True,
     )
+
+    bonus_effectiveness = _compute_bonus_effectiveness(start_date, today)
 
     return {
         "days": days,
@@ -1001,6 +1112,7 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
         "top_callbacks": top_callbacks,
         "top_users": top_users,
         "hourly_heatmap": hourly_heatmap,
+        "bonus_effectiveness": bonus_effectiveness,
         "recent_events": recent_events,
         "recent_errors": recent_errors,
     }
@@ -1022,6 +1134,21 @@ async def admin_user_events(
 
     BotEvent.create_table(safe=True)
     start_date = date.today() - timedelta(days=days - 1)
+    all_user_rows = list(
+        BotEvent.select(BotEvent.timestamp, BotEvent.event_type)
+        .where(BotEvent.user_id == user_id, BotEvent.date >= start_date)
+    )
+    hourly_counts = [0] * 24
+    for ev in all_user_rows:
+        if ev.event_type != "error":
+            hourly_counts[datetime.fromtimestamp(ev.timestamp).hour] += 1
+
+    peak_hours = [
+        {"hour": h, "label": f"{h:02d}:00", "count": hourly_counts[h]}
+        for h in sorted(range(24), key=lambda x: hourly_counts[x], reverse=True)
+        if hourly_counts[h] > 0
+    ][:3]
+
     rows = list(
         BotEvent.select()
         .where(BotEvent.user_id == user_id, BotEvent.date >= start_date)
@@ -1033,6 +1160,8 @@ async def admin_user_events(
         "user_id": user_id,
         "user_name": resolve_display_name(user_id, str(user_id)),
         "days": days,
+        "hourly_counts": hourly_counts,
+        "peak_hours": peak_hours,
         "events": [
             {
                 "timestamp": ev.timestamp,

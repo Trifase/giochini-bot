@@ -199,6 +199,65 @@
             </div>
         </section>
 
+        <!-- Bonus & New Games Effectiveness -->
+        <section v-if="data.bonus_effectiveness" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-bold">Efficacia Giochi Bonus &amp; Nuovi Giochi</h2>
+                    <p class="text-xs text-slate-400">Confronto giocate medie giornaliere nei giorni bonus/nuovi vs giorni normali nel periodo</p>
+                </div>
+                <div v-if="data.bonus_effectiveness.summary.total_bonus_days" class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono">
+                        Bonus: <strong class="text-amber-300">{{ data.bonus_effectiveness.summary.avg_bonus_overall }}/g</strong>
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono">
+                        Normale: <strong class="text-slate-200">{{ data.bonus_effectiveness.summary.avg_normal_overall }}/g</strong>
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg font-mono font-bold"
+                          :class="data.bonus_effectiveness.summary.lift_pct_overall >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'">
+                        {{ data.bonus_effectiveness.summary.lift_pct_overall >= 0 ? '+' : '' }}{{ data.bonus_effectiveness.summary.lift_pct_overall }}%
+                    </span>
+                </div>
+            </div>
+            <div v-if="!data.bonus_effectiveness.games.length" class="text-xs text-slate-500">Nessun gioco bonus o nuovo gioco registrato nel periodo.</div>
+            <div v-else class="overflow-x-auto max-h-80 overflow-y-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="py-2">Gioco</th>
+                            <th class="py-2">Tipo</th>
+                            <th class="py-2 text-right">Gg Bonus</th>
+                            <th class="py-2 text-right">Giocate Bonus</th>
+                            <th class="py-2 text-right">Media Bonus/g</th>
+                            <th class="py-2 text-right">Media Normale/g</th>
+                            <th class="py-2 text-right">Lift</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        <tr v-for="g in data.bonus_effectiveness.games" :key="g.game" class="hover:bg-slate-800/40">
+                            <td class="py-2 font-semibold text-slate-100">{{ g.emoji }} {{ g.game }}</td>
+                            <td class="py-2">
+                                <span v-for="t in g.bonus_types" :key="t"
+                                      class="px-1.5 py-0.5 rounded font-mono text-[10px] mr-1"
+                                      :class="t === 'new_game' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-amber-500/20 text-amber-300'">
+                                    {{ t === 'new_game' ? 'nuovo' : 'jolly' }}
+                                </span>
+                                <span class="font-mono text-[10px] text-slate-400">x{{ g.max_multiplier }}</span>
+                            </td>
+                            <td class="py-2 text-right font-mono text-slate-300">{{ g.bonus_days }}</td>
+                            <td class="py-2 text-right font-mono text-amber-300">{{ g.bonus_plays }}</td>
+                            <td class="py-2 text-right font-mono font-bold text-slate-100">{{ g.avg_bonus }}</td>
+                            <td class="py-2 text-right font-mono text-slate-400">{{ g.avg_normal }}</td>
+                            <td class="py-2 text-right font-mono font-bold"
+                                :class="g.lift_pct >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                                {{ g.lift_pct >= 0 ? '+' : '' }}{{ g.lift_pct }}%
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- Users & Recent Events -->
         <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
@@ -212,6 +271,7 @@
                                 <th class="py-2 text-right">Cmd</th>
                                 <th class="py-2 text-right">Btn</th>
                                 <th class="py-2 text-right">Giochi</th>
+                                <th class="py-2 text-right">Picco</th>
                                 <th class="py-2 text-right">Ultimo</th>
                             </tr>
                         </thead>
@@ -224,6 +284,7 @@
                                 <td class="py-2 text-right font-mono text-sky-400">{{ u.commands }}</td>
                                 <td class="py-2 text-right font-mono text-amber-400">{{ u.callbacks }}</td>
                                 <td class="py-2 text-right font-mono text-emerald-400">{{ u.scores }}</td>
+                                <td class="py-2 text-right font-mono text-indigo-300">{{ u.peak_hour || '—' }}</td>
                                 <td class="py-2 text-right font-mono text-slate-400">{{ u.last_seen }}</td>
                             </tr>
                         </tbody>
@@ -277,15 +338,40 @@
                 </div>
             </div>
             <div v-if="loadingUserEvents" class="text-xs text-slate-400 py-4">Caricamento eventi...</div>
-            <div v-else-if="!filteredUserEvents.length" class="text-xs text-slate-500 py-2">Nessun evento trovato.</div>
-            <div v-else class="space-y-1.5 max-h-96 overflow-y-auto pr-1">
-                <div v-for="(ev, idx) in filteredUserEvents" :key="idx" class="flex items-center justify-between gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
-                    <div class="min-w-0">
-                        <span class="px-1.5 py-0.5 rounded font-mono text-[10px] mr-1.5" :class="badgeClass(ev.event_type)">{{ ev.event_type }}</span>
-                        <span class="font-mono text-slate-100 font-semibold">{{ ev.name }}</span>
-                        <span v-if="ev.detail" class="text-slate-400 ml-1.5">({{ ev.detail }})</span>
+            <div v-else class="space-y-3">
+                <div v-if="userHourlyCounts.some(v => v > 0)" class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span class="font-semibold text-slate-300">Orari di picco ({{ days }}g)</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span v-for="pk in userPeakHours" :key="pk.hour" class="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono text-[11px]">
+                                {{ pk.label }} ({{ pk.count }})
+                            </span>
+                        </div>
                     </div>
-                    <span class="font-mono text-[11px] text-slate-400 shrink-0">{{ ev.time_str }}</span>
+                    <div class="grid grid-cols-[repeat(24,minmax(0,1fr))] gap-1 items-end h-14 pt-1">
+                        <div v-for="(cnt, h) in userHourlyCounts" :key="h"
+                             class="flex flex-col items-center justify-end h-full"
+                             :title="`${String(h).padStart(2, '0')}:00 — ${cnt} eventi`">
+                            <div class="w-full rounded-t transition-all"
+                                 :class="userPeakHours.length && h === userPeakHours[0].hour ? 'bg-indigo-400' : (cnt > 0 ? 'bg-sky-500/60' : 'bg-slate-800/70')"
+                                 :style="{ height: cnt > 0 ? Math.max(12, Math.round((cnt / maxUserHourVal) * 100)) + '%' : '3px' }">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-[repeat(24,minmax(0,1fr))] gap-1 text-[9px] font-mono text-slate-500 text-center">
+                        <span v-for="h in 24" :key="h">{{ (h - 1) % 3 === 0 ? String(h - 1).padStart(2, '0') : '' }}</span>
+                    </div>
+                </div>
+                <div v-if="!filteredUserEvents.length" class="text-xs text-slate-500 py-2">Nessun evento trovato.</div>
+                <div v-else class="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+                    <div v-for="(ev, idx) in filteredUserEvents" :key="idx" class="flex items-center justify-between gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
+                        <div class="min-w-0">
+                            <span class="px-1.5 py-0.5 rounded font-mono text-[10px] mr-1.5" :class="badgeClass(ev.event_type)">{{ ev.event_type }}</span>
+                            <span class="font-mono text-slate-100 font-semibold">{{ ev.name }}</span>
+                            <span v-if="ev.detail" class="text-slate-400 ml-1.5">({{ ev.detail }})</span>
+                        </div>
+                        <span class="font-mono text-[11px] text-slate-400 shrink-0">{{ ev.time_str }}</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -332,6 +418,8 @@ createApp({
             eventFilter: 'all',
             selectedUser: null,
             userEvents: [],
+            userHourlyCounts: Array(24).fill(0),
+            userPeakHours: [],
             userEventFilter: 'all',
             loadingUserEvents: false,
             selectedCommand: null,
@@ -348,6 +436,9 @@ createApp({
         maxHeatVal() {
             if (!this.data) return 1;
             return Math.max(1, ...this.data.hourly_heatmap.flat());
+        },
+        maxUserHourVal() {
+            return Math.max(1, ...this.userHourlyCounts);
         },
         filteredEvents() {
             if (!this.data) return [];
@@ -423,6 +514,8 @@ createApp({
                 if (res.ok) {
                     const payload = await res.json();
                     this.userEvents = payload.events || [];
+                    this.userHourlyCounts = payload.hourly_counts || Array(24).fill(0);
+                    this.userPeakHours = payload.peak_hours || [];
                 }
             } finally {
                 this.loadingUserEvents = false;
