@@ -948,7 +948,7 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
     cmd_stats: dict[str, dict] = {}
     cb_stats: dict[str, dict] = {}
     user_stats: dict[int, dict] = {}
-    hourly_heatmap = [[0 for _ in range(24)] for _ in range(7)]
+    hourly_heatmap = [[0 for _ in range(48)] for _ in range(7)]
 
     commands_period = 0
     callbacks_period = 0
@@ -1008,7 +1008,8 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
 
         if ev.event_type != "error":
             dt_obj = datetime.fromtimestamp(ev.timestamp)
-            hourly_heatmap[dt_obj.weekday()][dt_obj.hour] += 1
+            slot_30m = dt_obj.hour * 2 + (1 if dt_obj.minute >= 30 else 0)
+            hourly_heatmap[dt_obj.weekday()][slot_30m] += 1
 
         if uid is not None:
             u_entry = user_stats.setdefault(

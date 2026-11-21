@@ -297,6 +297,8 @@ def test_api_admin_overview_auth_and_aggregation(monkeypatch):
     assert data["top_callbacks"][0] == {"name": "myonly_more", "count": 1, "unique_users": 1}
     assert data["top_users"][0]["name"] == "Mario"
     assert ":" in data["top_users"][0]["peak_hour"]
+    assert len(data["hourly_heatmap"]) == 7
+    assert len(data["hourly_heatmap"][0]) == 48
 
     be = data["bonus_effectiveness"]
     assert be["summary"]["total_bonus_days"] == 1
