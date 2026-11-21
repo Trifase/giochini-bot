@@ -176,8 +176,11 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">
-                            <tr v-for="u in data.top_users" :key="u.user_id">
-                                <td class="py-2 font-semibold text-slate-200">{{ u.name }}</td>
+                            <tr v-for="u in data.top_users" :key="u.user_id"
+                                @click="selectUser(u)"
+                                class="cursor-pointer hover:bg-slate-800/50 transition"
+                                :class="selectedUser && selectedUser.user_id === u.user_id ? 'bg-indigo-950/50' : ''">
+                                <td class="py-2 font-semibold text-indigo-300 hover:underline">{{ u.name }}</td>
                                 <td class="py-2 text-right font-mono text-sky-400">{{ u.commands }}</td>
                                 <td class="py-2 text-right font-mono text-amber-400">{{ u.callbacks }}</td>
                                 <td class="py-2 text-right font-mono text-emerald-400">{{ u.scores }}</td>
@@ -203,13 +206,46 @@
                     <div v-for="(ev, idx) in filteredEvents" :key="idx" class="flex items-center justify-between gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
                         <div class="min-w-0">
                             <span class="px-1.5 py-0.5 rounded font-mono text-[10px] mr-1.5" :class="badgeClass(ev.event_type)">{{ ev.event_type }}</span>
-                            <span class="font-semibold text-slate-200">{{ ev.user_name }}</span>
+                            <button v-if="ev.user_id" @click="selectUser({ user_id: ev.user_id, name: ev.user_name })" class="font-semibold text-indigo-300 hover:underline">{{ ev.user_name }}</button>
+                            <span v-else class="font-semibold text-slate-200">{{ ev.user_name }}</span>
                             <span class="text-slate-400 mx-1">→</span>
                             <span class="font-mono text-slate-100">{{ ev.name }}</span>
                             <span v-if="ev.detail" class="text-slate-500 ml-1 truncate">({{ ev.detail }})</span>
                         </div>
                         <span class="font-mono text-[10px] text-slate-500 shrink-0">{{ ev.time_str.slice(5, 16) }}</span>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Selected User Events Drilldown -->
+        <section v-if="selectedUser" id="user-events-panel" class="bg-slate-900 border border-indigo-500/40 rounded-2xl p-5 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-bold text-indigo-300">Dettaglio Eventi: {{ selectedUser.name }}</h2>
+                    <p class="text-xs text-slate-400">Ultimi {{ days }} giorni (max 200 eventi, dal più recente)</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select v-model="userEventFilter" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-semibold">
+                        <option value="all">Tutti ({{ userEvents.length }})</option>
+                        <option value="command">Comandi</option>
+                        <option value="callback">Callback</option>
+                        <option value="score">Giocate</option>
+                        <option value="error">Errori</option>
+                    </select>
+                    <button @click="selectedUser = null" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">✕ Chiudi</button>
+                </div>
+            </div>
+            <div v-if="loadingUserEvents" class="text-xs text-slate-400 py-4">Caricamento eventi...</div>
+            <div v-else-if="!filteredUserEvents.length" class="text-xs text-slate-500 py-2">Nessun evento trovato.</div>
+            <div v-else class="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+                <div v-for="(ev, idx) in filteredUserEvents" :key="idx" class="flex items-center justify-between gap-2 bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-2 text-xs">
+                    <div class="min-w-0">
+                        <span class="px-1.5 py-0.5 rounded font-mono text-[10px] mr-1.5" :class="badgeClass(ev.event_type)">{{ ev.event_type }}</span>
+                        <span class="font-mono text-slate-100 font-semibold">{{ ev.name }}</span>
+                        <span v-if="ev.detail" class="text-slate-400 ml-1.5">({{ ev.detail }})</span>
+                    </div>
+                    <span class="font-mono text-[11px] text-slate-400 shrink-0">{{ ev.time_str }}</span>
                 </div>
             </div>
         </section>
@@ -228,6 +264,10 @@ createApp({
             days: 30,
             data: null,
             eventFilter: 'all',
+            selectedUser: null,
+            userEvents: [],
+            userEventFilter: 'all',
+            loadingUserEvents: false,
             dayLabels: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
         };
     },
@@ -244,6 +284,10 @@ createApp({
             if (!this.data) return [];
             if (this.eventFilter === 'all') return this.data.recent_events;
             return this.data.recent_events.filter(e => e.event_type === this.eventFilter);
+        },
+        filteredUserEvents() {
+            if (this.userEventFilter === 'all') return this.userEvents;
+            return this.userEvents.filter(e => e.event_type === this.userEventFilter);
         },
     },
     methods: {
@@ -279,10 +323,37 @@ createApp({
                 if (!res.ok) return false;
                 this.data = await res.json();
                 this.authenticated = true;
+                if (this.selectedUser) {
+                    this.fetchUserEvents(this.selectedUser.user_id);
+                }
                 return true;
             } catch (e) {
                 this.authError = 'Errore di rete.';
                 return false;
+            }
+        },
+        selectUser(u) {
+            this.selectedUser = u;
+            this.userEventFilter = 'all';
+            this.fetchUserEvents(u.user_id);
+            this.$nextTick(() => {
+                const el = document.getElementById('user-events-panel');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        },
+        async fetchUserEvents(userId) {
+            if (!this.token || !userId) return;
+            this.loadingUserEvents = true;
+            try {
+                const res = await fetch(`/api/admin/user-events/?user_id=${userId}&days=${this.days}`, {
+                    headers: { 'X-Admin-Token': this.token },
+                });
+                if (res.ok) {
+                    const payload = await res.json();
+                    this.userEvents = payload.events || [];
+                }
+            } finally {
+                this.loadingUserEvents = false;
             }
         },
         barHeight(val) {

@@ -1006,6 +1006,46 @@ async def admin_overview(request: Request, days: int = 30, token: str | None = N
     }
 
 
+@app.get("/admin/user-events/")
+@app.get("/api/admin/user-events/")
+async def admin_user_events(
+    request: Request,
+    user_id: int,
+    days: int = 30,
+    limit: int = 200,
+    token: str | None = None,
+):
+    """Return chronological (newest first) bot events for a specific user."""
+    _require_admin(request, token)
+    days = max(1, min(days, 365))
+    limit = max(1, min(limit, 1000))
+
+    BotEvent.create_table(safe=True)
+    start_date = date.today() - timedelta(days=days - 1)
+    rows = list(
+        BotEvent.select()
+        .where(BotEvent.user_id == user_id, BotEvent.date >= start_date)
+        .order_by(BotEvent.timestamp.desc(), BotEvent.id.desc())
+        .limit(limit)
+    )
+
+    return {
+        "user_id": user_id,
+        "user_name": resolve_display_name(user_id, str(user_id)),
+        "days": days,
+        "events": [
+            {
+                "timestamp": ev.timestamp,
+                "time_str": datetime.fromtimestamp(ev.timestamp).strftime("%Y-%m-%d %H:%M:%S"),
+                "event_type": ev.event_type,
+                "name": ev.name,
+                "detail": ev.detail,
+            }
+            for ev in rows
+        ],
+    }
+
+
 # Direct web shortcuts
 @app.get("/", include_in_schema=False)
 async def serve_root():

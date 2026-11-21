@@ -292,3 +292,11 @@ def test_api_admin_overview_auth_and_aggregation(monkeypatch):
     assert html_res.status_code == 200
     assert "Giochini Admin Analytics" in html_res.text
 
+    assert client.get("/api/admin/user-events/?user_id=10").status_code == 401
+    ue_res = client.get("/api/admin/user-events/?user_id=10&days=7", headers={"X-Admin-Token": "secret-admin-123"})
+    assert ue_res.status_code == 200
+    ue_data = ue_res.json()
+    assert ue_data["user_name"] == "Mario"
+    assert len(ue_data["events"]) == 4
+    assert all("time_str" in e and "event_type" in e for e in ue_data["events"])
+
