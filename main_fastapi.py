@@ -1140,9 +1140,13 @@ async def admin_user_events(
         .where(BotEvent.user_id == user_id, BotEvent.date >= start_date)
     )
     hourly_counts = [0] * 24
+    hourly_heatmap = [[0 for _ in range(48)] for _ in range(7)]
     for ev in all_user_rows:
         if ev.event_type != "error":
-            hourly_counts[datetime.fromtimestamp(ev.timestamp).hour] += 1
+            dt_obj = datetime.fromtimestamp(ev.timestamp)
+            hourly_counts[dt_obj.hour] += 1
+            slot_30m = dt_obj.hour * 2 + (1 if dt_obj.minute >= 30 else 0)
+            hourly_heatmap[dt_obj.weekday()][slot_30m] += 1
 
     peak_hours = [
         {"hour": h, "label": f"{h:02d}:00", "count": hourly_counts[h]}
@@ -1162,6 +1166,7 @@ async def admin_user_events(
         "user_name": resolve_display_name(user_id, str(user_id)),
         "days": days,
         "hourly_counts": hourly_counts,
+        "hourly_heatmap": hourly_heatmap,
         "peak_hours": peak_hours,
         "events": [
             {

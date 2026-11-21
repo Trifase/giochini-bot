@@ -321,6 +321,8 @@ def test_api_admin_overview_auth_and_aggregation(monkeypatch):
     assert len(ue_data["events"]) == 4
     assert len(ue_data["hourly_counts"]) == 24
     assert sum(ue_data["hourly_counts"]) == 4
+    assert len(ue_data["hourly_heatmap"]) == 7
+    assert len(ue_data["hourly_heatmap"][0]) == 48
     assert len(ue_data["peak_hours"]) >= 1
     assert all("time_str" in e and "event_type" in e for e in ue_data["events"])
 
