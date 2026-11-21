@@ -1046,6 +1046,52 @@ async def admin_user_events(
     }
 
 
+@app.get("/admin/command-events/")
+@app.get("/api/admin/command-events/")
+async def admin_command_events(
+    request: Request,
+    name: str,
+    event_type: str = "command",
+    days: int = 30,
+    limit: int = 200,
+    token: str | None = None,
+):
+    """Return chronological (newest first) usage events for a specific command or callback."""
+    _require_admin(request, token)
+    days = max(1, min(days, 365))
+    limit = max(1, min(limit, 1000))
+
+    BotEvent.create_table(safe=True)
+    start_date = date.today() - timedelta(days=days - 1)
+    rows = list(
+        BotEvent.select()
+        .where(
+            BotEvent.event_type == event_type,
+            BotEvent.name == name,
+            BotEvent.date >= start_date,
+        )
+        .order_by(BotEvent.timestamp.desc(), BotEvent.id.desc())
+        .limit(limit)
+    )
+    display_names = get_display_names(ev.user_id for ev in rows if ev.user_id is not None)
+
+    return {
+        "name": name,
+        "event_type": event_type,
+        "days": days,
+        "events": [
+            {
+                "timestamp": ev.timestamp,
+                "time_str": datetime.fromtimestamp(ev.timestamp).strftime("%Y-%m-%d %H:%M:%S"),
+                "user_id": ev.user_id,
+                "user_name": display_names.get(ev.user_id, str(ev.user_id)) if ev.user_id else "Sistema",
+                "detail": ev.detail,
+            }
+            for ev in rows
+        ],
+    }
+
+
 # Direct web shortcuts
 @app.get("/", include_in_schema=False)
 async def serve_root():

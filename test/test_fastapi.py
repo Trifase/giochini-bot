@@ -300,3 +300,15 @@ def test_api_admin_overview_auth_and_aggregation(monkeypatch):
     assert len(ue_data["events"]) == 4
     assert all("time_str" in e and "event_type" in e for e in ue_data["events"])
 
+    assert client.get("/api/admin/command-events/?name=/myday&event_type=command").status_code == 401
+    ce_res = client.get(
+        "/api/admin/command-events/?name=/myday&event_type=command&days=7",
+        headers={"X-Admin-Token": "secret-admin-123"},
+    )
+    assert ce_res.status_code == 200
+    ce_data = ce_res.json()
+    assert ce_data["name"] == "/myday"
+    assert ce_data["event_type"] == "command"
+    assert len(ce_data["events"]) >= 1
+    assert all("time_str" in e and "user_name" in e for e in ce_data["events"])
+

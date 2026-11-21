@@ -75,8 +75,8 @@
                     {{ data.kpis.callbacks_period }} <span class="text-slate-600">/</span> {{ data.kpis.scores_period }}
                 </div>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                <div class="text-xs text-slate-400 font-semibold">Errori ({{ days }}g)</div>
+            <div @click="focusErrors" class="bg-slate-900 border border-slate-800 hover:border-rose-500/40 rounded-2xl p-4 cursor-pointer transition">
+                <div class="text-xs text-slate-400 font-semibold">Errori ({{ days }}g) — clicca per dettagli</div>
                 <div class="text-2xl font-black mt-1" :class="data.kpis.errors_period > 0 ? 'text-rose-400' : 'text-slate-300'">
                     {{ data.kpis.errors_period }}
                 </div>
@@ -115,7 +115,10 @@
                 <h2 class="text-base font-bold mb-3">Comandi più usati</h2>
                 <div v-if="!data.top_commands.length" class="text-xs text-slate-500">Nessun comando registrato nel periodo.</div>
                 <div v-else class="space-y-2 max-h-80 overflow-y-auto pr-1">
-                    <div v-for="c in data.top_commands" :key="c.name" class="flex items-center justify-between bg-slate-950/60 border border-slate-800/80 rounded-xl px-3.5 py-2 text-sm">
+                    <div v-for="c in data.top_commands" :key="c.name"
+                         @click="selectCommand(c.name, 'command')"
+                         class="flex items-center justify-between bg-slate-950/60 hover:bg-slate-800/60 border border-slate-800/80 rounded-xl px-3.5 py-2 text-sm cursor-pointer transition"
+                         :class="selectedCommand && selectedCommand.name === c.name && selectedCommand.event_type === 'command' ? 'border-sky-500/60 bg-sky-950/30' : ''">
                         <span class="font-mono font-bold text-sky-300">{{ c.name }}</span>
                         <div class="flex items-center gap-3 text-xs text-slate-400">
                             <span>{{ c.unique_users }} utenti</span>
@@ -129,7 +132,10 @@
                 <h2 class="text-base font-bold mb-3">Interazioni UI (Callback)</h2>
                 <div v-if="!data.top_callbacks.length" class="text-xs text-slate-500">Nessuna callback registrata nel periodo.</div>
                 <div v-else class="space-y-2 max-h-80 overflow-y-auto pr-1">
-                    <div v-for="cb in data.top_callbacks" :key="cb.name" class="flex items-center justify-between bg-slate-950/60 border border-slate-800/80 rounded-xl px-3.5 py-2 text-sm">
+                    <div v-for="cb in data.top_callbacks" :key="cb.name"
+                         @click="selectCommand(cb.name, 'callback')"
+                         class="flex items-center justify-between bg-slate-950/60 hover:bg-slate-800/60 border border-slate-800/80 rounded-xl px-3.5 py-2 text-sm cursor-pointer transition"
+                         :class="selectedCommand && selectedCommand.name === cb.name && selectedCommand.event_type === 'callback' ? 'border-amber-500/60 bg-amber-950/30' : ''">
                         <span class="font-mono font-bold text-amber-300">{{ cb.name }}</span>
                         <div class="flex items-center gap-3 text-xs text-slate-400">
                             <span>{{ cb.unique_users }} utenti</span>
@@ -137,6 +143,40 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Selected Command / Callback Drilldown -->
+        <section v-if="selectedCommand" id="command-events-panel" class="bg-slate-900 border border-sky-500/40 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-bold text-sky-300">Dettaglio {{ selectedCommand.event_type === 'command' ? 'Comando' : 'Callback' }}: <span class="font-mono">{{ selectedCommand.name }}</span></h2>
+                    <p class="text-xs text-slate-400">Chi lo ha usato negli ultimi {{ days }} giorni ({{ commandEvents.length }} utilizzi)</p>
+                </div>
+                <button @click="selectedCommand = null" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">✕ Chiudi</button>
+            </div>
+            <div v-if="loadingCommandEvents" class="text-xs text-slate-400 py-3">Caricamento...</div>
+            <div v-else-if="!commandEvents.length" class="text-xs text-slate-500 py-2">Nessun utilizzo trovato.</div>
+            <div v-else class="overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="py-2">Data / Ora</th>
+                            <th class="py-2">Utente</th>
+                            <th class="py-2">Dettaglio / Argomenti</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        <tr v-for="(ev, idx) in commandEvents" :key="idx" class="hover:bg-slate-800/40">
+                            <td class="py-2 font-mono text-slate-400 whitespace-nowrap pr-4">{{ ev.time_str }}</td>
+                            <td class="py-2 pr-4">
+                                <button v-if="ev.user_id" @click="selectUser({ user_id: ev.user_id, name: ev.user_name })" class="font-semibold text-indigo-300 hover:underline">{{ ev.user_name }}</button>
+                                <span v-else class="text-slate-300">{{ ev.user_name }}</span>
+                            </td>
+                            <td class="py-2 font-mono text-slate-300">{{ ev.detail || '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
@@ -249,6 +289,32 @@
                 </div>
             </div>
         </section>
+
+        <!-- Recent Errors -->
+        <section id="errors-panel" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h2 class="text-base font-bold text-rose-300">Errori Recenti ({{ data.recent_errors.length }})</h2>
+            <div v-if="!data.recent_errors.length" class="text-xs text-slate-500">Nessun errore registrato nel periodo.</div>
+            <div v-else class="overflow-x-auto max-h-72 overflow-y-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="py-2">Data / Ora</th>
+                            <th class="py-2">Tipo</th>
+                            <th class="py-2">Utente</th>
+                            <th class="py-2">Messaggio</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        <tr v-for="(er, idx) in data.recent_errors" :key="idx">
+                            <td class="py-2 font-mono text-slate-400 whitespace-nowrap pr-4">{{ er.time_str }}</td>
+                            <td class="py-2 font-mono text-rose-400 font-semibold pr-4">{{ er.name }}</td>
+                            <td class="py-2 text-slate-300 pr-4">{{ er.user_name }}</td>
+                            <td class="py-2 font-mono text-slate-400">{{ er.detail || '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </template>
 </div>
 
@@ -268,6 +334,9 @@ createApp({
             userEvents: [],
             userEventFilter: 'all',
             loadingUserEvents: false,
+            selectedCommand: null,
+            commandEvents: [],
+            loadingCommandEvents: false,
             dayLabels: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
         };
     },
@@ -326,6 +395,9 @@ createApp({
                 if (this.selectedUser) {
                     this.fetchUserEvents(this.selectedUser.user_id);
                 }
+                if (this.selectedCommand) {
+                    this.fetchCommandEvents(this.selectedCommand.name, this.selectedCommand.event_type);
+                }
                 return true;
             } catch (e) {
                 this.authError = 'Errore di rete.';
@@ -355,6 +427,33 @@ createApp({
             } finally {
                 this.loadingUserEvents = false;
             }
+        },
+        selectCommand(name, eventType) {
+            this.selectedCommand = { name, event_type: eventType };
+            this.fetchCommandEvents(name, eventType);
+            this.$nextTick(() => {
+                const el = document.getElementById('command-events-panel');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        },
+        async fetchCommandEvents(name, eventType) {
+            if (!this.token || !name) return;
+            this.loadingCommandEvents = true;
+            try {
+                const res = await fetch(`/api/admin/command-events/?name=${encodeURIComponent(name)}&event_type=${encodeURIComponent(eventType)}&days=${this.days}`, {
+                    headers: { 'X-Admin-Token': this.token },
+                });
+                if (res.ok) {
+                    const payload = await res.json();
+                    this.commandEvents = payload.events || [];
+                }
+            } finally {
+                this.loadingCommandEvents = false;
+            }
+        },
+        focusErrors() {
+            const el = document.getElementById('errors-panel');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         },
         barHeight(val) {
             return `${Math.round((val / this.maxDailyTotal) * 100)}%`;
