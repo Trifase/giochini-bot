@@ -634,13 +634,15 @@ class Catfishing(Giochino):
         "catfishing.net\n#709 - 2.5/10\n🐟🐟🥚🐟🥚\n🐟🥚🐈🐟🐟",
         "catfishing.net\n#736 - 2/10\n🐈🐟🐟🐟🐈\n🐟🐟🐟🐟🐟",
         "catfishing.net\n#701 - 5/10\n🐟🐈🐈🐟🐟\n🐈🐈🐟🐟🐈",
-        "catfishing.net\n#702 - 1/10\n🐟🐈🐟🐟🐟\n🐟🐟🐟🐟🐟"
+        "catfishing.net\n#702 - 1/10\n🐟🐈🐟🐟🐟\n🐟🐟🐟🐟🐟",
+        "catfishing.net\n#703 - 0/10\n🐟🐟🐟🐟🐟\n🐟🐟🐟🐟🐟"
     ]
     expected = [
         {"day": "709", "name": "Catfishing", "timestamp": 10, "tries": 75, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "736", "name": "Catfishing", "timestamp": 10, "tries": 80, "user_id": 456481297, "user_name": "Trifase"},
         {"day": "701", "name": "Catfishing", "timestamp": 10, "tries": 50, "user_id": 456481297, "user_name": "Trifase"},
-        {"day": "702", "name": "Catfishing", "timestamp": 10, "tries": 90, "user_id": 456481297, "user_name": "Trifase"}
+        {"day": "702", "name": "Catfishing", "timestamp": 10, "tries": 90, "user_id": 456481297, "user_name": "Trifase"},
+        {"day": "703", "name": "Catfishing", "timestamp": 10, "tries": "X", "user_id": 456481297, "user_name": "Trifase"}
     ]
 
     @staticmethod
@@ -657,7 +659,7 @@ class Catfishing(Giochino):
         score_match = re.search(r"(\d+(?:\.\d+)?)/10", text)
         if score_match:
             score = float(score_match.group(1))
-            self.tries = int(100 - (score * 10))
+            self.tries = "X" if score <= 0 else int(100 - (score * 10))
         else:
             self.tries = None
         self.stars = None
