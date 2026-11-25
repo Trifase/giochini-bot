@@ -442,3 +442,40 @@ async def test_sync_telegram_user_logs_commands_and_callbacks():
         ("callback", "myonly_more", "myonly_more_777_99"),
     ]
 
+
+@pytest.mark.anyio
+async def test_ranking_shows_games_played_instead_of_bonus():
+    import datetime
+    from config import ID_GIOCHINI
+    from main import classifica_istantanea
+    from utils import PuntiBonus
+    from games import ALL_GAMES, get_day_from_date
+
+    today = datetime.date.today()
+    w_day = str(get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today))
+    a_day = str(get_day_from_date(ALL_GAMES["Angle"]["date"], ALL_GAMES["Angle"]["day"], "Angle", today))
+
+    Punteggio.create(date=today, timestamp=100, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario", game="Wordle", day=w_day, tries=2, lost=False)
+    Punteggio.create(date=today, timestamp=101, chat_id=ID_GIOCHINI, user_id=2, user_name="Luigi", game="Wordle", day=w_day, tries=4, lost=False)
+    Punteggio.create(date=today, timestamp=102, chat_id=ID_GIOCHINI, user_id=3, user_name="Peach", game="Wordle", day=w_day, tries=6, lost=False)
+    Punteggio.create(date=today, timestamp=103, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario", game="Angle", day=a_day, tries=3, lost=False)
+    Punteggio.create(date=today, timestamp=104, chat_id=ID_GIOCHINI, user_id=2, user_name="Luigi", game="Angle", day=a_day, tries=5, lost=False)
+    Punteggio.create(date=today, timestamp=105, chat_id=ID_GIOCHINI, user_id=3, user_name="Peach", game="Angle", day=a_day, tries=7, lost=False)
+
+    PuntiBonus.create_table(safe=True)
+    PuntiBonus.create(date=today, user_id=1, user_name="Mario", punti=5, reason="test", timestamp=104)
+
+    message = MagicMock()
+    message.reply_text = AsyncMock()
+    message.delete = AsyncMock()
+    update = MagicMock()
+    update.message = message
+    context = MagicMock()
+    context.job_queue = MagicMock()
+
+    await classifica_istantanea(update, context)
+    text = message.reply_text.call_args.args[0]
+    assert "Mario (2)" in text
+    assert "Luigi (2)" in text
+    assert "(+5)" not in text
+

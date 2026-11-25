@@ -2284,18 +2284,25 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     # elif "-allow-ex-aequo" in context.args:
     #     model = "allow-ex-aequo"
 
+    today = datetime.date.today()
     classifica_stelle = daily_ranking(model)
-    # print(cambiamenti)
+    plays_by_uid = {
+        int(row.user_id): int(row.plays)
+        for row in (
+            Punteggio.select(Punteggio.user_id, peewee.fn.COUNT(Punteggio.game).alias("plays"))
+            .where(Punteggio.date == today)
+            .group_by(Punteggio.user_id)
+        )
+    }
 
     message = "Ecco la classifica temporanea di oggi:\n\n"
 
     for position, user_id, user_name, stelle, *rest in classifica_stelle:
-        bonus = rest[0] if rest else 0
         stelle_val = int(stelle)
         stelle_formatted = f"  {stelle_val}" if stelle_val < 10 else f"{stelle_val}"
-        bonus_str = f" ({'+' if bonus > 0 else ''}{bonus})" if bonus != 0 else ""
+        plays_count = plays_by_uid.get(int(user_id), 0)
 
-        message += f"{stelle_formatted}{STAR_SYMBOL} {user_name}{bonus_str}\n"
+        message += f"{stelle_formatted}{STAR_SYMBOL} {user_name} ({plays_count})\n"
 
     await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
 
