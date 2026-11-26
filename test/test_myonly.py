@@ -483,3 +483,48 @@ async def test_ranking_shows_games_played_instead_of_bonus():
     assert "Luigi (2)" in text
     assert "(+5)" not in text
 
+
+@pytest.mark.anyio
+async def test_mostplayed_ephemeral_top10_unplayed():
+    import datetime
+    from config import ID_GIOCHINI
+    from main import mostplayed
+    from games import ALL_GAMES, get_day_from_date
+
+    today = datetime.date.today()
+    w_day = str(get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today))
+    a_day = str(get_day_from_date(ALL_GAMES["Angle"]["date"], ALL_GAMES["Angle"]["day"], "Angle", today))
+    b_day = str(get_day_from_date(ALL_GAMES["Bandle"]["date"], ALL_GAMES["Bandle"]["day"], "Bandle", today))
+
+    # Wordle: 3 players, user 999 has NOT played -> should be #1
+    for uid in (1, 2, 3):
+        Punteggio.create(date=today, timestamp=100 + uid, chat_id=ID_GIOCHINI, user_id=uid, user_name=f"P{uid}", game="Wordle", day=w_day, tries=3, lost=False)
+    # Angle: 2 players, user 999 has NOT played -> should be #2
+    for uid in (1, 2):
+        Punteggio.create(date=today, timestamp=200 + uid, chat_id=ID_GIOCHINI, user_id=uid, user_name=f"P{uid}", game="Angle", day=a_day, tries=3, lost=False)
+    # Bandle: 4 players, user 999 HAS played -> must be excluded
+    for uid in (1, 2, 3, 999):
+        Punteggio.create(date=today, timestamp=300 + uid, chat_id=ID_GIOCHINI, user_id=uid, user_name=f"P{uid}", game="Bandle", day=b_day, tries=3, lost=False)
+
+    user = MagicMock()
+    user.id = 999
+    message = MagicMock()
+    message.message_id = 55
+    message.ephemeral_message_id = "eph_55"
+    message.reply_text = AsyncMock()
+    update = MagicMock()
+    update.message = message
+    update.effective_user = user
+    context = MagicMock()
+
+    await mostplayed(update, context)
+
+    assert message.reply_text.await_count == 1
+    kwargs = message.reply_text.call_args.kwargs
+    text = message.reply_text.call_args.args[0]
+    assert kwargs["api_kwargs"] == {"ephemeral_message_parameters": {"receiver_user_id": 999}}
+    assert "Wordle" in text and "(3)" in text
+    assert "Angle" in text and "(2)" in text
+    assert "Bandle" not in text
+    assert text.index("Wordle") < text.index("Angle")
+

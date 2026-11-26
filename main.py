@@ -420,6 +420,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "<b>🎮 Oggi</b>",
         "📌 /myday - Giochi a cui non hai ancora giocato oggi",
         "📌 /myscore - Tuo punteggio e piazzamenti di oggi",
+        "📌 /mostplayed - Top 10 giochi che ti mancano più giocati oggi",
         "📌 /bonus - Giochi bonus attivi oggi (Jolly e Nuovi)",
         "📌 /favs - Scegli i tuoi giochi preferiti",
         "📌 /<i>nomegioco</i> - Link rapido al gioco di oggi (es. <code>/connections</code>, dura 5s)",
@@ -1992,6 +1993,75 @@ async def myscore(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+async def mostplayed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show ephemeral top 10 unplayed active games today ordered by player count descending."""
+    if not update.message or not update.effective_user:
+        return
+
+    user_id = int(update.effective_user.id)
+    today = datetime.date.today()
+    bonuses_by_game = get_all_bonuses_for_date(today, auto_pick_jolly=True)
+
+    active_games = [g for g in GAMES.keys() if not GAMES[g].get("disabled", False)]
+    expected_days = {
+        g: str(int(get_day_from_date(GAMES[g]["date"], GAMES[g]["day"], g, today)))
+        for g in active_games
+    }
+
+    players_by_game: dict[str, set[int]] = {g: set() for g in active_games}
+    if expected_days:
+        rows = Punteggio.select(Punteggio.game, Punteggio.day, Punteggio.user_id).where(
+            Punteggio.chat_id == ID_GIOCHINI,
+            Punteggio.game.in_(active_games),
+            Punteggio.day.in_(list(set(expected_days.values()))),
+        )
+        for row in rows:
+            if expected_days.get(row.game) == str(row.day):
+                players_by_game[row.game].add(int(row.user_id))
+
+    unplayed = [
+        (g, len(players_by_game[g]))
+        for g in active_games
+        if user_id not in players_by_game[g] and len(players_by_game[g]) > 0
+    ]
+    unplayed.sort(key=lambda item: (-item[1], item[0]))
+    top10 = unplayed[:10]
+
+    if not top10:
+        if all(user_id in players_by_game[g] for g in active_games):
+            message = "🥳 Hai già giocato a tutti i giochi attivi di oggi!"
+        else:
+            message = "Nessuno ha ancora giocato oggi ai giochi che ti mancano."
+    else:
+        lines = ["🔥 <b>Top 10 giochi che ti mancano oggi (più giocati):</b>\n"]
+        for idx, (game_name, count) in enumerate(top10, start=1):
+            g_info = GAMES[game_name]
+            emoji = g_info.get("emoji", "🎮")
+            url = g_info.get("url", "")
+            link = f'<a href="{url}">{emoji} {game_name}</a>' if url else f"{emoji} {game_name}"
+            mult, b_type = bonuses_by_game.get(game_name, (1, None))
+            badge = format_bonus_badge(mult, b_type)
+            lines.append(f"{idx}. {link}{badge} ({count})")
+        message = "\n".join(lines)
+
+    eph_id = getattr(update.message, "ephemeral_message_id", None)
+    if eph_id:
+        reply_params = ReplyParameters(
+            message_id=update.message.message_id,
+            api_kwargs={"ephemeral_message_id": eph_id},
+        )
+    else:
+        reply_params = ReplyParameters(message_id=update.message.message_id)
+
+    await update.message.reply_text(
+        message,
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+        reply_parameters=reply_params,
+        api_kwargs={"ephemeral_message_parameters": {"receiver_user_id": user_id}},
+    )
+
+
 async def simula_daily(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     AVAILABLE_MODELS = {
         "default": "Default (solo vincenti, worst-rank)",
@@ -2526,6 +2596,7 @@ async def post_init(app: Application) -> None:
     my_commands = [
         BotCommand('myday', 'Giochi che ti mancano oggi', api_kwargs={'is_ephemeral': True}),
         BotCommand('myscore', 'Il tuo punteggio e piazzamenti di oggi', api_kwargs={'is_ephemeral': True}),
+        BotCommand('mostplayed', 'Top 10 giochi che ti mancano più giocati oggi', api_kwargs={'is_ephemeral': True}),
         BotCommand('ranking', 'Classifica generale di oggi'),
         BotCommand('classifica', 'Classifiche di oggi per gioco (o /c gioco)'),
         BotCommand('bonus', 'Giochi bonus attivi oggi (Jolly e Nuovi)'),
@@ -2642,6 +2713,7 @@ def main():
     app.add_handler(CommandHandler("classificona", classificona), 1)
     app.add_handler(CommandHandler(["myday", "mytoday", "myonly", "my", "today", "daily"], mytoday), 1)
     app.add_handler(CommandHandler(["myscore", "score"], myscore), 1)
+    app.add_handler(CommandHandler("mostplayed", mostplayed), 1)
     app.add_handler(CommandHandler(["mystats", "mystat", "statistiche"], mystats), 1)
     app.add_handler(CommandHandler(["groupstats", "gstats", "statsgroup"], groupstats_command), 1)
     app.add_handler(CommandHandler(["weekstat", "weekstats", "wstat", "week"], week_stats_command), 1)
