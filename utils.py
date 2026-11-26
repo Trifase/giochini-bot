@@ -1040,59 +1040,74 @@ def count_daily_plays(from_day: datetime.date = None) -> dict[int, int]:
 
 
 def real_ranking(from_day: datetime.date = None, prior_m: float = 5.0) -> tuple[list[dict], float]:
-    """Efficiency ranking based on official daily_ranking('default') normalized by games played,
-    using Empirical Bayes shrinkage toward the day's group average stars/game."""
+    """Efficiency ranking (0-100%) across multi-player games (>=2 players),
+    normalizing each game's default score by player count, weighting by game multiplier,
+    excluding solo games and PuntiBonus, with Empirical Bayes shrinkage (prior_m)."""
+    today = datetime.date.today()
     if not from_day:
-        from_day = datetime.date.today()
+        from_day = today
 
-    official = daily_ranking("default", from_day)
-    plays_by_uid = count_daily_plays(from_day)
+    bonuses_by_game = get_all_bonuses_for_date(from_day, auto_pick_jolly=(from_day == today))
+    player_stats: dict[int, dict] = {}
 
-    entries = []
-    seen_uids = set()
-    for _pos, uid, name, stars, *rest in official:
-        uid = int(uid)
-        bonus = int(rest[0]) if rest else 0
-        plays = plays_by_uid.get(uid, 0)
-        if plays <= 0:
+    for game, info in GAMES.items():
+        if info.get("disabled", False):
             continue
-        seen_uids.add(uid)
-        net_stars = max(0, int(stars) - bonus)
-        entries.append({
-            "user_id": uid,
-            "user_name": name,
-            "official_stars": int(stars),
-            "net_stars": net_stars,
-            "bonus": bonus,
-            "plays": plays,
-        })
+        day = get_day_from_date(info["date"], info["day"], game, from_day)
+        rows = list(
+            Punteggio.select(Punteggio.user_name, Punteggio.user_id, Punteggio.tries, Punteggio.extra, Punteggio.lost)
+            .where(Punteggio.day == day, Punteggio.game == game, Punteggio.chat_id == ID_GIOCHINI)
+            .order_by(Punteggio.tries, Punteggio.extra.cast("INTEGER").desc(), Punteggio.timestamp)
+        )
+        if len(rows) < 2:
+            continue
 
-    missing_uids = [uid for uid, cnt in plays_by_uid.items() if cnt > 0 and uid not in seen_uids]
-    if missing_uids:
-        names = get_display_names(missing_uids)
-        for uid in missing_uids:
-            entries.append({
-                "user_id": uid,
-                "user_name": names.get(uid, str(uid)),
-                "official_stars": 0,
-                "net_stars": 0,
-                "bonus": 0,
-                "plays": plays_by_uid[uid],
-            })
+        cl = Classifica()
+        cl.game = game
+        cl.day = day
+        cl.date = from_day
+        cl.emoji = info["emoji"]
+        cl.giocate = [
+            Giocata(user_id=g.user_id, user_name=g.user_name, tries=g.tries, game=game, extra=g.extra if g.extra else 0)
+            for g in rows
+        ]
+        cl.order_and_position()
+        cl.assign_stars("default", multiplier=1)
 
-    if not entries:
+        num_players = len(cl.giocate)
+        weight = float(bonuses_by_game.get(game, (1, None))[0])
+        for _pos, uid, uname, base_stars in cl.get_stars_list():
+            uid = int(uid)
+            st = player_stats.setdefault(
+                uid,
+                {"user_id": uid, "user_name": uname, "w_sum": 0.0, "w_total": 0.0, "plays": 0},
+            )
+            st["w_sum"] += weight * (base_stars / num_players)
+            st["w_total"] += weight
+            st["plays"] += 1
+
+    if not player_stats:
         return [], 0.0
 
-    total_net_stars = sum(e["net_stars"] for e in entries)
-    total_plays = sum(e["plays"] for e in entries)
-    group_avg = total_net_stars / total_plays if total_plays > 0 else 0.0
+    display_names = get_display_names(player_stats.keys())
+    total_w_sum = sum(st["w_sum"] for st in player_stats.values())
+    total_w = sum(st["w_total"] for st in player_stats.values())
+    group_avg = (total_w_sum / total_w) if total_w > 0 else 0.5
 
-    for e in entries:
-        e["raw_avg"] = e["net_stars"] / e["plays"]
-        e["bayesian_avg"] = (e["net_stars"] + prior_m * group_avg) / (e["plays"] + prior_m)
+    entries = []
+    for uid, st in player_stats.items():
+        raw_ratio = st["w_sum"] / st["w_total"] if st["w_total"] > 0 else 0.0
+        bayes_ratio = (st["w_sum"] + prior_m * group_avg) / (st["w_total"] + prior_m)
+        entries.append({
+            "user_id": uid,
+            "user_name": display_names.get(uid, st["user_name"]),
+            "plays": st["plays"],
+            "raw_pct": raw_ratio * 100.0,
+            "bayesian_pct": bayes_ratio * 100.0,
+        })
 
-    entries.sort(key=lambda e: (e["bayesian_avg"], e["raw_avg"], e["net_stars"]), reverse=True)
-    return entries, group_avg
+    entries.sort(key=lambda e: (e["bayesian_pct"], e["raw_pct"], e["plays"]), reverse=True)
+    return entries, group_avg * 100.0
 
 
 def daily_ranking(model: str = "default", from_day: datetime.date = None):

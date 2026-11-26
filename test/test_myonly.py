@@ -548,6 +548,9 @@ async def test_realrank_admin_only_and_bayesian_efficiency():
         Punteggio.create(date=today, timestamp=102 + idx * 10, chat_id=ID_GIOCHINI, user_id=3, user_name="Peach", game=g_name, day=g_day, tries=5, lost=False)
     w_day = str(get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today))
     Punteggio.create(date=today, timestamp=99, chat_id=ID_GIOCHINI, user_id=4, user_name="Lucky", game="Wordle", day=w_day, tries=1, lost=False)
+    # Solo game played only by Mario -> must be ignored (not counted in plays and not dragging down average)
+    c_day = str(get_day_from_date(ALL_GAMES["Colorfle"]["date"], ALL_GAMES["Colorfle"]["day"], "Colorfle", today))
+    Punteggio.create(date=today, timestamp=200, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario", game="Colorfle", day=c_day, tries=2, lost=False)
 
     # Milestone bonus should not inflate efficiency
     PuntiBonus.create_table(safe=True)
@@ -568,7 +571,7 @@ async def test_realrank_admin_only_and_bayesian_efficiency():
     await cmd_realrank(upd_na, ctx)
     assert msg_na.reply_text.await_count == 0
 
-    # Admin gets public efficiency ranking with Mario #1 (above Lucky and above bonus-inflated Luigi)
+    # Admin gets public efficiency ranking with Mario #1 (6 multi-player games, solo Colorfle excluded)
     admin_user = MagicMock()
     admin_user.id = ADMIN_ID
     msg_adm = MagicMock()
@@ -581,5 +584,6 @@ async def test_realrank_admin_only_and_bayesian_efficiency():
     assert msg_adm.reply_text.await_count == 1
     text = msg_adm.reply_text.call_args.args[0]
     assert "RealRank" in text
+    assert "(6g · raw" in text
     assert text.index("Mario") < text.index("Lucky") < text.index("Luigi")
 

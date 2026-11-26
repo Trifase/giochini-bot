@@ -2399,13 +2399,13 @@ async def cmd_realrank(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     for idx, e in enumerate(entries, start=1):
         prefix = medals.get(idx, f"{idx}.")
         lines.append(
-            f"{prefix} <code>{e['bayesian_avg']:.2f}</code>{STAR_SYMBOL}/g "
+            f"{prefix} <code>{e['bayesian_pct']:5.1f}%</code> "
             f"<b>{html.escape(str(e['user_name']))}</b> "
-            f"<i>({e['net_stars']}{STAR_SYMBOL} / {e['plays']}g · raw {e['raw_avg']:.2f})</i>"
+            f"<i>({e['plays']}g · raw {e['raw_pct']:.1f}%)</i>"
         )
 
     lines.append(
-        f"\n<i>Formula bayesiana: (punti_giochi + {int(prior_m)}×{group_avg:.2f}) / (giocate + {int(prior_m)}) · esclusi punti bonus traguardi.</i>"
+        f"\n<i>Media bayesiana sui piazzamenti normalizzati (1°=100%, esclusi giochi in solitaria e bonus traguardi · media gruppo {group_avg:.1f}%, m={int(prior_m)}).</i>"
     )
     await update.message.reply_text("\n".join(lines), parse_mode="HTML", disable_web_page_preview=True)
     await delete_original_command(update, context, 30)
