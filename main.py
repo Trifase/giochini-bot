@@ -690,6 +690,32 @@ async def send_long_message(bot_token: str, chat_id: int | str, message: str, re
     return response_data
 
 
+async def send_rich_markdown_message(
+    bot_token: str,
+    chat_id: int | str,
+    markdown: str,
+    reply_to_message_id: int | None = None,
+) -> dict:
+    url = f"https://api.telegram.org/bot{bot_token}/sendRichMessage"
+    payload = {
+        "chat_id": chat_id,
+        "rich_message": {
+            "markdown": markdown,
+        },
+    }
+    if reply_to_message_id is not None:
+        payload["reply_parameters"] = {"message_id": reply_to_message_id}
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, json=payload, timeout=30.0)
+        response_data = response.json()
+
+    if not response_data.get("ok"):
+        raise RuntimeError(f"Telegram API Error: {response_data}")
+
+    return response_data
+
+
 async def classificona(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     messaggio = ""
     print(f"ci sono in totale {len(GAMES.keys())} giochi")
@@ -2377,7 +2403,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def cmd_realrank(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Admin-only public command: official ranking normalized by games played (Bayesian efficiency)."""
+    """Admin-only public command: RealRank™ Bayesian lobby-weighted & volatility-adjusted efficiency via sendRichMessage."""
     if not update.message or not update.effective_user or update.effective_user.id != ADMIN_ID:
         return
 
@@ -2388,26 +2414,45 @@ async def cmd_realrank(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         target_date = today - datetime.timedelta(days=1)
         label = f"ieri ({target_date.strftime('%Y-%m-%d')})"
 
-    prior_m = 5.0
-    entries, group_avg = real_ranking(target_date, prior_m=prior_m)
+    entries, meta = real_ranking(target_date, prior_games=5.0, volatility_lambda=0.25)
     if not entries:
-        await update.message.reply_text(f"Nessuna giocata registrata per {label}.")
+        await update.message.reply_text(f"Nessuna giocata multiplayer registrata per {label}.")
         return
 
     medals = {1: "🥇", 2: "🥈", 3: "🥉"}
-    lines = [f"🎯 <b>RealRank™ — Efficienza di {label}:</b>\n"]
+    rows = [
+        f"## 🎯 RealRank™ — Efficienza di {label}",
+        "",
+        "| # | Giocatore | RealRank™ | Raw | σ | Giochi |",
+        "| :---: | :--- | ---: | ---: | ---: | ---: |",
+    ]
     for idx, e in enumerate(entries, start=1):
-        prefix = medals.get(idx, f"{idx}.")
-        lines.append(
-            f"{prefix} <code>{e['bayesian_pct']:5.1f}%</code> "
-            f"<b>{html.escape(str(e['user_name']))}</b> "
-            f"<i>({e['plays']}g · raw {e['raw_pct']:.1f}%)</i>"
+        prefix = medals.get(idx, str(idx))
+        safe_name = str(e["user_name"]).replace("|", "\\|")
+        rows.append(
+            f"| {prefix} | **{safe_name}** | **{e['real_score']:.1f}** | "
+            f"{e['raw_pct']:.1f}% | ±{e['sigma_pct']:.1f}% | {e['plays']} |"
         )
 
-    lines.append(
-        f"\n<i>Media bayesiana sui piazzamenti normalizzati (1°=100%, esclusi giochi in solitaria e bonus traguardi · media gruppo {group_avg:.1f}%, m={int(prior_m)}).</i>"
+    rows.extend([
+        "",
+        "### 📐 Modello Matematico",
+        "",
+        r"$$R_u = 100 \cdot \max\!\left(0,\; \frac{\sum_{g} w_g s_{u,g} + m\,\mu_0}{\sum_{g} w_g + m} - \lambda \frac{\sigma_u}{\sqrt{n_u + 1}}\right)$$",
+        "",
+        r"- $s_{u,g} = \frac{\text{punti}_{u,g}}{N_g} \in [0,1]$ — piazzamento normalizzato (esclusi giochi in solitaria $N_g = 1$ e bonus traguardi)",
+        r"- $w_g = M_g \cdot \ln(N_g + 1)$ — peso entropia lobby $\times$ moltiplicatore $M_g$",
+        f"- $\\mu_0 = {meta['mu0']:.3f}$ (media pesata gruppo), $m = {meta['prior_m']:.2f}$ (prior bayesiano $\\approx {int(meta['prior_games'])}$ giochi medi)",
+        f"- $\\sigma_u$ deviazione standard pesata, penalità volatilità $\\lambda = {meta['lambda']:.2f}$",
+    ])
+
+    md = "\n".join(rows)
+    chat_id = update.effective_chat.id if update.effective_chat else update.message.chat_id
+    await send_rich_markdown_message(
+        bot_token=TOKEN,
+        chat_id=chat_id,
+        markdown=md,
     )
-    await update.message.reply_text("\n".join(lines), parse_mode="HTML", disable_web_page_preview=True)
     await delete_original_command(update, context, 30)
 
 

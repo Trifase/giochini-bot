@@ -1039,16 +1039,26 @@ def count_daily_plays(from_day: datetime.date = None) -> dict[int, int]:
     return dict(counts)
 
 
-def real_ranking(from_day: datetime.date = None, prior_m: float = 5.0) -> tuple[list[dict], float]:
-    """Efficiency ranking (0-100%) across multi-player games (>=2 players),
-    normalizing each game's default score by player count, weighting by game multiplier,
-    excluding solo games and PuntiBonus, with Empirical Bayes shrinkage (prior_m)."""
+def real_ranking(
+    from_day: datetime.date = None,
+    prior_games: float = 5.0,
+    volatility_lambda: float = 0.25,
+) -> tuple[list[dict], dict]:
+    """RealRank™ efficiency index (0-100) across multi-player games (N_g >= 2):
+    - Normalized score per game: s_{u,g} = base_stars / N_g in [0, 1]
+    - Lobby-entropy & multiplier weight: w_g = M_g * ln(N_g + 1)
+    - Empirical Bayes shrinkage toward day's weighted group mean mu_0 with prior m = prior_games * avg(w_g)
+    - Consistency (LCB) penalty: -lambda * sigma_u / sqrt(n_u + 1)
+    Excludes solo games (N_g < 2) and PuntiBonus milestone points."""
+    import math
+
     today = datetime.date.today()
     if not from_day:
         from_day = today
 
     bonuses_by_game = get_all_bonuses_for_date(from_day, auto_pick_jolly=(from_day == today))
     player_stats: dict[int, dict] = {}
+    game_weights: list[float] = []
 
     for game, info in GAMES.items():
         if info.get("disabled", False):
@@ -1075,39 +1085,63 @@ def real_ranking(from_day: datetime.date = None, prior_m: float = 5.0) -> tuple[
         cl.assign_stars("default", multiplier=1)
 
         num_players = len(cl.giocate)
-        weight = float(bonuses_by_game.get(game, (1, None))[0])
+        mult = float(bonuses_by_game.get(game, (1, None))[0])
+        weight = mult * math.log(num_players + 1)
+        game_weights.append(weight)
+
         for _pos, uid, uname, base_stars in cl.get_stars_list():
             uid = int(uid)
+            s_ug = base_stars / num_players
             st = player_stats.setdefault(
                 uid,
-                {"user_id": uid, "user_name": uname, "w_sum": 0.0, "w_total": 0.0, "plays": 0},
+                {"user_id": uid, "user_name": uname, "obs": [], "w_sum": 0.0, "w_total": 0.0, "plays": 0},
             )
-            st["w_sum"] += weight * (base_stars / num_players)
+            st["obs"].append((weight, s_ug))
+            st["w_sum"] += weight * s_ug
             st["w_total"] += weight
             st["plays"] += 1
 
     if not player_stats:
-        return [], 0.0
+        return [], {"mu0": 0.0, "prior_m": 0.0, "lambda": volatility_lambda, "prior_games": prior_games}
 
     display_names = get_display_names(player_stats.keys())
     total_w_sum = sum(st["w_sum"] for st in player_stats.values())
     total_w = sum(st["w_total"] for st in player_stats.values())
-    group_avg = (total_w_sum / total_w) if total_w > 0 else 0.5
+    mu0 = (total_w_sum / total_w) if total_w > 0 else 0.5
+    avg_w = sum(game_weights) / len(game_weights) if game_weights else 1.0
+    prior_m = prior_games * avg_w
 
     entries = []
     for uid, st in player_stats.items():
         raw_ratio = st["w_sum"] / st["w_total"] if st["w_total"] > 0 else 0.0
-        bayes_ratio = (st["w_sum"] + prior_m * group_avg) / (st["w_total"] + prior_m)
+        var = (
+            sum(w * ((s - raw_ratio) ** 2) for w, s in st["obs"]) / st["w_total"]
+            if st["w_total"] > 0
+            else 0.0
+        )
+        sigma = math.sqrt(max(0.0, var))
+        theta_hat = (st["w_sum"] + prior_m * mu0) / (st["w_total"] + prior_m)
+        penalty = volatility_lambda * (sigma / math.sqrt(st["plays"] + 1))
+        real_score = max(0.0, theta_hat - penalty) * 100.0
         entries.append({
             "user_id": uid,
             "user_name": display_names.get(uid, st["user_name"]),
             "plays": st["plays"],
             "raw_pct": raw_ratio * 100.0,
-            "bayesian_pct": bayes_ratio * 100.0,
+            "sigma_pct": sigma * 100.0,
+            "bayesian_pct": theta_hat * 100.0,
+            "real_score": real_score,
         })
 
-    entries.sort(key=lambda e: (e["bayesian_pct"], e["raw_pct"], e["plays"]), reverse=True)
-    return entries, group_avg * 100.0
+    entries.sort(key=lambda e: (e["real_score"], e["bayesian_pct"], e["plays"]), reverse=True)
+    meta = {
+        "mu0": mu0,
+        "mu0_pct": mu0 * 100.0,
+        "prior_m": prior_m,
+        "lambda": volatility_lambda,
+        "prior_games": prior_games,
+    }
+    return entries, meta
 
 
 def daily_ranking(model: str = "default", from_day: datetime.date = None):

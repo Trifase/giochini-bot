@@ -571,19 +571,24 @@ async def test_realrank_admin_only_and_bayesian_efficiency():
     await cmd_realrank(upd_na, ctx)
     assert msg_na.reply_text.await_count == 0
 
-    # Admin gets public efficiency ranking with Mario #1 (6 multi-player games, solo Colorfle excluded)
+    # Admin gets public efficiency ranking via sendRichMessage with LaTeX formula and Markdown table
     admin_user = MagicMock()
     admin_user.id = ADMIN_ID
     msg_adm = MagicMock()
     msg_adm.reply_text = AsyncMock()
+    msg_adm.chat_id = ID_GIOCHINI
     upd_adm = MagicMock()
     upd_adm.message = msg_adm
     upd_adm.effective_user = admin_user
+    upd_adm.effective_chat = MagicMock(id=ID_GIOCHINI)
 
-    await cmd_realrank(upd_adm, ctx)
-    assert msg_adm.reply_text.await_count == 1
-    text = msg_adm.reply_text.call_args.args[0]
-    assert "RealRank" in text
-    assert "(6g · raw" in text
-    assert text.index("Mario") < text.index("Lucky") < text.index("Luigi")
+    from unittest.mock import patch
+    with patch("main.send_rich_markdown_message", new=AsyncMock(return_value={"ok": True})) as mock_rich:
+        await cmd_realrank(upd_adm, ctx)
+        assert mock_rich.await_count == 1
+        md = mock_rich.call_args.kwargs["markdown"]
+        assert "RealRank™" in md
+        assert "$$R_u = 100" in md
+        assert "| **Mario** |" in md and "| 6 |" in md
+        assert md.index("Mario") < md.index("Lucky") < md.index("Luigi")
 
