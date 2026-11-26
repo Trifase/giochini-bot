@@ -70,6 +70,7 @@ from utils import (
     correct_name,
     count_daily_plays,
     daily_ranking,
+    real_ranking,
     ensure_gioco_bonus_schema,
     ensure_punteggi_pk_migration,
     ensure_utenti_schema_and_backfill,
@@ -448,6 +449,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message.extend([
             "",
             "<b>🔧 Admin</b>",
+            "• /realrank [ieri] - Classifica efficienza normalizzata per giocate",
             "• /stelle - Assegna/resetta punti bonus o malus",
             "• /setanchor - Imposta il #giorno di un gioco",
             "• /ask <i>&lt;domanda&gt;</i> - Query AI sul database",
@@ -2374,6 +2376,41 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
     await delete_original_command(update, context, 30)
 
 
+async def cmd_realrank(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Admin-only public command: official ranking normalized by games played (Bayesian efficiency)."""
+    if not update.message or not update.effective_user or update.effective_user.id != ADMIN_ID:
+        return
+
+    today = datetime.date.today()
+    target_date = today
+    label = "oggi"
+    if context.args and context.args[0].lower() in ("ieri", "yesterday"):
+        target_date = today - datetime.timedelta(days=1)
+        label = f"ieri ({target_date.strftime('%Y-%m-%d')})"
+
+    prior_m = 5.0
+    entries, group_avg = real_ranking(target_date, prior_m=prior_m)
+    if not entries:
+        await update.message.reply_text(f"Nessuna giocata registrata per {label}.")
+        return
+
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    lines = [f"🎯 <b>RealRank — Efficienza di {label}:</b>\n"]
+    for idx, e in enumerate(entries, start=1):
+        prefix = medals.get(idx, f"{idx}.")
+        lines.append(
+            f"{prefix} <code>{e['bayesian_avg']:.2f}</code>{STAR_SYMBOL}/g "
+            f"<b>{html.escape(str(e['user_name']))}</b> "
+            f"<i>({e['net_stars']}{STAR_SYMBOL} / {e['plays']}g · raw {e['raw_avg']:.2f})</i>"
+        )
+
+    lines.append(
+        f"\n<i>Formula bayesiana: (punti_giochi + {int(prior_m)}×{group_avg:.2f}) / (giocate + {int(prior_m)}) · esclusi punti bonus traguardi.</i>"
+    )
+    await update.message.reply_text("\n".join(lines), parse_mode="HTML", disable_web_page_preview=True)
+    await delete_original_command(update, context, 30)
+
+
 def _format_game_link(game_name: str, target_date: datetime.date) -> str:
     g_info = GAMES.get(game_name, {})
     g_emoji = g_info.get("emoji", "🎮")
@@ -2720,6 +2757,7 @@ def main():
     app.add_handler(CommandHandler("help", show_help), 1)
     app.add_handler(CommandHandler(["list", "lista"], list_games), 1)
     app.add_handler(CommandHandler(["dailyranking", "ranking", "oggi"], classifica_istantanea), 1)
+    app.add_handler(CommandHandler("realrank", cmd_realrank), 1)
     app.add_handler(CommandHandler(["simuladaily", "simula"], simula_daily), 1)
     app.add_handler(CommandHandler(["bonus", "giochibonus"], cmd_bonus_games), 1)
     app.add_handler(CommandHandler(["stelle", "stelline", "malus", "punti"], cmd_stelle), 1)

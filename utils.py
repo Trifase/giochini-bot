@@ -1039,6 +1039,62 @@ def count_daily_plays(from_day: datetime.date = None) -> dict[int, int]:
     return dict(counts)
 
 
+def real_ranking(from_day: datetime.date = None, prior_m: float = 5.0) -> tuple[list[dict], float]:
+    """Efficiency ranking based on official daily_ranking('default') normalized by games played,
+    using Empirical Bayes shrinkage toward the day's group average stars/game."""
+    if not from_day:
+        from_day = datetime.date.today()
+
+    official = daily_ranking("default", from_day)
+    plays_by_uid = count_daily_plays(from_day)
+
+    entries = []
+    seen_uids = set()
+    for _pos, uid, name, stars, *rest in official:
+        uid = int(uid)
+        bonus = int(rest[0]) if rest else 0
+        plays = plays_by_uid.get(uid, 0)
+        if plays <= 0:
+            continue
+        seen_uids.add(uid)
+        net_stars = max(0, int(stars) - bonus)
+        entries.append({
+            "user_id": uid,
+            "user_name": name,
+            "official_stars": int(stars),
+            "net_stars": net_stars,
+            "bonus": bonus,
+            "plays": plays,
+        })
+
+    missing_uids = [uid for uid, cnt in plays_by_uid.items() if cnt > 0 and uid not in seen_uids]
+    if missing_uids:
+        names = get_display_names(missing_uids)
+        for uid in missing_uids:
+            entries.append({
+                "user_id": uid,
+                "user_name": names.get(uid, str(uid)),
+                "official_stars": 0,
+                "net_stars": 0,
+                "bonus": 0,
+                "plays": plays_by_uid[uid],
+            })
+
+    if not entries:
+        return [], 0.0
+
+    total_net_stars = sum(e["net_stars"] for e in entries)
+    total_plays = sum(e["plays"] for e in entries)
+    group_avg = total_net_stars / total_plays if total_plays > 0 else 0.0
+
+    for e in entries:
+        e["raw_avg"] = e["net_stars"] / e["plays"]
+        e["bayesian_avg"] = (e["net_stars"] + prior_m * group_avg) / (e["plays"] + prior_m)
+
+    entries.sort(key=lambda e: (e["bayesian_avg"], e["raw_avg"], e["net_stars"]), reverse=True)
+    return entries, group_avg
+
+
 def daily_ranking(model: str = "default", from_day: datetime.date = None):
     """Creates the daily ranking for all games."""
     points = defaultdict(int)

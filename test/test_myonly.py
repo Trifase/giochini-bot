@@ -528,3 +528,58 @@ async def test_mostplayed_ephemeral_top10_unplayed():
     assert "Bandle" not in text
     assert text.index("Wordle") < text.index("Angle")
 
+
+@pytest.mark.anyio
+async def test_realrank_admin_only_and_bayesian_efficiency():
+    import datetime
+    from config import ADMIN_ID, ID_GIOCHINI
+    from main import cmd_realrank
+    from utils import PuntiBonus
+    from games import ALL_GAMES, get_day_from_date
+
+    today = datetime.date.today()
+    games_to_use = ["Wordle", "Angle", "Bandle", "Connections", "Strands", "Flagle"]
+    # Mario plays 6 games and wins all 6 (2nd is Luigi, 3rd is Peach)
+    # Lucky plays 1 game and ties for 1st with Mario -> high raw avg, but Bayesian shrinks Lucky below Mario!
+    for idx, g_name in enumerate(games_to_use):
+        g_day = str(get_day_from_date(ALL_GAMES[g_name]["date"], ALL_GAMES[g_name]["day"], g_name, today))
+        Punteggio.create(date=today, timestamp=100 + idx * 10, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario", game=g_name, day=g_day, tries=1, lost=False)
+        Punteggio.create(date=today, timestamp=101 + idx * 10, chat_id=ID_GIOCHINI, user_id=2, user_name="Luigi", game=g_name, day=g_day, tries=3, lost=False)
+        Punteggio.create(date=today, timestamp=102 + idx * 10, chat_id=ID_GIOCHINI, user_id=3, user_name="Peach", game=g_name, day=g_day, tries=5, lost=False)
+    w_day = str(get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today))
+    Punteggio.create(date=today, timestamp=99, chat_id=ID_GIOCHINI, user_id=4, user_name="Lucky", game="Wordle", day=w_day, tries=1, lost=False)
+
+    # Milestone bonus should not inflate efficiency
+    PuntiBonus.create_table(safe=True)
+    PuntiBonus.create(date=today, user_id=2, user_name="Luigi", punti=50, reason="test", timestamp=500)
+
+    # Non-admin is ignored
+    non_admin = MagicMock()
+    non_admin.id = 999999
+    msg_na = MagicMock()
+    msg_na.reply_text = AsyncMock()
+    upd_na = MagicMock()
+    upd_na.message = msg_na
+    upd_na.effective_user = non_admin
+    ctx = MagicMock()
+    ctx.args = []
+    ctx.job_queue = MagicMock()
+
+    await cmd_realrank(upd_na, ctx)
+    assert msg_na.reply_text.await_count == 0
+
+    # Admin gets public efficiency ranking with Mario #1 (above Lucky and above bonus-inflated Luigi)
+    admin_user = MagicMock()
+    admin_user.id = ADMIN_ID
+    msg_adm = MagicMock()
+    msg_adm.reply_text = AsyncMock()
+    upd_adm = MagicMock()
+    upd_adm.message = msg_adm
+    upd_adm.effective_user = admin_user
+
+    await cmd_realrank(upd_adm, ctx)
+    assert msg_adm.reply_text.await_count == 1
+    text = msg_adm.reply_text.call_args.args[0]
+    assert "RealRank" in text
+    assert text.index("Mario") < text.index("Lucky") < text.index("Luigi")
+
