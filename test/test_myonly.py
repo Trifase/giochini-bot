@@ -452,8 +452,10 @@ async def test_ranking_shows_games_played_instead_of_bonus():
     from games import ALL_GAMES, get_day_from_date
 
     today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
     w_day = str(get_day_from_date(ALL_GAMES["Wordle"]["date"], ALL_GAMES["Wordle"]["day"], "Wordle", today))
     a_day = str(get_day_from_date(ALL_GAMES["Angle"]["date"], ALL_GAMES["Angle"]["day"], "Angle", today))
+    c_day = str(get_day_from_date(ALL_GAMES["Colorfle"]["date"], ALL_GAMES["Colorfle"]["day"], "Colorfle", today))
 
     Punteggio.create(date=today, timestamp=100, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario", game="Wordle", day=w_day, tries=2, lost=False)
     Punteggio.create(date=today, timestamp=101, chat_id=ID_GIOCHINI, user_id=2, user_name="Luigi", game="Wordle", day=w_day, tries=4, lost=False)
@@ -461,9 +463,11 @@ async def test_ranking_shows_games_played_instead_of_bonus():
     Punteggio.create(date=today, timestamp=103, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario", game="Angle", day=a_day, tries=3, lost=False)
     Punteggio.create(date=today, timestamp=104, chat_id=ID_GIOCHINI, user_id=2, user_name="Luigi", game="Angle", day=a_day, tries=5, lost=False)
     Punteggio.create(date=today, timestamp=105, chat_id=ID_GIOCHINI, user_id=3, user_name="Peach", game="Angle", day=a_day, tries=7, lost=False)
+    # Played yesterday evening after Colorfle reset (counts toward today's puzzle day)
+    Punteggio.create(date=yesterday, timestamp=90, chat_id=ID_GIOCHINI, user_id=1, user_name="Mario", game="Colorfle", day=c_day, tries=4, lost=False)
 
     PuntiBonus.create_table(safe=True)
-    PuntiBonus.create(date=today, user_id=1, user_name="Mario", punti=5, reason="test", timestamp=104)
+    PuntiBonus.create(date=today, user_id=1, user_name="Mario", punti=5, reason="test", timestamp=106)
 
     message = MagicMock()
     message.reply_text = AsyncMock()
@@ -475,7 +479,7 @@ async def test_ranking_shows_games_played_instead_of_bonus():
 
     await classifica_istantanea(update, context)
     text = message.reply_text.call_args.args[0]
-    assert "Mario (2)" in text
+    assert "Mario (3)" in text
     assert "Luigi (2)" in text
     assert "(+5)" not in text
 

@@ -1020,6 +1020,25 @@ class Classifica:
 
 
 
+def count_daily_plays(from_day: datetime.date = None) -> dict[int, int]:
+    """Counts plays per user_id across the exact (game, day) pairs evaluated by daily_ranking."""
+    if not from_day:
+        from_day = datetime.date.today()
+    counts: dict[int, int] = defaultdict(int)
+    for game, info in GAMES.items():
+        if info.get("disabled", False):
+            continue
+        day = get_day_from_date(info["date"], info["day"], game, from_day)
+        rows = Punteggio.select(Punteggio.user_id).where(
+            Punteggio.day == day,
+            Punteggio.game == game,
+            Punteggio.chat_id == ID_GIOCHINI,
+        )
+        for row in rows:
+            counts[int(row.user_id)] += 1
+    return dict(counts)
+
+
 def daily_ranking(model: str = "default", from_day: datetime.date = None):
     """Creates the daily ranking for all games."""
     points = defaultdict(int)

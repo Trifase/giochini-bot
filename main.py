@@ -68,6 +68,7 @@ from utils import (
     POOP_MEDAL,
     award_daily_play_milestones,
     correct_name,
+    count_daily_plays,
     daily_ranking,
     ensure_gioco_bonus_schema,
     ensure_punteggi_pk_migration,
@@ -2286,14 +2287,7 @@ async def classifica_istantanea(update: Update, context: ContextTypes.DEFAULT_TY
 
     today = datetime.date.today()
     classifica_stelle = daily_ranking(model)
-    plays_by_uid = {
-        int(row.user_id): int(row.plays)
-        for row in (
-            Punteggio.select(Punteggio.user_id, peewee.fn.COUNT(Punteggio.game).alias("plays"))
-            .where(Punteggio.date == today)
-            .group_by(Punteggio.user_id)
-        )
-    }
+    plays_by_uid = count_daily_plays(today)
 
     message = "Ecco la classifica temporanea di oggi:\n\n"
 
