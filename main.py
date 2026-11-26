@@ -2395,7 +2395,7 @@ async def cmd_realrank(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     medals = {1: "🥇", 2: "🥈", 3: "🥉"}
-    lines = [f"🎯 <b>RealRank — Efficienza di {label}:</b>\n"]
+    lines = [f"🎯 <b>RealRank™ — Efficienza di {label}:</b>\n"]
     for idx, e in enumerate(entries, start=1):
         prefix = medals.get(idx, f"{idx}.")
         lines.append(
