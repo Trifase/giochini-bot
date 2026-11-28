@@ -772,3 +772,20 @@ def test_weighted_average_ranking():
     assert uids.index(1) < uids.index(2)
 
 
+def test_get_date_from_day_respects_game_anchor():
+    from utils import GameAnchor, get_date_from_day
+    from games import ALL_GAMES, get_day_from_date, invalidate_anchor_cache
+
+    target_date = datetime.date(2026, 11, 28)
+    GameAnchor.create_table(safe=True)
+    GameAnchor.replace(game_name="TimeGuessr", anchor_date=target_date, anchor_day="1277").execute()
+    invalidate_anchor_cache()
+    try:
+        day = get_day_from_date(ALL_GAMES["TimeGuessr"]["date"], ALL_GAMES["TimeGuessr"]["day"], "TimeGuessr", target_date)
+        assert day == "1277"
+        assert get_date_from_day("TimeGuessr", day) == target_date
+    finally:
+        GameAnchor.delete().where(GameAnchor.game_name == "TimeGuessr").execute()
+        invalidate_anchor_cache()
+
+

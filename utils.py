@@ -47,7 +47,7 @@ try:
 except ImportError:
     POOP_MEDAL = "💩 "
 from games import ALL_GAMES as GAMES
-from games import get_day_from_date
+from games import get_day_from_date, _get_anchor_for_game
 
 
 
@@ -1320,9 +1320,13 @@ def str_as_int(string: str) -> int:
 
 
 def get_date_from_day(game: str, day: str) -> datetime.date:
-    # GAMES = get_games()
-    days_difference = int(GAMES[game]["day"]) - int(day)
-    return GAMES[game]["date"] - datetime.timedelta(days=days_difference)
+    anchor = _get_anchor_for_game(game)
+    if anchor:
+        ref_date, ref_day = anchor
+    else:
+        ref_date, ref_day = GAMES[game]["date"], GAMES[game]["day"]
+    days_difference = int(ref_day) - int(day)
+    return ref_date - datetime.timedelta(days=days_difference)
 
 
 def correct_name(name: str) -> str:
